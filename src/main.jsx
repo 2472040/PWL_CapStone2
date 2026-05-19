@@ -1,5 +1,6 @@
 // app-main.jsx — wires up landing page + shell + screens + drawer registry
 // v2.0: + Landing page, Error boundary, search provider, mobile UI, keyboard shortcuts
+import { apiFetch, setToken, removeToken, getToken} from './services/api.js';
 import React, {  useState, useEffect  } from 'react';
 import { DrawerContent, ModalContent, Sidebar, ToastProvider, StoreProvider, useStore, Drawer, Modal, PageBar, PageHost, SearchProvider, MobileSidebarToggle, MouseTracker, useKeyboardShortcuts, useRevealFallback, ScrollProgress, SoundIntegration, CursorEnabler, TiltEngine, D  } from './components/app-shell.jsx';
 import { CustomCursor } from './components/app-cursor.jsx';
@@ -163,6 +164,36 @@ function Shell({ onLogout }) {
   );
 }
 
+function AuthInitializer() {
+  const { dispatch } = useStore();
+
+  useEffect(() => {
+    async function loadCurrentUser() {
+      try {
+        const result = await apiFetch('/auth/me');
+
+        const user = result.data;
+
+        // simpan role ke store agar UI menyesuaikan
+        if (user.role) {
+          dispatch({
+            type: 'SET_ROLE',
+            payload: user.role,
+          });
+        }
+      } catch (error) {
+        console.error('Gagal mengambil data user:', error.message);
+      }
+    }
+
+    if (getToken()) {
+      loadCurrentUser();
+    }
+  }, [dispatch]);
+
+  return null;
+}
+
 function App() {
   const [view, setView] = useState(() => {
     // Check if user was previously in the app
@@ -171,31 +202,64 @@ function App() {
     } catch (e) { return 'landing'; }
   });
 
-  function enterApp() {
+  useEffect(() => {
+    if (view === 'app' && !getToken()) {
+      setView('landing');
+      localStorage.removeItem('loka-view');
+    }
+  }, [view]);
+
+  async function enterApp() {
+  try {
+    const result = await apiFetch('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: 'anindita@kampus.id',
+        password: 'password123',
+      }),
+    });
+
+    // simpan JWT token
+    setToken(result.data.token);
+
+    // masuk ke aplikasi
     setView('app');
-    try { localStorage.setItem('loka-view', 'app'); } catch(e) {}
+    localStorage.setItem('loka-view', 'app');
+  } catch (error) {
+    alert('Login gagal: ' + error.message);
   }
+}
 
   function goToLanding() {
-    setView('landing');
-    try { localStorage.setItem('loka-view', 'landing'); } catch(e) {}
-  }
+  // hapus JWT token
+  removeToken();
+
+  // kembali ke landing page
+  setView('landing');
+
+  // delete status view
+  try {
+    localStorage.removeItem('loka-view');
+  } catch (e) {}
+}
 
   return (
-    <ErrorBoundary>
-      <StoreProvider>
-        <SearchProvider>
-          <ToastProvider>
-            {view === 'landing' ? (
-              <LandingPage onEnterApp={enterApp} />
-            ) : (
-              <Shell onLogout={goToLanding} />
-            )}
-          </ToastProvider>
-        </SearchProvider>
-      </StoreProvider>
-    </ErrorBoundary>
-  );
+  <ErrorBoundary>
+    <StoreProvider>
+      <SearchProvider>
+        <ToastProvider>
+          <AuthInitializer />
+
+          {view === 'landing' ? (
+            <LandingPage onEnterApp={enterApp} />
+          ) : (
+            <Shell onLogout={goToLanding} />
+          )}
+        </ToastProvider>
+      </SearchProvider>
+    </StoreProvider>
+  </ErrorBoundary>
+);
 }
 
 import ReactDOM from 'react-dom/client';
