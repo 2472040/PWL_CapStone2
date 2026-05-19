@@ -1,0 +1,182 @@
+extends layout
+
+block content
+  style.
+    .login-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #16213e 100%);
+    }
+    .login-card {
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+    }
+    .login-logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .login-logo h1 {
+      font-size: 28px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #b794ff, #7eebd8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
+    }
+    .login-logo p {
+      color: #71717a;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #a1a1aa;
+      margin-bottom: 8px;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      color: #e4e4e7;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus {
+      border-color: #b794ff;
+      box-shadow: 0 0 0 3px rgba(183,148,255,0.1);
+    }
+    .login-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #b794ff, #7eebd8);
+      border: none;
+      border-radius: 12px;
+      color: #0a0a0f;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      margin-top: 8px;
+    }
+    .login-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .login-btn:active { transform: translateY(0); }
+    .error-msg {
+      background: rgba(251,113,133,0.1);
+      border: 1px solid rgba(251,113,133,0.2);
+      color: #fb7185;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .error-msg.show { display: block; }
+    .login-footer {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 12px;
+      color: #52525b;
+    }
+    .role-hint {
+      margin-top: 24px;
+      padding: 16px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    .role-hint p { font-size: 12px; color: #71717a; margin-bottom: 8px; }
+    .role-hint code { font-size: 11px; color: #a78bfa; background: rgba(167,139,250,0.1); padding: 2px 6px; border-radius: 4px; }
+
+  .login-wrapper
+    .login-card
+      .login-logo
+        h1 LokaLab
+        p Sistem Inventaris Laboratorium
+
+      #error-msg.error-msg
+
+      form#login-form(method="POST" action="javascript:void(0)")
+        .form-group
+          label(for="email") Email
+          input#email(type="email" name="email" placeholder="contoh@kampus.id" required autofocus)
+        .form-group
+          label(for="password") Password
+          input#password(type="password" name="password" placeholder="Masukkan password" required)
+        button.login-btn(type="submit") Masuk
+
+      .role-hint
+        p Demo accounts (password: #[code password123])
+        p #[code anindita@kampus.id] — Sys Admin
+        p #[code pradipta@kampus.id] — Kalab
+        p #[code hendra@kampus.id] — Kaprodi
+        p #[code faqih@kampus.id] — Admin
+        p #[code maharani@kampus.id] — Staf Lab
+
+      .login-footer &copy; 2026 LokaLab — Capstone PWL
+
+  script.
+    document.getElementById('login-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const errEl = document.getElementById('error-msg');
+      const btn = document.querySelector('.login-btn');
+      errEl.classList.remove('show');
+      btn.textContent = 'Memproses...';
+      btn.disabled = true;
+
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          errEl.textContent = data.error || 'Login gagal.';
+          errEl.classList.add('show');
+          btn.textContent = 'Masuk';
+          btn.disabled = false;
+          return;
+        }
+
+        // Simpan token & user data
+        localStorage.setItem('loka-token', data.data.token);
+        localStorage.setItem('loka-user', JSON.stringify(data.data.user));
+        localStorage.setItem('loka-view', 'app');
+
+        // Redirect ke React frontend
+        // Jika diakses langsung di port 3000, arahkan ke Vite dev server (5173)
+        // Jika diakses via proxy atau production, arahkan ke root
+        const port = window.location.port;
+        if (port === '3000') {
+          window.location.href = 'http://localhost:5173';
+        } else {
+          window.location.href = '/';
+        }
+      } catch (err) {
+        errEl.textContent = 'Tidak dapat terhubung ke server.';
+        errEl.classList.add('show');
+        btn.textContent = 'Masuk';
+        btn.disabled = false;
+      }
+    });
+
