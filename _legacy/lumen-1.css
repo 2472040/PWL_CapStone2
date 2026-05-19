@@ -1,0 +1,128 @@
+/* Lumen — Linear/blueprint dark, sharper geometry, mono accent */
+.lu {
+  --bg: #0a0b0e;
+  --bg-2: #0d0e12;
+  --surface: #11131a;
+  --surface-2: #161924;
+  --ink: #e8eaef;
+  --ink-2: rgba(232,234,239,0.62);
+  --ink-3: rgba(232,234,239,0.36);
+  --line: rgba(232,234,239,0.08);
+  --line-2: rgba(232,234,239,0.16);
+  --accent: #a3e635;
+  --accent-2: #84cc16;
+  --accent-soft: rgba(163,230,53,0.12);
+  --warn: #fbbf24;
+  --rose: #f87171;
+  --blue: #60a5fa;
+  --violet: #a78bfa;
+  position: relative;
+  width: 100%; height: 100%;
+  overflow-y: auto; overflow-x: hidden;
+  background: var(--bg); color: var(--ink);
+  font-family: 'Inter', system-ui, sans-serif;
+  scrollbar-width: none;
+  font-feature-settings: 'ss01','cv11';
+}
+.lu::-webkit-scrollbar { display: none; }
+.lu-mono { font-family: 'JetBrains Mono', monospace; font-feature-settings: 'tnum','zero'; letter-spacing: -0.01em; }
+.lu-display { font-family: 'Inter', system-ui, sans-serif; font-weight: 500; letter-spacing: -0.03em; }
+
+/* Blueprint grid background */
+.lu-grid-bg {
+  position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    linear-gradient(to right, rgba(232,234,239,0.025) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(232,234,239,0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  background-position: 0 0;
+  mask-image: radial-gradient(ellipse at center top, black 30%, transparent 80%);
+}
+.lu-glow-bg {
+  position: absolute; top: -100px; left: 50%; transform: translateX(-50%);
+  width: 700px; height: 400px; pointer-events: none; z-index: 0;
+  background: radial-gradient(ellipse at center, rgba(163,230,53,0.08) 0%, transparent 60%);
+  filter: blur(40px);
+}
+.lu-layer { position: relative; z-index: 2; }
+
+/* Top nav — tight, sharp */
+.lu-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 32px; border-bottom: 1px solid var(--line);
+  background: rgba(10,11,14,0.7); backdrop-filter: blur(16px);
+  position: sticky; top: 0; z-index: 20;
+}
+.lu-brand { display: flex; align-items: center; gap: 12px; font-weight: 600; }
+.lu-brand-mark {
+  width: 28px; height: 28px; border-radius: 6px;
+  background: var(--ink); color: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 14px;
+  position: relative;
+}
+.lu-brand-mark::after {
+  content: ''; position: absolute; inset: 3px; border-radius: 4px;
+  border: 1px dashed rgba(10,11,14,0.4); pointer-events: none;
+}
+.lu-brand-text { display: flex; flex-direction: column; line-height: 1; }
+.lu-brand-text .n { font-size: 14px; letter-spacing: -0.01em; }
+.lu-brand-text .v { font-size: 10px; color: var(--ink-3); font-family: 'JetBrains Mono', monospace; margin-top: 3px; letter-spacing: 0.04em; }
+.lu-nav-links { display: flex; gap: 2px; font-size: 13px; }
+.lu-nav-links a { color: var(--ink-2); text-decoration: none; padding: 7px 14px; border-radius: 6px; cursor: pointer; transition: all 0.15s; }
+.lu-nav-links a:hover { background: var(--surface); color: var(--ink); }
+.lu-nav-right { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.lu-nav-status { display: flex; align-items: center; gap: 7px; color: var(--ink-2); padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+.lu-nav-status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.lu-btn { padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink); transition: all 0.15s; display: inline-flex; align-items: center; gap: 7px; font-family: inherit; }
+.lu-btn:hover { background: var(--surface-2); border-color: var(--ink-3); }
+.lu-btn.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 600; }
+.lu-btn.primary:hover { background: var(--accent-2); }
+
+/* Hero */
+.lu-hero { padding: 80px 32px 100px; max-width: 1200px; margin: 0 auto; position: relative; }
+.lu-hero-top { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--ink-3); letter-spacing: 0.06em; text-transform: uppercase; }
+.lu-hero-top .v { color: var(--accent); }
+.lu-hero-top .div { width: 24px; height: 1px; background: var(--line-2); }
+.lu-h1 { font-size: clamp(54px, 7vw, 92px); line-height: 0.95; letter-spacing: -0.04em; margin: 0 0 26px; font-weight: 500; max-width: 980px; }
+.lu-h1 .accent { color: var(--accent); }
+.lu-h1 .stamp { display: inline-block; padding: 0 12px; border: 1px solid var(--line-2); border-radius: 8px; font-size: 0.72em; vertical-align: middle; margin-left: 8px; color: var(--ink-2); font-family: 'JetBrains Mono', monospace; font-weight: 400; }
+.lu-hero-sub { font-size: 17px; line-height: 1.55; color: var(--ink-2); max-width: 580px; margin: 0 0 36px; font-weight: 300; }
+.lu-hero-ctas { display: flex; gap: 10px; align-items: center; }
+
+/* Schematic spec strip below hero */
+.lu-spec {
+  margin-top: 60px;
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+}
+.lu-spec-cell { padding: 22px 24px; border-right: 1px solid var(--line); }
+.lu-spec-cell:last-child { border-right: none; }
+.lu-spec-k { font-size: 10px; color: var(--ink-3); letter-spacing: 0.12em; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; margin-bottom: 10px; }
+.lu-spec-v { font-size: 30px; font-family: 'JetBrains Mono', monospace; font-weight: 500; letter-spacing: -0.02em; }
+.lu-spec-v .unit { color: var(--ink-3); font-size: 14px; margin-left: 4px; font-weight: 400; }
+.lu-spec-bar { margin-top: 12px; height: 1px; background: var(--line-2); position: relative; }
+.lu-spec-bar::after { content: ''; position: absolute; left: 0; top: 0; height: 1px; width: 60%; background: var(--accent); }
+
+/* Section heading */
+.lu-section { padding: 80px 32px; max-width: 1200px; margin: 0 auto; position: relative; }
+.lu-section-tag { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; color: var(--ink-3); letter-spacing: 0.16em; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; margin-bottom: 18px; }
+.lu-section-tag::before { content: ''; width: 20px; height: 1px; background: var(--accent); }
+.lu-section-h2 { font-size: clamp(36px, 4.5vw, 54px); line-height: 1.02; letter-spacing: -0.03em; margin: 0 0 14px; font-weight: 500; max-width: 820px; }
+.lu-section-h2 .accent { color: var(--accent); }
+.lu-section-sub { font-size: 16px; color: var(--ink-2); max-width: 580px; line-height: 1.55; margin: 0 0 44px; }
+
+/* Roles — schematic cards */
+.lu-roles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.lu-role { padding: 24px 22px; border-right: 1px solid var(--line); position: relative; transition: background 0.2s; cursor: pointer; }
+.lu-role:last-child { border-right: none; }
+.lu-role:hover { background: var(--surface); }
+.lu-role:hover::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: var(--accent); }
+.lu-role-n { font-size: 10px; color: var(--ink-3); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.1em; margin-bottom: 16px; display: flex; justify-content: space-between; }
+.lu-role-n .ix { color: var(--accent); }
+.lu-role-short { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); font-family: 'JetBrains Mono', monospace; margin-bottom: 8px; }
+.lu-role-title { font-size: 18px; font-weight: 500; letter-spacing: -0.01em; margin-bottom: 6px; line-height: 1.2; }
+.lu-role-action { font-size: 13px; color: var(--ink-2); margin-bottom: 16px; }
+.lu-role-tasks { display: flex; flex-direction: column; gap: 6px; }
+.lu-role-task { font-size: 11px; color: var(--ink-2); font-family: 'JetBrains Mono', monospace; display: flex; gap: 8px; }
+.lu-role-task::before { content: '›'; color: var(--ink-3); }
