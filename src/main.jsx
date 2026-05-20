@@ -1,5 +1,6 @@
 // app-main.jsx — wires up landing page + shell + screens + drawer registry
 // v2.0: + Landing page, Error boundary, search provider, mobile UI, keyboard shortcuts
+import { apiFetch, setToken, removeToken, getToken } from './services/api.js';
 import React, {  useState, useEffect  } from 'react';
 import { DrawerContent, ModalContent, Sidebar, ToastProvider, StoreProvider, useStore, Drawer, Modal, PageBar, PageHost, SearchProvider, MobileSidebarToggle, MouseTracker, useKeyboardShortcuts, useRevealFallback, ScrollProgress, SoundIntegration, CursorEnabler, TiltEngine, D  } from './components/app-shell.jsx';
 import { CustomCursor } from './components/app-cursor.jsx';
