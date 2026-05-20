@@ -163,14 +163,176 @@ function Shell({ onLogout }) {
   );
 }
 
+<<<<<<< Updated upstream
+=======
+function AuthInitializer() {
+  const { dispatch } = useStore();
+
+  useEffect(() => {
+    async function loadCurrentUser() {
+      try {
+        const result = await apiFetch('/auth/me');
+        const user = result.data;
+        if (user.role) {
+          dispatch({ type: 'SET_ROLE', role: user.role });
+        }
+      } catch (error) {
+        console.error('Gagal mengambil data user:', error.message);
+        // Token invalid/expired → clear it
+        removeToken();
+      }
+    }
+
+    if (getToken()) {
+      loadCurrentUser();
+    }
+  }, [dispatch]);
+
+  return null;
+}
+
+// =========================================================
+// Login Screen — glassmorphism dark theme
+// =========================================================
+const DEMO_ACCOUNTS = [
+  { label: 'Sysadmin', email: 'anindita@kampus.id' },
+  { label: 'Kalab', email: 'pradipta@kampus.id' },
+  { label: 'Kaprodi', email: 'hendra@kampus.id' },
+  { label: 'Admin', email: 'faqih@kampus.id' },
+  { label: 'Staf Lab', email: 'maharani@kampus.id' },
+];
+
+function LoginScreen({ onLogin, onBack }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (!email || !password) {
+      setError('Email dan password wajib diisi.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await apiFetch('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+
+      setToken(result.data.token);
+      onLogin(result.data.user);
+    } catch (err) {
+      setError(err.message || 'Login gagal. Periksa email dan password.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fillDemo = (demoEmail) => {
+    setEmail(demoEmail);
+    setPassword('password123');
+    setError('');
+  };
+
+  return (
+    <div className="loka-login">
+      <div className="loka-login-bg">
+        <div className="loka-login-blob" />
+        <div className="loka-login-blob" />
+        <div className="loka-login-blob" />
+      </div>
+      <div className="loka-login-grain" />
+
+      <div className="loka-login-card">
+        <div className="loka-login-brand">
+          <div className="loka-login-dot" />
+          <div>
+            <span className="loka-login-brand-text">Loka</span>
+            <span className="loka-login-brand-sub">· Lab Suite</span>
+          </div>
+        </div>
+
+        <h1 className="loka-login-heading">Selamat datang</h1>
+        <p className="loka-login-subheading">Masuk ke dashboard inventaris laboratorium</p>
+
+        {error && (
+          <div className="loka-login-error">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            {error}
+          </div>
+        )}
+
+        <form className="loka-login-form" onSubmit={handleSubmit}>
+          <div className="loka-login-field">
+            <label className="loka-login-label" htmlFor="login-email">Email</label>
+            <input
+              id="login-email"
+              className={`loka-login-input ${error ? 'error' : ''}`}
+              type="email"
+              placeholder="nama@kampus.id"
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); setError(''); }}
+              autoComplete="email"
+              autoFocus
+            />
+          </div>
+
+          <div className="loka-login-field">
+            <label className="loka-login-label" htmlFor="login-password">Password</label>
+            <input
+              id="login-password"
+              className={`loka-login-input ${error ? 'error' : ''}`}
+              type="password"
+              placeholder="Masukkan password"
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); setError(''); }}
+              autoComplete="current-password"
+            />
+          </div>
+
+          <button className="loka-login-btn" type="submit" disabled={loading}>
+            {loading ? <><div className="loka-login-spinner" /> Memproses...</> : 'Masuk'}
+          </button>
+        </form>
+
+        <div className="loka-login-divider">akun demo</div>
+        <div className="loka-login-demo">
+          {DEMO_ACCOUNTS.map((acc) => (
+            <button key={acc.email} className="loka-login-demo-btn" type="button" onClick={() => fillDemo(acc.email)}>
+              {acc.label}
+            </button>
+          ))}
+        </div>
+
+        <button className="loka-login-back" type="button" onClick={onBack}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Kembali ke beranda
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// =========================================================
+// App — manages view: landing → login → app
+// =========================================================
+>>>>>>> Stashed changes
 function App() {
   const [view, setView] = useState(() => {
-    // Check if user was previously in the app
     try {
-      return localStorage.getItem('loka-view') || 'landing';
+      if (localStorage.getItem('token')) {
+        return localStorage.getItem('loka-view') || 'app';
+      }
+      return 'landing';
     } catch (e) { return 'landing'; }
   });
 
+<<<<<<< Updated upstream
   function enterApp() {
     setView('app');
     try { localStorage.setItem('loka-view', 'app'); } catch(e) {}
@@ -179,6 +341,29 @@ function App() {
   function goToLanding() {
     setView('landing');
     try { localStorage.setItem('loka-view', 'landing'); } catch(e) {}
+=======
+  // Guard: if view is 'app' but no token, go back to landing
+  useEffect(() => {
+    if (view === 'app' && !getToken()) {
+      setView('landing');
+      try { localStorage.removeItem('loka-view'); } catch (e) {}
+    }
+  }, [view]);
+
+  function showLogin() {
+    setView('login');
+  }
+
+  function handleLogin(user) {
+    setView('app');
+    try { localStorage.setItem('loka-view', 'app'); } catch (e) {}
+  }
+
+  function goToLanding() {
+    removeToken();
+    setView('landing');
+    try { localStorage.removeItem('loka-view'); } catch (e) {}
+>>>>>>> Stashed changes
   }
 
   return (
@@ -186,9 +371,21 @@ function App() {
       <StoreProvider>
         <SearchProvider>
           <ToastProvider>
+<<<<<<< Updated upstream
             {view === 'landing' ? (
               <LandingPage onEnterApp={enterApp} />
             ) : (
+=======
+            <AuthInitializer />
+
+            {view === 'landing' && (
+              <LandingPage onEnterApp={showLogin} />
+            )}
+            {view === 'login' && (
+              <LoginScreen onLogin={handleLogin} onBack={() => setView('landing')} />
+            )}
+            {view === 'app' && (
+>>>>>>> Stashed changes
               <Shell onLogout={goToLanding} />
             )}
           </ToastProvider>
@@ -204,3 +401,4 @@ import '../assets/css/app-components.css';
 import '../assets/css/app-landing.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+
