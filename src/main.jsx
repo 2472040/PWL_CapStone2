@@ -163,8 +163,6 @@ function Shell({ onLogout }) {
   );
 }
 
-<<<<<<< Updated upstream
-=======
 function AuthInitializer() {
   const { dispatch } = useStore();
 
@@ -321,7 +319,6 @@ function LoginScreen({ onLogin, onBack }) {
 // =========================================================
 // App — manages view: landing → login → app
 // =========================================================
->>>>>>> Stashed changes
 function App() {
   const [view, setView] = useState(() => {
     try {
@@ -332,16 +329,6 @@ function App() {
     } catch (e) { return 'landing'; }
   });
 
-<<<<<<< Updated upstream
-  function enterApp() {
-    setView('app');
-    try { localStorage.setItem('loka-view', 'app'); } catch(e) {}
-  }
-
-  function goToLanding() {
-    setView('landing');
-    try { localStorage.setItem('loka-view', 'landing'); } catch(e) {}
-=======
   // Guard: if view is 'app' but no token, go back to landing
   useEffect(() => {
     if (view === 'app' && !getToken()) {
@@ -363,7 +350,6 @@ function App() {
     removeToken();
     setView('landing');
     try { localStorage.removeItem('loka-view'); } catch (e) {}
->>>>>>> Stashed changes
   }
 
   return (
@@ -371,11 +357,6 @@ function App() {
       <StoreProvider>
         <SearchProvider>
           <ToastProvider>
-<<<<<<< Updated upstream
-            {view === 'landing' ? (
-              <LandingPage onEnterApp={enterApp} />
-            ) : (
-=======
             <AuthInitializer />
 
             {view === 'landing' && (
@@ -385,7 +366,6 @@ function App() {
               <LoginScreen onLogin={handleLogin} onBack={() => setView('landing')} />
             )}
             {view === 'app' && (
->>>>>>> Stashed changes
               <Shell onLogout={goToLanding} />
             )}
           </ToastProvider>
