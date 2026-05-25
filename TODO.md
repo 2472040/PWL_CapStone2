@@ -5,7 +5,7 @@
 |---------|--------|
 | **Maliq** | Frontend React (Landing Page + Dashboard UI) |
 | **Frans** | Backend (Express + MySQL + Auth + API) |
-| **Anggota 3** | Integrasi Frontend ↔ Backend |
+| **Keyren** | Integrasi Frontend ↔ Backend |
 
 ---
 
@@ -86,7 +86,7 @@
 
 ---
 
-## 3. Integrasi Frontend ↔ Backend (Anggota 3)
+## 3. Integrasi Frontend ↔ Backend (Keyren)
 
 ### Setup
 - [x] Buat file `src/services/api.js` — fetch wrapper dengan JWT token dari localStorage
