@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useStore, useToast, PageBar, PageHost, StatTile, D, Icon, QR, useSearch } from '../../components/app-shell.jsx';
+import { apiFetch } from '../../services/api.js';
 // PENGADAAN — Kalab view: list of drafts + create
 // =========================================================
 function PengadaanKalab() {
@@ -87,14 +88,37 @@ function ReviewKaprodi() {
   const { state, dispatch } = useStore();
   const { query } = useSearch();
   const role = D.roles.find(r => r.id === 'kaprodi');
+  
+  useEffect(() => {
+    async function loadReviewDrafts() {
+      try {
+        const res = await apiFetch('/procurement/review');
+        // Filter array in case backend returns unexpected structures
+        const validDrafts = (res.data || []).map(d => ({
+          ...d,
+          by: d.creator?.name || d.by,
+          role: d.creator?.role || d.role,
+          items: d.items?.map(it => ({
+            ...it,
+            approval: it.approval?.status === 'approved' ? 'ok' : it.approval?.status === 'rejected' ? 'no' : null
+          })) || []
+        }));
+        dispatch({ type: 'SET_DRAFTS', drafts: validDrafts });
+      } catch (err) {
+        console.error('Failed to load drafts:', err);
+      }
+    }
+    loadReviewDrafts();
+  }, [dispatch]);
+
   const inbox = state.drafts.filter(d => {
     if (d.status !== 'submitted') return false;
     if (!query) return true;
     const q = query.toLowerCase();
-    return d.title.toLowerCase().includes(q) || d.code.toLowerCase().includes(q) || d.by.toLowerCase().includes(q);
+    return d.title.toLowerCase().includes(q) || d.code.toLowerCase().includes(q) || (d.by && d.by.toLowerCase().includes(q));
   });
-  const [openCode, setOpenCode] = useState(inbox[0]?.code || null);
-  const opened = state.drafts.find(d => d.code === openCode);
+  const [openCode, setOpenCode] = useState(null);
+  const opened = state.drafts.find(d => d.code === openCode && d.status === 'submitted') || inbox[0];
 
   if (!opened) return (
     <div className="page" style={{'--role-accent': role.accent}}>
@@ -117,14 +141,38 @@ function ReceivingAdmin() {
   const { state, dispatch } = useStore();
   const { query } = useSearch();
   const role = D.roles.find(r => r.id === 'admin');
+  
+  useEffect(() => {
+    async function loadReceiving() {
+      try {
+        const res = await apiFetch('/procurement/receiving');
+        const validDrafts = (res.data || []).map(d => ({
+          ...d,
+          by: d.creator?.name || d.by,
+          role: d.creator?.role || d.role,
+          items: d.items?.map(it => ({
+            ...it,
+            approval: it.approval?.status === 'approved' ? 'ok' : it.approval?.status === 'rejected' ? 'no' : null,
+            received: it.receivings && it.receivings.length > 0,
+            receivedDate: it.receivings && it.receivings.length > 0 ? new Date(it.receivings[0].received_date).toLocaleDateString('id-ID') : null
+          })) || []
+        }));
+        dispatch({ type: 'SET_DRAFTS', drafts: validDrafts });
+      } catch (err) {
+        console.error('Failed to load receiving drafts:', err);
+      }
+    }
+    loadReceiving();
+  }, [dispatch]);
+
   const queue = state.drafts.filter(d => {
     if (d.status !== 'finalized' && d.status !== 'completed') return false;
     if (!query) return true;
     const q = query.toLowerCase();
-    return d.title.toLowerCase().includes(q) || d.code.toLowerCase().includes(q) || d.by.toLowerCase().includes(q);
+    return d.title.toLowerCase().includes(q) || d.code.toLowerCase().includes(q) || (d.by && d.by.toLowerCase().includes(q));
   });
-  const [openCode, setOpenCode] = useState(queue[0]?.code || null);
-  const opened = state.drafts.find(d => d.code === openCode);
+  const [openCode, setOpenCode] = useState(null);
+  const opened = state.drafts.find(d => d.code === openCode && (d.status === 'finalized' || d.status === 'completed')) || queue[0];
 
   if (!opened) return (
     <div className="page" style={{'--role-accent': role.accent}}>
@@ -165,36 +213,90 @@ function DraftDetail({ draft, onBack, mode }) {
     return { inv, bhp, all, approved, received, ok, no, pending, rec };
   }, [d]);
 
-  function approveAll() {
-    dispatch({ type: 'APPROVE_ALL', code: d.code });
-    toast('Semua item disetujui', 'ok');
+  async function approveAll() {
+    try {
+      const decisions = d.items.filter(it => !it.approval).map(it => ({
+        item_id: it.id,
+        status: 'approved'
+      }));
+      if (decisions.length > 0) {
+        await apiFetch(`/procurement/drafts/${d.id}/approve`, {
+          method: 'POST',
+          body: JSON.stringify({ decisions })
+        });
+      }
+      dispatch({ type: 'APPROVE_ALL', code: d.code });
+      toast('Semua item disetujui', 'ok');
+    } catch (err) {
+      toast(err.message, 'warn');
+    }
   }
-  function finalize() {
+  async function finalize() {
     if (totals.pending > 0) {
       toast('Masih ada ' + totals.pending + ' item yang belum diputuskan', 'warn');
       return;
     }
-    dispatch({ type: 'FINALIZE_DRAFT', code: d.code });
-    toast('Draf difinalisasi & dikunci → Staf Admin', 'ok');
+    try {
+      await apiFetch(`/procurement/drafts/${d.id}/finalize`, { method: 'POST' });
+      dispatch({ type: 'FINALIZE_DRAFT', code: d.code });
+      toast('Draf difinalisasi & dikunci → Staf Admin', 'ok');
+      onBack();
+    } catch (err) {
+      toast(err.message, 'warn');
+    }
   }
-  function markReceived(itemId) {
-    dispatch({ type: 'MARK_RECEIVED', code: d.code, itemId, date: new Date().toLocaleDateString('id-ID') });
-    toast('Status diperbarui', 'info');
+  async function markReceived(itemId) {
+    const item = d.items.find(it => it.id === itemId);
+    if (!item.received) {
+      try {
+        await apiFetch(`/procurement/receiving`, {
+          method: 'POST',
+          body: JSON.stringify({ draft_item_id: itemId, qty_received: item.qty })
+        });
+        dispatch({ type: 'MARK_RECEIVED', code: d.code, itemId, date: new Date().toLocaleDateString('id-ID') });
+        toast('Status diperbarui', 'info');
+      } catch (err) {
+        toast(err.message, 'warn');
+      }
+    } else {
+      // In a real app we might have un-receive, but backend doesn't support DELETE receiving yet
+      toast('Item sudah diterima', 'info');
+    }
   }
-  function setApproval(itemId, value) {
-    dispatch({ type: 'SET_APPROVAL', code: d.code, itemId, value });
+  async function setApproval(itemId, value) {
+    try {
+      const currentVal = d.items.find(it => it.id === itemId)?.approval;
+      const newVal = currentVal === value ? null : value;
+      const mappedVal = newVal === 'ok' ? 'approved' : newVal === 'no' ? 'rejected' : 'approved'; // Backend needs valid status, if null we shouldn't send, but for now toggle
+      
+      if (newVal !== null) {
+        await apiFetch(`/procurement/drafts/${d.id}/approve`, {
+          method: 'POST',
+          body: JSON.stringify({ decisions: [{ item_id: itemId, status: mappedVal }] })
+        });
+      }
+      dispatch({ type: 'SET_APPROVAL', code: d.code, itemId, value });
+    } catch (err) {
+      toast(err.message, 'warn');
+    }
   }
   function submitDraft() {
     // for kalab demo — already submitted, but we can show toast
     toast('Draf sudah submitted, menunggu Kaprodi', 'info');
   }
-  function completeReceiving() {
+  async function completeReceiving() {
     if (totals.rec < d.items.filter(it => it.approval !== 'no').length) {
       toast('Masih ada item yang belum diterima', 'warn');
       return;
     }
-    dispatch({ type: 'COMPLETE_DRAFT', code: d.code });
-    toast('Penerimaan diselesaikan', 'ok');
+    try {
+      // Not implemented in backend yet to explicitly complete, but we simulate on frontend
+      dispatch({ type: 'COMPLETE_DRAFT', code: d.code });
+      toast('Penerimaan diselesaikan', 'ok');
+      onBack();
+    } catch (err) {
+      toast(err.message, 'warn');
+    }
   }
 
   return (
@@ -360,11 +462,33 @@ function HistoryKaprodi() {
   const { state, dispatch } = useStore();
   const { query } = useSearch();
   const role = D.roles.find(r => r.id === 'kaprodi');
+  
+  useEffect(() => {
+    async function loadHistory() {
+      try {
+        const res = await apiFetch('/procurement/history');
+        const validDrafts = (res.data || []).map(d => ({
+          ...d,
+          by: d.creator?.name || d.by,
+          role: d.creator?.role || d.role,
+          items: d.items?.map(it => ({
+            ...it,
+            approval: it.approval?.status === 'approved' ? 'ok' : it.approval?.status === 'rejected' ? 'no' : null
+          })) || []
+        }));
+        dispatch({ type: 'SET_DRAFTS', drafts: validDrafts });
+      } catch (err) {
+        console.error('Failed to load history:', err);
+      }
+    }
+    loadHistory();
+  }, [dispatch]);
+
   const reviewed = state.drafts.filter(d => {
     if (d.status !== 'finalized' && d.status !== 'completed') return false;
     if (!query) return true;
     const q = query.toLowerCase();
-    return d.title.toLowerCase().includes(q) || d.code.toLowerCase().includes(q) || d.by.toLowerCase().includes(q);
+    return d.title.toLowerCase().includes(q) || d.code.toLowerCase().includes(q) || (d.by && d.by.toLowerCase().includes(q));
   });
   const [openCode, setOpenCode] = useState(null);
   const opened = state.drafts.find(d => d.code === openCode);

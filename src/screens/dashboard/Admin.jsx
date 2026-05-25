@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useStore, useToast, D, Icon, QR, StatTile, useSearch } from '../../components/app-shell.jsx';
+import { apiFetch } from '../../services/api.js';
 
 function Users() {
   const { state, dispatch } = useStore();
@@ -210,8 +211,28 @@ function Audit() {
 
 // ===== LABELS (Admin) =====
 function Labels() {
-  const { state } = useStore();
+  const { state, dispatch } = useStore();
   const role = D.roles.find(r => r.id === 'admin');
+  
+  useEffect(() => {
+    async function loadLabels() {
+      try {
+        const res = await apiFetch('/inventory'); // Use inventory instead of labels to get all items
+        if (res.data) {
+          const inv = res.data.map(i => ({
+            code: i.code,
+            name: i.name,
+            room: i.room?.name || 'Belum ada ruangan'
+          }));
+          dispatch({ type: 'SET_INVENTORY', inventory: inv });
+        }
+      } catch (err) {
+        console.error('Failed to load inventory for labels:', err);
+      }
+    }
+    loadLabels();
+  }, [dispatch]);
+
   const recent = state.inventory.slice(0, 8);
   return (
     <div className="page" style={{'--role-accent': role.accent}}>
