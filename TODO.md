@@ -108,14 +108,14 @@
 - [ ] Kalab: Pengadaan — CRUD draf dari /api/procurement/drafts
 - [ ] Kalab: Submit draf — POST /api/procurement/drafts/:id/submit
 - [ ] Kalab: Tambah item — POST /api/procurement/drafts/:id/items
-- [ ] Kaprodi: Review — ambil dari GET /api/procurement/review
-- [ ] Kaprodi: Approve/reject item — POST /api/procurement/drafts/:id/approve
-- [ ] Kaprodi: Finalisasi — POST /api/procurement/drafts/:id/finalize
-- [ ] Kaprodi: Riwayat draf — GET /api/procurement/history
-- [ ] Admin: Penerimaan — GET /api/procurement/receiving
-- [ ] Admin: Input penerimaan — POST /api/procurement/receiving
-- [ ] Admin: Update label — PUT /api/inventory/:id/label
-- [ ] Admin: List label — GET /api/inventory/manage/labels
+- [x] Kaprodi: Review — ambil dari GET /api/procurement/review
+- [x] Kaprodi: Approve/reject item — POST /api/procurement/drafts/:id/approve
+- [x] Kaprodi: Finalisasi — POST /api/procurement/drafts/:id/finalize
+- [x] Kaprodi: Riwayat draf — GET /api/procurement/history
+- [x] Admin: Penerimaan — GET /api/procurement/receiving
+- [x] Admin: Input penerimaan — POST /api/procurement/receiving
+- [x] Admin: Update label — PUT /api/inventory/:id/label
+- [x] Admin: List label — GET /api/inventory/manage/labels
 - [ ] Staf Lab: Maintenance — GET & POST /api/maintenance
 - [ ] Staf Lab: BHP — GET & PUT /api/bhp`
 - Maliq = admin dan kepala lab
