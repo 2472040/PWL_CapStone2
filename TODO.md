@@ -89,14 +89,14 @@
 ## 3. Integrasi Frontend ↔ Backend (Anggota 3)
 
 ### Setup
-- [ ] Buat file `src/services/api.js` — fetch wrapper dengan JWT token dari localStorage
-- [ ] Buat helper: `getToken()`, `setToken()`, `removeToken()`, `authHeaders()`
+- [x] Buat file `src/services/api.js` — fetch wrapper dengan JWT token dari localStorage
+- [x] Buat helper: `getToken()`, `setToken()`, `removeToken()`, `authHeaders()`
 
 ### Login / Logout Flow
-- [ ] Ubah flow login di React — panggil POST /api/auth/login, simpan token
-- [ ] Ubah flow logout — hapus token dari localStorage, redirect ke landing
-- [ ] Proteksi halaman dashboard — kalau tidak ada token, redirect ke login
-- [ ] Tampilkan info user yang sedang login dari GET /api/auth/me
+- [x] Ubah flow login di React — panggil POST /api/auth/login, simpan token
+- [x] Ubah flow logout — hapus token dari localStorage, redirect ke landing
+- [x] Proteksi halaman dashboard — kalau tidak ada token, redirect ke login
+- [x] Tampilkan info user yang sedang login dari GET /api/auth/me
 
 ### Ganti Hardcoded Data → Fetch API
 - [ ] Dashboard — ambil stats dari GET /api/dashboard/stats
@@ -117,7 +117,11 @@
 - [ ] Admin: Update label — PUT /api/inventory/:id/label
 - [ ] Admin: List label — GET /api/inventory/manage/labels
 - [ ] Staf Lab: Maintenance — GET & POST /api/maintenance
-- [ ] Staf Lab: BHP — GET & PUT /api/bhp
+- [ ] Staf Lab: BHP — GET & PUT /api/bhp`
+- Maliq = admin dan kepala lab
+- Fran = Ketua prodi, staff admin
+- Keyren = staff lab
+
 
 ### UI States
 - [ ] Tambahkan loading spinner saat fetch data
