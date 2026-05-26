@@ -150,11 +150,36 @@ function reducer(s, a) {
     case 'BHP_RESTOCK': {
       return { ...s, bhp: s.bhp.map(b => b.id !== a.id ? b : ({ ...b, stock: b.stock + a.amount, lastIn: a.date })) };
     }
+    case 'SET_BHP': {
+      return { ...s, bhp: a.bhp };
+    }
     case 'ADD_MAINT_LOG': {
       let bhp = s.bhp;
-      a.log.bhp.forEach(b => { bhp = bhp.map(x => x.id !== b.id ? x : ({ ...x, stock: Math.max(0, x.stock - b.qty) })); });
-      const inv = s.inventory.map(x => x.code !== a.log.asset ? x : ({ ...x, cond: a.log.cond, last: 'baru saja' }));
-      return { ...s, maintLog: [a.log, ...s.maintLog], bhp, inventory: inv };
+      const logBhp = a.log.bhp || a.log.bhp_used || [];
+      logBhp.forEach(b => {
+        const bhpId = b.id || b.bhp_id;
+        const qty = b.qty || b.qty_used || 0;
+        bhp = bhp.map(x => (x.id !== bhpId && x.code !== bhpId) ? x : ({ ...x, stock: Math.max(0, x.stock - qty) }));
+      });
+      const assetCode = a.log.asset || a.log.inventory_id;
+      const condVal = a.log.cond || a.log.condition_after;
+      const inv = s.inventory.map(x => x.code !== assetCode ? x : ({ ...x, cond: condVal, last: 'baru saja' }));
+      
+      const formattedLog = {
+        id: a.log.id || a.log.code || `M-${Date.now()}`,
+        date: a.log.date || new Date().toISOString(),
+        name: a.log.name || (s.inventory.find(x => x.code === assetCode)?.name || 'Aset'),
+        asset: assetCode,
+        action: a.log.action,
+        tech: a.log.tech || 'Saya',
+        cond: condVal,
+        bhp: logBhp.map(b => ({
+          id: b.id || b.bhp_id,
+          qty: b.qty || b.qty_used || 0,
+          unit: b.unit || ''
+        }))
+      };
+      return { ...s, maintLog: [formattedLog, ...s.maintLog], bhp, inventory: inv };
     }
     case 'ADD_USER':   return { ...s, users: [a.user, ...s.users] };
     case 'TOGGLE_USER': return { ...s, users: s.users.map(u => u.id !== a.id ? u : ({ ...u, status: u.status === 'active' ? 'paused' : 'active' })) };

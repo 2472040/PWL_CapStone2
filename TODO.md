@@ -100,8 +100,8 @@
 
 ### Ganti Hardcoded Data → Fetch API
 - [ ] Dashboard — ambil stats dari GET /api/dashboard/stats
-- [x] Inventaris — ambil data dari GET /api/inventory (semua role)
-- [ ] Detail inventaris — ambil dari GET /api/inventory/:id
+- [ ] Inventaris — ambil data dari GET /api/inventory (semua role)
+- [x] Detail inventaris — ambil dari GET /api/inventory/:id
 - [ ] Sysadmin: Pengguna — CRUD dari /api/users
 - [ ] Sysadmin: Ruangan — CRUD dari /api/rooms
 - [ ] Sysadmin: Audit log — ambil dari /api/audit-logs
@@ -116,10 +116,10 @@
 - [x] Admin: Input penerimaan — POST /api/procurement/receiving
 - [x] Admin: Update label — PUT /api/inventory/:id/label
 - [x] Admin: List label — GET /api/inventory/manage/labels
-- [ ] Staf Lab: Maintenance — GET & POST /api/maintenance
-- [ ] Staf Lab: BHP — GET & PUT /api/bhp`
-- Maliq = sysadmin dan kepala lab
-- Fran = Ketua prodi, admin
+- [x] Staf Lab: Maintenance — GET & POST /api/maintenance
+- [x] Staf Lab: BHP — GET & PUT /api/bhp
+- Maliq = admin dan kepala lab
+- Fran = Ketua prodi, staff admin
 - Keyren = staff lab
 
 

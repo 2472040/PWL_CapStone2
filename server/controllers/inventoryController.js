@@ -31,19 +31,60 @@ const getInventory = async (req, res) => {
 
 const getInventoryDetail = async (req, res) => {
   try {
-    const item = await Inventory.findByPk(req.params.id, {
-      include: [
-        { model: Room },
-        { model: Label, as: 'label' },
-        {
-          model: MaintenanceLog, as: 'maintenanceLogs',
-          include: [{ model: User, as: 'technician', attributes: ['id', 'name'] }],
-          limit: 10, order: [['date', 'DESC']],
-        },
-      ],
-    });
+    const idOrCode = req.params.id;
+    let item;
+    const includeOptions = [
+      { model: Room },
+      { model: Label, as: 'label' },
+      {
+        model: MaintenanceLog, as: 'maintenanceLogs',
+        include: [
+          { model: User, as: 'technician', attributes: ['id', 'name'] },
+          { model: MaintenanceBhp, as: 'bhpUsed', include: [{ model: Bhp }] }
+        ],
+        limit: 10,
+        order: [['date', 'DESC']],
+      },
+    ];
+
+    if (isNaN(idOrCode)) {
+      item = await Inventory.findOne({ where: { code: idOrCode }, include: includeOptions });
+    } else {
+      item = await Inventory.findByPk(idOrCode, { include: includeOptions });
+    }
+
     if (!item) return res.status(404).json({ error: 'Item tidak ditemukan.' });
-    res.json({ data: item });
+
+    // Transform to formatted JSON expected by frontend
+    const formattedItem = {
+      id: item.id,
+      code: item.code,
+      name: item.name,
+      cat: item.category,
+      room: item.Room ? item.Room.code : 'R-301',
+      cond: item.condition || 'Baik',
+      last: item.last_checked ? new Date(item.last_checked).toLocaleDateString('id-ID') : 'baru saja',
+      acquired: item.acquired_date ? item.acquired_date.substring(0, 7) : '',
+      value: parseFloat(item.value) || 0,
+      serial: item.serial || '',
+      specs: item.specs || '',
+      Room: item.Room ? { id: item.Room.id, code: item.Room.code, name: item.Room.name } : null,
+      label: item.label ? { id: item.label.id, label_number: item.label.label_number, qr_data: item.label.qr_data, photo_url: item.label.photo_url } : null,
+      maintenanceLogs: (item.maintenanceLogs || []).map(l => ({
+        id: l.code || `M-${l.id}`,
+        action: l.action,
+        date: l.date,
+        tech: l.technician ? l.technician.name : 'Teknisi',
+        cond: l.condition_after,
+        bhp: (l.bhpUsed || []).map(bu => ({
+          id: bu.Bhp ? bu.Bhp.code : (bu.bhp_id ? `B-${bu.bhp_id}` : ''),
+          qty: parseFloat(bu.qty_used),
+          unit: bu.Bhp ? bu.Bhp.unit : ''
+        }))
+      }))
+    };
+
+    res.json({ data: formattedItem });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Gagal memuat detail.' });
