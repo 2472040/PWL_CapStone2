@@ -211,8 +211,9 @@ function Audit() {
 
 // ===== LABELS (Admin) =====
 function Labels() {
-  const { state, dispatch } = useStore();
+  const { state } = useStore();
   const role = D.roles.find(r => r.id === 'admin');
+  const [recent, setRecent] = useState([]);
   
   useEffect(() => {
     async function loadLabels() {
@@ -222,18 +223,16 @@ function Labels() {
           const inv = res.data.map(i => ({
             code: i.code,
             name: i.name,
-            room: i.room?.name || 'Belum ada ruangan'
+            room: i.Room?.name || 'Belum ada ruangan'
           }));
-          dispatch({ type: 'SET_INVENTORY', inventory: inv });
+          setRecent(inv.slice(0, 8));
         }
       } catch (err) {
         console.error('Failed to load inventory for labels:', err);
       }
     }
     loadLabels();
-  }, [dispatch]);
-
-  const recent = state.inventory.slice(0, 8);
+  }, []);
   return (
     <div className="page" style={{'--role-accent': role.accent}}>
       <div className="page-head" data-reveal>

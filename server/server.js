@@ -21,7 +21,7 @@ async function start() {
       console.log(`🔐 Login Page: http://localhost:${PORT}/login\n`);
     });
   } catch (err) {
-    console.error('❌ Gagal menjalankan server:', err.message);
+    console.error('❌ Gagal menjalankan server:', err);
     process.exit(1);
   }
 }

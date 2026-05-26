@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useStore, useToast, PageBar, PageHost, StatTile, D, Icon, QR, useSearch } from '../../components/app-shell.jsx';
+import { apiFetch } from '../../services/api.js';
 
 function Inventory() {
   const { state, dispatch } = useStore();
@@ -8,6 +9,32 @@ function Inventory() {
   const [filter, setFilter] = useState('all');
   const [localQuery, setLocalQuery] = useState('');
   const query = globalQuery || localQuery;
+
+  useEffect(() => {
+    async function fetchInventory() {
+      try {
+        const res = await apiFetch('/inventory');
+        if (res.data) {
+          const inv = res.data.map(i => ({
+            code: i.code,
+            name: i.name,
+            cat: i.category,
+            room: i.Room?.name || 'Gudang',
+            cond: i.condition || 'Baik',
+            last: i.last_checked ? new Date(i.last_checked).toLocaleDateString('id-ID') : 'Baru saja',
+            acquired: i.acquired_date ? i.acquired_date.substring(0, 7) : '2025-01',
+            value: i.value || 0,
+            serial: i.serial || '-',
+            specs: i.specs || '-'
+          }));
+          dispatch({ type: 'SET_INVENTORY', inventory: inv });
+        }
+      } catch (err) {
+        console.error('Failed to load inventory', err);
+      }
+    }
+    fetchInventory();
+  }, [dispatch]);
 
   const filtered = state.inventory.filter(it => {
     if (filter !== 'all' && it.cat !== filter) return false;
