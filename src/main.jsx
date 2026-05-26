@@ -164,9 +164,18 @@ function Shell({ onLogout }) {
   );
 }
 
-function AuthInitializer() {
+function AuthInitializer({ pendingRole }) {
   const { dispatch } = useStore();
 
+  // Immediately apply role from login response or localStorage
+  useEffect(() => {
+    const role = pendingRole || (() => { try { return localStorage.getItem('loka-role'); } catch (e) { return null; } })();
+    if (role) {
+      dispatch({ type: 'SET_ROLE', role });
+    }
+  }, [pendingRole, dispatch]);
+
+  // Also verify with backend (in case token expired or role changed)
   useEffect(() => {
     async function loadCurrentUser() {
       try {
@@ -174,11 +183,13 @@ function AuthInitializer() {
         const user = result.data;
         if (user.role) {
           dispatch({ type: 'SET_ROLE', role: user.role });
+          try { localStorage.setItem('loka-role', user.role); } catch (e) {}
         }
       } catch (error) {
         console.error('Gagal mengambil data user:', error.message);
         // Token invalid/expired → clear it
         removeToken();
+        try { localStorage.removeItem('loka-role'); } catch (e) {}
       }
     }
 
@@ -329,6 +340,8 @@ function App() {
       return 'landing';
     } catch (e) { return 'landing'; }
   });
+  // Store the logged-in user's role so we can dispatch SET_ROLE inside StoreProvider
+  const [pendingRole, setPendingRole] = useState(null);
 
   // Guard: if view is 'app' but no token, go back to landing
   useEffect(() => {
@@ -343,14 +356,23 @@ function App() {
   }
 
   function handleLogin(user) {
+    // Save the role from the login response so AuthInitializer can apply it
+    if (user && user.role) {
+      setPendingRole(user.role);
+      try { localStorage.setItem('loka-role', user.role); } catch (e) {}
+    }
     setView('app');
     try { localStorage.setItem('loka-view', 'app'); } catch (e) {}
   }
 
   function goToLanding() {
     removeToken();
+    setPendingRole(null);
     setView('landing');
-    try { localStorage.removeItem('loka-view'); } catch (e) {}
+    try {
+      localStorage.removeItem('loka-view');
+      localStorage.removeItem('loka-role');
+    } catch (e) {}
   }
 
   return (
@@ -358,7 +380,7 @@ function App() {
       <StoreProvider>
         <SearchProvider>
           <ToastProvider>
-            <AuthInitializer />
+            <AuthInitializer pendingRole={pendingRole} />
 
             {view === 'landing' && (
               <LandingPage onEnterApp={showLogin} />
