@@ -11,7 +11,7 @@ async function start() {
     console.log('✅ Database terhubung ke MySQL');
 
     // Sync all models (creates tables if not exist)
-    await sequelize.sync({ alter: false });
+    await sequelize.sync({ alter: true });
     console.log('✅ Semua tabel berhasil di-sync');
 
     // Start server

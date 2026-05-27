@@ -24,6 +24,7 @@
       { id: 'dashboard', label: 'Dashboard', icon: 'grid' },
       { id: 'users',     label: 'Pengguna', icon: 'users' },
       { id: 'rooms',     label: 'Ruangan', icon: 'room' },
+      { id: 'inventaris', label: 'Inventaris', icon: 'box' },
       { id: 'audit',     label: 'Audit log', icon: 'log' },
     ],
     kalab: [

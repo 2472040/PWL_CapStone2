@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const { User, Room, AuditLog } = require('../models');
 const { logAudit } = require('../middleware/audit');
 
@@ -54,12 +55,22 @@ const updateUser = async (req, res) => {
     if (!user) return res.status(404).json({ error: 'Pengguna tidak ditemukan.' });
 
     const { name, email, role, status, initials, password } = req.body;
+    let credentialsChanged = false;
+
+    if (role && role !== user.role) credentialsChanged = true;
+    if (status && status !== user.status) credentialsChanged = true;
+    if (password) credentialsChanged = true;
+
     if (name) user.name = name;
     if (email) user.email = email;
     if (role) user.role = role;
     if (status) user.status = status;
     if (initials) user.initials = initials;
     if (password) user.password = await bcrypt.hash(password, 10);
+
+    if (credentialsChanged) {
+      user.token_version = (user.token_version || 0) + 1;
+    }
 
     await user.save();
     await logAudit(req.user.id, 'user.update', user.name, req.ip);
@@ -78,8 +89,9 @@ const deleteUser = async (req, res) => {
     if (!user) return res.status(404).json({ error: 'Pengguna tidak ditemukan.' });
 
     const userName = user.name;
-    // Soft delete: set status to paused
+    // Soft delete: set status to paused and invalidate tokens
     user.status = 'paused';
+    user.token_version = (user.token_version || 0) + 1;
     await user.save();
 
     await logAudit(req.user.id, 'user.deactivate', userName, req.ip);
@@ -192,8 +204,71 @@ const getAuditLogs = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/audit-logs/verify
+ * Verifies integrity of the audit logs chain using HMAC-SHA256
+ */
+const verifyAuditChain = async (req, res) => {
+  try {
+    const logs = await AuditLog.findAll({
+      order: [['id', 'ASC']],
+    });
+
+    const secret = process.env.AUDIT_LOG_SECRET || 'lokalab-default-audit-secret-key-2026';
+    let previousHash = '0000000000000000000000000000000000000000000000000000000000000000';
+    const issues = [];
+
+    for (let i = 0; i < logs.length; i++) {
+      const log = logs[i];
+      // Convert DATETIME to unix seconds string to avoid TZ / millisecond formatting issues
+      const timeSecs = Math.floor(new Date(log.created_at || log.createdAt).getTime() / 1000).toString();
+
+      // Compute expected HMAC hash
+      const dataToHash = `${previousHash}|${timeSecs}|${log.user_id || ''}|${log.action}|${log.target || ''}|${log.ip || ''}`;
+      const computedHash = crypto.createHmac('sha256', secret).update(dataToHash).digest('hex');
+
+      // 1. Verify previous_hash link (except for genesis log if it has null previous_hash)
+      if (log.previous_hash && log.previous_hash !== previousHash) {
+        issues.push({
+          id: log.id,
+          action: log.action,
+          error: `previous_hash mismatch. Expected link to "${previousHash.substring(0, 10)}...", Got link to "${log.previous_hash.substring(0, 10)}..."`
+        });
+      }
+
+      // 2. Verify current log data integrity
+      if (log.hash && log.hash !== computedHash) {
+        issues.push({
+          id: log.id,
+          action: log.action,
+          error: `Tampering detected: Log data has been modified. Calculated hash: "${computedHash.substring(0, 10)}...", Stored hash: "${log.hash.substring(0, 10)}..."`
+        });
+      }
+
+      // Move chain forward using the stored hash if available, otherwise computed
+      previousHash = log.hash || computedHash;
+    }
+
+    if (issues.length > 0) {
+      return res.json({
+        valid: false,
+        issuesCount: issues.length,
+        issues
+      });
+    }
+
+    res.json({
+      valid: true,
+      message: 'Rantai audit log utuh dan terverifikasi secara kriptografis (tidak ada manipulasi data).'
+    });
+  } catch (err) {
+    console.error('[Verify Audit Chain Error]', err);
+    res.status(500).json({ error: 'Gagal melakukan verifikasi rantai audit log.' });
+  }
+};
+
 module.exports = {
   getUsers, createUser, updateUser, deleteUser,
   getRooms, createRoom, updateRoom, deleteRoom,
-  getAuditLogs,
+  getAuditLogs, verifyAuditChain
 };

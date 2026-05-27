@@ -16,6 +16,10 @@ Tujuan Projek
 - Melakukan review draf pengadaan barang dari kepala laboratorium.
 - Kaprodi dapat memilih barang mana yang disetujui atau ditolak pengadaannya.
 - Finalisasi draf pengadaan barang. Setelah melakukan finalisasi maka draf sudah tidak dapat diubah.
+- [x] 3. Kriptografi Backup (AES-256-GCM)
+  - [x] Ubah enkripsi di `server/controllers/backupController.js` menggunakan `aes-256-gcm` dan *Authentication Tag*
+  - [x] Turunkan kunci backup dari `process.env.BACKUP_ENCRYPTION_SECRET` (bukan JWT_SECRET)
+  - [x] Uji dekripsi & restore di `backupController.js` dengan memverifikasi *Auth Tag* sebelum parsing data
 
 4. Staf Administrasi
 - Melihat draf pengadaan barang yang telah disetujui oleh ketua program studi.

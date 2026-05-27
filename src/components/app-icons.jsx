@@ -1,4 +1,5 @@
 // Shared icon system (Lucide-style inline SVGs)
+import React from 'react';
 
 function Icon({ name, size = 16, strokeWidth = 1.6, ...rest }) {
   const paths = {
@@ -50,27 +51,38 @@ function Icon({ name, size = 16, strokeWidth = 1.6, ...rest }) {
   );
 }
 
-// Pseudo-QR generator (deterministic from seed)
+// High-fidelity standard QR code generator using open API
 function QR({ seed, size = 7, cls = '' }) {
-  const cells = React.useMemo(() => {
-    const n = size * size;
-    let h = 0;
-    for (let i = 0; i < seed.length; i++) h = ((h << 5) - h + seed.charCodeAt(i)) | 0;
-    const arr = new Array(n);
-    for (let i = 0; i < n; i++) { h = (h * 1103515245 + 12345) & 0x7fffffff; arr[i] = h % 2; }
-    // corner finder markers
-    const set = (r, c, v) => { if (r >= 0 && r < size && c >= 0 && c < size) arr[r * size + c] = v; };
-    const corner = (r0, c0) => {
-      for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) set(r0 + r, c0 + c, (r === 0 || r === 2 || c === 0 || c === 2) ? 1 : 0);
-    };
-    corner(0, 0); corner(0, size - 3); corner(size - 3, 0);
-    return arr;
-  }, [seed, size]);
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(seed)}`;
+  
   return (
-    <div className={`qr qr-${size} ${cls}`}>
-      {cells.map((c, i) => <div key={i} className={c ? '' : 'on'} />)}
+    <div className={`qr-img-wrap ${cls}`} style={{ display: 'inline-block', background: '#fff', padding: 6, borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+      <img 
+        src={qrUrl} 
+        alt={`QR ${seed}`} 
+        style={{ display: 'block', width: size * 10, height: size * 10, borderRadius: 4 }}
+        crossOrigin="anonymous"
+      />
     </div>
   );
 }
 
-export { Icon, QR };
+async function downloadQR(seed) {
+  try {
+    const res = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(seed)}`);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `QR_${seed}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    if (window.showToast) window.showToast('QR Code berhasil diunduh!', 'ok');
+  } catch (err) {
+    window.open(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(seed)}`, '_blank');
+  }
+}
+
+export { Icon, QR, downloadQR };

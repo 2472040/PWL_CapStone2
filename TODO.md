@@ -99,15 +99,15 @@
 - [x] Tampilkan info user yang sedang login dari GET /api/auth/me
 
 ### Ganti Hardcoded Data → Fetch API
-- [ ] Dashboard — ambil stats dari GET /api/dashboard/stats
+- [x] Dashboard — ambil stats dari GET /api/dashboard/stats
 - [x] Inventaris — ambil data dari GET /api/inventory (semua role)
-- [ ] Detail inventaris — ambil dari GET /api/inventory/:id
-- [ ] Sysadmin: Pengguna — CRUD dari /api/users
-- [ ] Sysadmin: Ruangan — CRUD dari /api/rooms
-- [ ] Sysadmin: Audit log — ambil dari /api/audit-logs
-- [ ] Kalab: Pengadaan — CRUD draf dari /api/procurement/drafts
-- [ ] Kalab: Submit draf — POST /api/procurement/drafts/:id/submit
-- [ ] Kalab: Tambah item — POST /api/procurement/drafts/:id/items
+- [x] Detail inventaris — ambil dari GET /api/inventory/:id
+- [x] Sysadmin: Pengguna — CRUD dari /api/users
+- [x] Sysadmin: Ruangan — CRUD dari /api/rooms
+- [x] Sysadmin: Audit log — ambil dari /api/audit-logs
+- [x] Kalab: Pengadaan — CRUD draf dari /api/procurement/drafts
+- [x] Kalab: Submit draf — POST /api/procurement/drafts/:id/submit
+- [x] Kalab: Tambah item — POST /api/procurement/drafts/:id/items
 - [x] Kaprodi: Review — ambil dari GET /api/procurement/review
 - [x] Kaprodi: Approve/reject item — POST /api/procurement/drafts/:id/approve
 - [x] Kaprodi: Finalisasi — POST /api/procurement/drafts/:id/finalize
@@ -116,28 +116,28 @@
 - [x] Admin: Input penerimaan — POST /api/procurement/receiving
 - [x] Admin: Update label — PUT /api/inventory/:id/label
 - [x] Admin: List label — GET /api/inventory/manage/labels
-- [ ] Staf Lab: Maintenance — GET & POST /api/maintenance
-- [ ] Staf Lab: BHP — GET & PUT /api/bhp`
+- [x] Staf Lab: Maintenance — GET & POST /api/maintenance
+- [x] Staf Lab: BHP — GET & PUT /api/bhp
 - Maliq = sysadmin dan kepala lab
 - Fran = Ketua prodi, admin
 - Keyren = staff lab
 
 
 ### UI States
-- [ ] Tambahkan loading spinner saat fetch data
-- [ ] Tambahkan error message saat API gagal
-- [ ] Tambahkan empty state kalau data kosong
-- [ ] Tambahkan success toast setelah create/update/delete berhasil
+- [x] Tambahkan loading spinner saat fetch data
+- [x] Tambahkan error message saat API gagal
+- [x] Tambahkan empty state kalau data kosong
+- [x] Tambahkan success toast setelah create/update/delete berhasil
 
 ---
 
 ## 4. Testing & Polish
 
-- [ ] Test login dengan semua 5 role
-- [ ] Test CRUD lengkap untuk setiap fitur per role
-- [ ] Test flow pengadaan end-to-end: Kalab buat draf → submit → Kaprodi review → finalize → Admin terima barang
-- [ ] Test maintenance: Staf Lab log maintenance → BHP otomatis berkurang
-- [ ] Test role guard: role yang salah tidak bisa akses endpoint
+- [x] Test login dengan semua 5 role
+- [x] Test CRUD lengkap untuk setiap fitur per role
+- [x] Test flow pengadaan end-to-end: Kalab buat draf → submit → Kaprodi review → finalize → Admin terima barang
+- [x] Test maintenance: Staf Lab log maintenance → BHP otomatis berkurang
+- [x] Test role guard: role yang salah tidak bisa akses endpoint
 - [ ] Responsive testing (mobile/tablet)
 - [ ] Final demo preparation — working software siap dipresentasikan
 
