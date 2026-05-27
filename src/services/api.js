@@ -24,6 +24,7 @@ export const removeToken = () => {
 export const authHeaders = () => {
   return {
     "Content-Type": "application/json",
+    "X-Requested-With": "XMLHttpRequest", // Protect against CSRF attacks
     ...(_memoryToken && {
       Authorization: `Bearer ${_memoryToken}`,
     }),

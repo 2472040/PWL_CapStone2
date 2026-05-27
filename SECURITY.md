@@ -32,9 +32,9 @@ LokaLab menerapkan pendekatan keamanan **defense-in-depth** (pertahanan berlapis
 |---|---|---|
 | **Password Storage** | bcrypt dengan salt rounds 12 | ✅ Aktif |
 | **Autentikasi** | JWT di HttpOnly Cookie + JTI + Token Version | ✅ Aktif |
-| **Pembatalan Sesi** | JTI Blacklist + Token Version Increment | ✅ Aktif |
-| **Enkripsi Data** | AES-256-GCM (Authenticated Encryption) | ✅ Aktif |
-| **Audit Trail** | HMAC-SHA256 Hash Chaining (Blockchain-like) | ✅ Aktif |
+| **Pembatalan Sesi** | Persistent JTI Blacklist (MySQL) + Token Version | ✅ Aktif |
+| **Enkripsi Data** | AES-256-GCM + Dynamic Salt KDF (scrypt) | ✅ Aktif |
+| **Audit Trail** | Tamper-Evident HMAC-SHA256 Hash Chaining | ✅ Aktif |
 | **HTTP Headers** | CSP, X-Frame-Options, nosniff, Referrer-Policy | ✅ Aktif |
 | **CORS** | Strict Origin + Credentials | ✅ Aktif |
 | **Frontend** | Auto-logout 401, Validasi Upload, Cookie Credentials | ✅ Aktif |
@@ -319,24 +319,40 @@ JWT secara default bersifat *stateless* — sekali token dibuat dan ditandatanga
 
 LokaLab mengimplementasikan **dua mekanisme** pembatalan token yang bekerja bersama:
 
-#### Mekanisme 1: JTI Blacklist (Per-Token Revocation)
+#### Mekanisme 1: Persistent Database JTI Blacklist (Per-Token Revocation)
+
+Untuk menjamin keamanan kelas produksi yang andal, LokaLab menyimpan daftar token yang telah dibatalkan (JTI Blacklist) secara **persisten di database MySQL** (tabel `revoked_tokens`) daripada di dalam memori server (in-memory). Dengan demikian, daftar blacklist tidak akan hilang meskipun server dimulai ulang (*restart*).
 
 ```javascript
-// In-memory blacklist untuk JTI yang sudah logout
-const jtiBlacklist = new Set();
-
-function blacklistJti(jti) {
-  jtiBlacklist.add(jti);
-  // Auto-cleanup setelah 35 menit (lebih lama dari token expiry 30m)
-  setTimeout(() => jtiBlacklist.delete(jti), 35 * 60 * 1000);
-}
+// File: server/middleware/auth.js
+const tokenBlacklist = {
+  has: async (jti) => {
+    try {
+      const found = await RevokedToken.findOne({ where: { jti } });
+      return !!found;
+    } catch (e) {
+      console.error('[Blacklist Has Error]', e.message);
+      return false;
+    }
+  },
+  add: async (jti, expiresAt) => {
+    try {
+      await RevokedToken.create({
+        jti,
+        expires_at: expiresAt || new Date(Date.now() + 30 * 60 * 1000) // Sesuai masa kedaluwarsa token 30m
+      });
+    } catch (e) {
+      if (e.name !== 'SequelizeUniqueConstraintError') {
+        console.error('[Blacklist Add Error]', e.message);
+      }
+    }
+  }
+};
 ```
 
-**Cara kerja**: Saat logout, `jti` dari token yang sedang aktif dimasukkan ke blacklist. Middleware `authenticate` mengecek apakah `jti` token yang datang ada di blacklist. Jika ya → ditolak.
+**Cara kerja**: Saat logout, `jti` dari token yang aktif disimpan ke tabel `revoked_tokens` dengan timestamp kedaluwarsa. Middleware `authenticate` memverifikasi secara asinkron apakah `jti` tersebut ada di database. Jika ya, akses langsung ditolak dengan status 401.
 
-**Keunggulan**: Pembatalan per-token yang presisi, tanpa mempengaruhi token di perangkat lain (kecuali diinginkan).
-
-**Auto-cleanup**: Entri di blacklist otomatis dihapus setelah 35 menit (sedikit lebih lama dari expiry token 30 menit), sehingga memory tidak membengkak.
+**Keunggulan**: Pembatalan sesi persisten per-token yang tahan restart server, sangat tangguh untuk arsitektur multi-instance/kluster.
 
 #### Mekanisme 2: Token Version (Global Session Invalidation)
 
@@ -445,26 +461,29 @@ File backup database (`.loka`) berisi seluruh data inventaris laboratorium. Jika
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 12;   // GCM memerlukan IV 12-byte (96-bit), bukan 16
 
-function getEncryptionKey() {
-  // Derive 256-bit key dari BACKUP_ENCRYPTION_SECRET
-  return crypto.createHash('sha256').update(String(ENCRYPTION_SECRET)).digest();
+function getEncryptionKey(saltHex) {
+  // Derives a secure 32-byte encryption key using scrypt and a dynamic or fallback salt
+  const secret = process.env.BACKUP_ENCRYPTION_SECRET || 'lokalab-default-backup-secret-key-2026';
+  const salt = saltHex ? Buffer.from(saltHex, 'hex') : 'loka-backup-salt-v2';
+  return crypto.scryptSync(secret, salt, 32);
 }
 
 const exportBackup = async (req, res) => {
   // 1. Kumpulkan data dari database
-  const backupData = { items, categories, locations };
+  const dbPayload = { users, rooms, ... };
 
-  // 2. Enkripsi dengan AES-256-GCM
-  const key = getEncryptionKey();
-  const iv = crypto.randomBytes(IV_LENGTH);                 // IV acak per-backup
+  // 2. Enkripsi dengan AES-256-GCM + scrypt KDF (Dynamic Salt)
+  const iv = crypto.randomBytes(12);
+  const salt = crypto.randomBytes(16).toString('hex'); // 16-byte random salt
+  const key = getEncryptionKey(salt);
   const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
 
-  let encrypted = cipher.update(jsonStr, 'utf8', 'hex');
+  let encrypted = cipher.update(rawJson, 'utf8', 'hex');
   encrypted += cipher.final('hex');
   const tag = cipher.getAuthTag().toString('hex');           // ← Authentication Tag
 
-  // 3. Output: { iv, encrypted, tag, timestamp, version }
-  const backupFile = { iv: iv.toString('hex'), encrypted, tag, timestamp, version: '2.0-gcm' };
+  // 3. Output: { iv, salt, encrypted, tag, timestamp, version }
+  const backupFile = { iv: iv.toString('hex'), salt, encrypted, tag, timestamp, version: '3.0.0' };
 };
 ```
 
@@ -477,9 +496,12 @@ const importBackup = async (req, res) => {
     return res.status(400).json({ message: 'Format file backup tidak valid.' });
   }
 
-  // 2. Dekripsi dengan verifikasi Authentication Tag
+  // 2. Dekripsi dengan verifikasi Authentication Tag & dynamic salt KDF
+  const key = getEncryptionKey(backupFile.salt);
+  const iv = Buffer.from(backupFile.iv, 'hex');
+  const tag = Buffer.from(backupFile.tag, 'hex');
   const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
-  decipher.setAuthTag(Buffer.from(backupFile.tag, 'hex'));   // ← Set Auth Tag
+  decipher.setAuthTag(tag);
 
   try {
     decrypted = decipher.update(backupFile.encrypted, 'hex', 'utf8');
@@ -497,7 +519,7 @@ const importBackup = async (req, res) => {
 | Parameter | Nilai | Penjelasan |
 |---|---|---|
 | **Algoritma** | `aes-256-gcm` | Authenticated Encryption with Associated Data (AEAD) |
-| **Panjang Kunci** | 256-bit (32 byte) | Diderivasi dari `BACKUP_ENCRYPTION_SECRET` via SHA-256 |
+| **Panjang Kunci** | 256-bit (32 byte) | Diderivasi via KDF (`scrypt`) menggunakan dynamic salt |
 | **Panjang IV** | 96-bit (12 byte) | Standar GCM yang direkomendasikan NIST |
 | **Authentication Tag** | 128-bit (16 byte) | Disimpan sebagai hex string (32 karakter) |
 | **Kunci** | `BACKUP_ENCRYPTION_SECRET` | Terpisah dari `JWT_SECRET` |
@@ -507,10 +529,11 @@ const importBackup = async (req, res) => {
 ```json
 {
   "iv": "a1b2c3d4e5f6a7b8c9d0e1f2",
+  "salt": "f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c3",
   "encrypted": "4f8a2b3c...enkripsi panjang...",
   "tag": "9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c",
   "timestamp": "2026-05-27T13:00:00.000Z",
-  "version": "2.0-gcm"
+  "version": "3.0.0"
 }
 ```
 
@@ -529,11 +552,11 @@ const importBackup = async (req, res) => {
 
 ### Apa dan Mengapa
 
-Audit log mencatat setiap aksi penting dalam sistem (login, logout, CRUD operasi, backup, dll). Tantangannya: bagaimana memastikan log itu sendiri **tidak bisa dimanipulasi** oleh siapapun — termasuk orang yang punya akses langsung ke database?
+Audit log mencatat setiap aksi penting dalam sistem (login, logout, CRUD operasi, backup, dll). Tantangannya: bagaimana menjamin integritas log agar jika terjadi manipulasi data oleh pihak internal maupun eksternal (termasuk administrator database), manipulasi tersebut dapat langsung terdeteksi secara kriptografis (*tamper-evident*)?
 
-### Solusi: HMAC-SHA256 Hash Chaining
+### Solusi: Hash Chaining berbasis HMAC-SHA256
 
-Setiap entri audit log dihubungkan secara kriptografi dengan entri sebelumnya, seperti konsep **blockchain**:
+Setiap entri audit log dihubungkan secara kriptografi dengan entri sebelumnya menggunakan **rantai hash (hash chain) berbasis HMAC-SHA256**:
 
 ```
 ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
@@ -562,28 +585,39 @@ Setiap entri audit log dihubungkan secara kriptografi dengan entri sebelumnya, s
 ```javascript
 const GENESIS_HASH = '0000000000000000000000000000000000000000000000000000000000000000';
 
-const logAudit = async (userId, action, target, details = null) => {
-  // 1. Ambil hash dari log terakhir (link ke rantai)
-  const lastLog = await AuditLog.findOne({
-    order: [['created_at', 'DESC']],
-    attributes: ['hash'],
-  });
-  const previousHash = lastLog?.hash || GENESIS_HASH;    // Genesis untuk log pertama
+const logAudit = async (userId, action, target, ip) => {
+  try {
+    const secret = process.env.AUDIT_LOG_SECRET || 'lokalab-default-audit-secret-key-2026';
+    
+    // 1. Ambil hash dari log terakhir (link ke rantai)
+    const lastLog = await AuditLog.findOne({
+      order: [['id', 'DESC']],
+    });
+    const previousHash = lastLog && lastLog.hash
+      ? lastLog.hash
+      : '0000000000000000000000000000000000000000000000000000000000000000';
 
-  // 2. Hitung HMAC-SHA256 dari data log + hash sebelumnya
-  const timestamp = new Date().toISOString();
-  const dataToHash = `${previousHash}|${timestamp}|${userId || 'SYSTEM'}|${action}|${target || ''}`;
-  const hash = crypto.createHmac('sha256', AUDIT_LOG_SECRET).update(dataToHash).digest('hex');
+    // 2. Gunakan timestamp unix detik presisi tinggi untuk konsistensi database
+    const now = new Date();
+    const timeSecs = Math.floor(now.getTime() / 1000).toString();
 
-  // 3. Simpan log dengan hash dan link ke log sebelumnya
-  await AuditLog.create({
-    user_id: userId,
-    action,
-    target,
-    details: details ? JSON.stringify(details) : null,
-    hash,                     // Hash unik log ini
-    previous_hash: previousHash,  // Link ke log sebelumnya
-  });
+    // 3. Hitung HMAC-SHA256 dari data log + hash sebelumnya
+    const dataToHash = `${previousHash}|${timeSecs}|${userId || ''}|${action}|${target || ''}|${ip || ''}`;
+    const hash = crypto.createHmac('sha256', secret).update(dataToHash).digest('hex');
+
+    // 4. Simpan log dengan hash dan link ke log sebelumnya
+    await AuditLog.create({
+      user_id: userId,
+      action,
+      target,
+      ip: ip || null,
+      hash,
+      previous_hash: previousHash,
+      created_at: now,
+    });
+  } catch (err) {
+    console.error('[Audit Log Error]', err.message);
+  }
 };
 ```
 
@@ -607,32 +641,65 @@ const logAudit = async (userId, action, target, details = null) => {
 
 ```javascript
 const verifyAuditChain = async (req, res) => {
-  const logs = await AuditLog.findAll({ order: [['created_at', 'ASC'], ['id', 'ASC']] });
+  try {
+    const logs = await AuditLog.findAll({ order: [['id', 'ASC']] });
+    const secret = process.env.AUDIT_LOG_SECRET || 'lokalab-default-audit-secret-key-2026';
+    let previousHash = '0000000000000000000000000000000000000000000000000000000000000000';
+    const issues = [];
 
-  let expectedPreviousHash = GENESIS_HASH;
-  const brokenLinks = [];
+    for (let i = 0; i < logs.length; i++) {
+      const log = logs[i];
+      // Convert DATETIME to unix seconds string to avoid TZ / millisecond formatting issues
+      const timeSecs = Math.floor(new Date(log.created_at || log.createdAt).getTime() / 1000).toString();
 
-  for (let i = 0; i < logs.length; i++) {
-    const log = logs[i];
-    if (!log.hash) continue; // Skip legacy logs
+      // Compute expected HMAC hash
+      const dataToHash = `${previousHash}|${timeSecs}|${log.user_id || ''}|${log.action}|${log.target || ''}|${log.ip || ''}`;
+      const computedHash = crypto.createHmac('sha256', secret).update(dataToHash).digest('hex');
 
-    // Cek 1: Apakah previous_hash cocok dengan hash log sebelumnya?
-    if (log.previous_hash !== expectedPreviousHash) {
-      brokenLinks.push({ logId: log.id, reason: 'Chain break' });
+      // 1. Verify previous_hash link
+      if (log.previous_hash && log.previous_hash !== previousHash) {
+        issues.push({
+          id: log.id,
+          action: log.action,
+          error: `previous_hash mismatch. Expected link to "${previousHash.substring(0, 10)}...", Got link to "${log.previous_hash.substring(0, 10)}..."`
+        });
+      }
+
+      // 2. Verify current log data integrity
+      if (log.hash && log.hash !== computedHash) {
+        issues.push({
+          id: log.id,
+          action: log.action,
+          error: `Tampering detected: Log data has been modified. Calculated hash: "${computedHash.substring(0, 10)}...", Stored hash: "${log.hash.substring(0, 10)}..."`
+        });
+      }
+
+      previousHash = log.hash || computedHash;
     }
 
-    // Cek 2: Recompute hash — apakah data log konsisten?
-    const dataToHash = `${log.previous_hash}|${timestamp}|${log.user_id}|${log.action}|${log.target}`;
-    const computedHash = crypto.createHmac('sha256', AUDIT_LOG_SECRET).update(dataToHash).digest('hex');
+    if (issues.length > 0) {
+      console.error('\n⚠️🚨 [SECURITY WARNING] DETEKSI MANIPULASI AUDIT LOG! 🚨⚠️');
+      console.error(`Ditemukan ${issues.length} masalah integritas data pada audit log.`);
+      issues.forEach(issue => {
+        console.error(`  - Log ID ${issue.id} [${issue.action}]: ${issue.error}`);
+      });
+      console.error('======================================================\n');
 
-    if (computedHash !== log.hash) {
-      brokenLinks.push({ logId: log.id, reason: 'Hash mismatch — data dimanipulasi' });
+      return res.json({
+        valid: false,
+        issuesCount: issues.length,
+        issues
+      });
     }
 
-    expectedPreviousHash = log.hash;
+    res.json({
+      valid: true,
+      message: 'Rantai audit log utuh dan terverifikasi secara kriptografis (tidak ada manipulasi data).'
+    });
+  } catch (err) {
+    console.error('[Verify Audit Chain Error]', err);
+    res.status(500).json({ error: 'Gagal melakukan verifikasi rantai audit log.' });
   }
-
-  // Response: valid / tidak valid + detail kerusakan
 };
 ```
 
@@ -900,7 +967,7 @@ node server/tests/security.test.cjs
 | Requirement | Implementasi | Status |
 |---|---|---|
 | Memorized Secret Verifier | bcrypt (salt rounds 12) | ✅ |
-| Throttling/Rate Limiting | Error delay pada login gagal | ⚠️ Bisa ditingkatkan |
+| Throttling/Rate Limiting | IP & Username rate limiter, delay progresif (throttling), serta audit failed login | ✅ |
 | Session Binding | HttpOnly Secure SameSite cookie | ✅ |
 | Reauthentication | 30 menit session timeout | ✅ |
 | Secret Storage | Semua kunci di `.env`, bukan hardcoded | ✅ |
@@ -909,16 +976,15 @@ node server/tests/security.test.cjs
 
 ## 13. Rekomendasi untuk Produksi
 
-Berikut peningkatan yang **disarankan** jika LokaLab akan di-deploy ke lingkungan produksi:
+Berikut peningkatan yang **disarankan** jika LokaLab akan di-deploy ke lingkungan produksi tingkat lanjut:
 
 ### Prioritas Tinggi
 
 | # | Rekomendasi | Alasan |
 |---|---|---|
-| 1 | **Ganti JTI blacklist ke Redis** | In-memory blacklist saat ini hilang saat server restart. Redis memberikan persistensi dan dukungan multi-instance |
+| 1 | **Redis untuk Blacklist (Skala Besar)** | JTI blacklist saat ini sudah persisten di database MySQL (`revoked_tokens`). Untuk produksi skala besar dengan beban trafik tinggi, memindahkan blacklist ke Redis dapat meminimalkan beban I/O database MySQL |
 | 2 | **Aktifkan HTTPS** | Cookie `secure: true` memerlukan HTTPS. Gunakan Let's Encrypt atau reverse proxy (nginx) |
-| 3 | **Rate limiting pada endpoint login** | Mencegah brute-force attack. Gunakan `express-rate-limit` (mis. 5 percobaan / 15 menit) |
-| 4 | **Buat `.env.example`** | Dokumentasikan semua environment variable yang diperlukan |
+| 3 | **Buat `.env.example`** | Dokumentasikan semua environment variable yang diperlukan |
 
 ### Prioritas Menengah
 

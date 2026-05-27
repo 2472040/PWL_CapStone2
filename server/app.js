@@ -14,17 +14,25 @@ app.use(cors({
   credentials: true
 }));
 
+const csrfProtection = require('./middleware/csrf');
+
 // Strict Security Headers
 app.use((req, res, next) => {
+  const isProd = process.env.NODE_ENV === 'production';
+  const scriptSrc = isProd ? "'self'" : "'self' 'unsafe-inline' 'unsafe-eval'";
+  const connectSrc = isProd 
+    ? "'self'" 
+    : "'self' ws://localhost:5173 http://localhost:3000 http://localhost:5173 ws://localhost:*";
+
   res.setHeader(
     'Content-Security-Policy',
-    "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-    "font-src 'self' data: https://fonts.gstatic.com; " +
-    "img-src 'self' data: blob:; " +
-    "connect-src 'self' ws://localhost:5173 http://localhost:3000 http://localhost:5173 ws://localhost:*; " +
-    "frame-ancestors 'none';"
+    `default-src 'self'; ` +
+    `script-src ${scriptSrc}; ` +
+    `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; ` +
+    `font-src 'self' data: https://fonts.gstatic.com; ` +
+    `img-src 'self' data: blob:; ` +
+    `connect-src ${connectSrc}; ` +
+    `frame-ancestors 'none';`
   );
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -35,6 +43,7 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(csrfProtection);
 
 // Pug view engine
 app.set('view engine', 'pug');

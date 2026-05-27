@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const { User } = require('../models');
 const { logAudit } = require('../middleware/audit');
 const { tokenBlacklist } = require('../middleware/auth');
+const { clearLoginAttempts } = require('../middleware/rateLimiter');
 
 /**
  * POST /api/auth/login
@@ -19,15 +20,18 @@ const login = async (req, res) => {
 
     const user = await User.findOne({ where: { email } });
     if (!user) {
+      await logAudit(null, 'auth.login_failed', `Email: ${email} (Pengguna tidak ditemukan)`, req.ip);
       return res.status(401).json({ error: 'Email atau password salah.' });
     }
 
     if (user.status !== 'active') {
+      await logAudit(user.id, 'auth.login_failed', `Email: ${email} (Akun dinonaktifkan)`, req.ip);
       return res.status(403).json({ error: 'Akun Anda telah dinonaktifkan.' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      await logAudit(user.id, 'auth.login_failed', `Email: ${email} (Password salah)`, req.ip);
       return res.status(401).json({ error: 'Email atau password salah.' });
     }
 
@@ -57,6 +61,7 @@ const login = async (req, res) => {
       maxAge: 30 * 60 * 1000 // 30 minutes
     });
 
+    clearLoginAttempts(req.ip, email);
     await logAudit(user.id, 'auth.login', user.email, req.ip);
 
     res.json({

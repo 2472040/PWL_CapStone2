@@ -8,10 +8,11 @@ const { logAudit } = require('../middleware/audit');
 
 const ALGORITHM = 'aes-256-gcm';
 
-// Derives a secure 32-byte encryption key from process.env.BACKUP_ENCRYPTION_SECRET
-const getEncryptionKey = () => {
+// Derives a secure 32-byte encryption key using scrypt and a dynamic or fallback salt
+const getEncryptionKey = (saltHex) => {
   const secret = process.env.BACKUP_ENCRYPTION_SECRET || process.env.JWT_SECRET || 'lokalab-default-backup-secret-key-2026';
-  return crypto.scryptSync(secret, 'loka-backup-salt-v2', 32);
+  const salt = saltHex ? Buffer.from(saltHex, 'hex') : 'loka-backup-salt-v2';
+  return crypto.scryptSync(secret, salt, 32);
 };
 
 /**
@@ -45,7 +46,9 @@ const exportBackup = async (req, res) => {
 
     // Setup AES-256-GCM cipher (12-byte IV standard for GCM)
     const iv = crypto.randomBytes(12);
-    const cipher = crypto.createCipheriv(ALGORITHM, getEncryptionKey(), iv);
+    const salt = crypto.randomBytes(16).toString('hex'); // 16-byte dynamic salt
+    const key = getEncryptionKey(salt);
+    const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
     
     let encrypted = cipher.update(rawJson, 'utf8', 'hex');
     encrypted += cipher.final('hex');
@@ -55,6 +58,7 @@ const exportBackup = async (req, res) => {
 
     const backupFile = {
       iv: iv.toString('hex'),
+      salt,
       encrypted,
       tag,
       checksum,
@@ -90,8 +94,8 @@ const restoreBackup = async (req, res) => {
       return res.status(400).json({ error: 'Integritas backup gagal: File tidak memiliki authentication tag (format tidak didukung).' });
     }
 
-    // Decrypt data
-    const key = getEncryptionKey();
+    // Decrypt data using the stored salt (falls back to legacy static salt if undefined)
+    const key = getEncryptionKey(backupFile.salt);
     const iv = Buffer.from(backupFile.iv, 'hex');
     const tag = Buffer.from(backupFile.tag, 'hex');
     const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
