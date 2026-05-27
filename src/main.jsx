@@ -1,6 +1,6 @@
 // app-main.jsx — wires up landing page + shell + screens + drawer registry
 // v2.0: + Landing page, Error boundary, search provider, mobile UI, keyboard shortcuts
-import { apiFetch, setToken, removeToken, getToken} from './services/api.js';
+import { apiFetch, setToken, removeToken, getToken } from './services/api.js';
 import React, {  useState, useEffect  } from 'react';
 import { DrawerContent, ModalContent, Sidebar, ToastProvider, StoreProvider, useStore, Drawer, Modal, PageBar, PageHost, SearchProvider, MobileSidebarToggle, MouseTracker, useKeyboardShortcuts, useRevealFallback, ScrollProgress, SoundIntegration, CursorEnabler, TiltEngine, D  } from './components/app-shell.jsx';
 import { CustomCursor } from './components/app-cursor.jsx';
@@ -164,25 +164,32 @@ function Shell({ onLogout }) {
   );
 }
 
-function AuthInitializer() {
+function AuthInitializer({ pendingRole }) {
   const { dispatch } = useStore();
 
+  // Immediately apply role from login response or localStorage
+  useEffect(() => {
+    const role = pendingRole || (() => { try { return localStorage.getItem('loka-role'); } catch (e) { return null; } })();
+    if (role) {
+      dispatch({ type: 'SET_ROLE', role });
+    }
+  }, [pendingRole, dispatch]);
+
+  // Also verify with backend (in case token expired or role changed)
   useEffect(() => {
     async function loadCurrentUser() {
       try {
         const result = await apiFetch('/auth/me');
-
         const user = result.data;
-
-        // simpan role ke store agar UI menyesuaikan
         if (user.role) {
-          dispatch({
-            type: 'SET_ROLE',
-            payload: user.role,
-          });
+          dispatch({ type: 'SET_ROLE', role: user.role });
+          try { localStorage.setItem('loka-role', user.role); } catch (e) {}
         }
       } catch (error) {
         console.error('Gagal mengambil data user:', error.message);
+        // Token invalid/expired → clear it
+        removeToken();
+        try { localStorage.removeItem('loka-role'); } catch (e) {}
       }
     }
 
@@ -194,72 +201,201 @@ function AuthInitializer() {
   return null;
 }
 
+// =========================================================
+// Login Screen — glassmorphism dark theme
+// =========================================================
+const DEMO_ACCOUNTS = [
+  { label: 'Sysadmin', email: 'anindita@kampus.id' },
+  { label: 'Kalab', email: 'pradipta@kampus.id' },
+  { label: 'Kaprodi', email: 'hendra@kampus.id' },
+  { label: 'Admin', email: 'faqih@kampus.id' },
+  { label: 'Staf Lab', email: 'maharani@kampus.id' },
+];
+
+function LoginScreen({ onLogin, onBack }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (!email || !password) {
+      setError('Email dan password wajib diisi.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await apiFetch('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+
+      setToken(result.data.token);
+      onLogin(result.data.user);
+    } catch (err) {
+      setError(err.message || 'Login gagal. Periksa email dan password.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fillDemo = (demoEmail) => {
+    setEmail(demoEmail);
+    setPassword('password123');
+    setError('');
+  };
+
+  return (
+    <div className="loka-login">
+      <div className="loka-login-bg">
+        <div className="loka-login-blob" />
+        <div className="loka-login-blob" />
+        <div className="loka-login-blob" />
+      </div>
+      <div className="loka-login-grain" />
+
+      <div className="loka-login-card">
+        <div className="loka-login-brand">
+          <div className="loka-login-dot" />
+          <div>
+            <span className="loka-login-brand-text">Loka</span>
+            <span className="loka-login-brand-sub">· Lab Suite</span>
+          </div>
+        </div>
+
+        <h1 className="loka-login-heading">Selamat datang</h1>
+        <p className="loka-login-subheading">Masuk ke dashboard inventaris laboratorium</p>
+
+        {error && (
+          <div className="loka-login-error">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            {error}
+          </div>
+        )}
+
+        <form className="loka-login-form" onSubmit={handleSubmit}>
+          <div className="loka-login-field">
+            <label className="loka-login-label" htmlFor="login-email">Email</label>
+            <input
+              id="login-email"
+              className={`loka-login-input ${error ? 'error' : ''}`}
+              type="email"
+              placeholder="nama@kampus.id"
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); setError(''); }}
+              autoComplete="email"
+              autoFocus
+            />
+          </div>
+
+          <div className="loka-login-field">
+            <label className="loka-login-label" htmlFor="login-password">Password</label>
+            <input
+              id="login-password"
+              className={`loka-login-input ${error ? 'error' : ''}`}
+              type="password"
+              placeholder="Masukkan password"
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); setError(''); }}
+              autoComplete="current-password"
+            />
+          </div>
+
+          <button className="loka-login-btn" type="submit" disabled={loading}>
+            {loading ? <><div className="loka-login-spinner" /> Memproses...</> : 'Masuk'}
+          </button>
+        </form>
+
+        <div className="loka-login-divider">akun demo</div>
+        <div className="loka-login-demo">
+          {DEMO_ACCOUNTS.map((acc) => (
+            <button key={acc.email} className="loka-login-demo-btn" type="button" onClick={() => fillDemo(acc.email)}>
+              {acc.label}
+            </button>
+          ))}
+        </div>
+
+        <button className="loka-login-back" type="button" onClick={onBack}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Kembali ke beranda
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// =========================================================
+// App — manages view: landing → login → app
+// =========================================================
 function App() {
   const [view, setView] = useState(() => {
-    // Check if user was previously in the app
     try {
-      return localStorage.getItem('loka-view') || 'landing';
+      if (localStorage.getItem('token')) {
+        return localStorage.getItem('loka-view') || 'app';
+      }
+      return 'landing';
     } catch (e) { return 'landing'; }
   });
+  // Store the logged-in user's role so we can dispatch SET_ROLE inside StoreProvider
+  const [pendingRole, setPendingRole] = useState(null);
 
+  // Guard: if view is 'app' but no token, go back to landing
   useEffect(() => {
     if (view === 'app' && !getToken()) {
       setView('landing');
-      localStorage.removeItem('loka-view');
+      try { localStorage.removeItem('loka-view'); } catch (e) {}
     }
   }, [view]);
 
-  async function enterApp() {
-  try {
-    const result = await apiFetch('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({
-        email: 'anindita@kampus.id',
-        password: 'password123',
-      }),
-    });
-
-    // simpan JWT token
-    setToken(result.data.token);
-
-    // masuk ke aplikasi
-    setView('app');
-    localStorage.setItem('loka-view', 'app');
-  } catch (error) {
-    alert('Login gagal: ' + error.message);
+  function showLogin() {
+    setView('login');
   }
-}
+
+  function handleLogin(user) {
+    // Save the role from the login response so AuthInitializer can apply it
+    if (user && user.role) {
+      setPendingRole(user.role);
+      try { localStorage.setItem('loka-role', user.role); } catch (e) {}
+    }
+    setView('app');
+    try { localStorage.setItem('loka-view', 'app'); } catch (e) {}
+  }
 
   function goToLanding() {
-  // hapus JWT token
-  removeToken();
-
-  // kembali ke landing page
-  setView('landing');
-
-  // delete status view
-  try {
-    localStorage.removeItem('loka-view');
-  } catch (e) {}
-}
+    removeToken();
+    setPendingRole(null);
+    setView('landing');
+    try {
+      localStorage.removeItem('loka-view');
+      localStorage.removeItem('loka-role');
+    } catch (e) {}
+  }
 
   return (
-  <ErrorBoundary>
-    <StoreProvider>
-      <SearchProvider>
-        <ToastProvider>
-          <AuthInitializer />
+    <ErrorBoundary>
+      <StoreProvider>
+        <SearchProvider>
+          <ToastProvider>
+            <AuthInitializer pendingRole={pendingRole} />
 
-          {view === 'landing' ? (
-            <LandingPage onEnterApp={enterApp} />
-          ) : (
-            <Shell onLogout={goToLanding} />
-          )}
-        </ToastProvider>
-      </SearchProvider>
-    </StoreProvider>
-  </ErrorBoundary>
-);
+            {view === 'landing' && (
+              <LandingPage onEnterApp={showLogin} />
+            )}
+            {view === 'login' && (
+              <LoginScreen onLogin={handleLogin} onBack={() => setView('landing')} />
+            )}
+            {view === 'app' && (
+              <Shell onLogout={goToLanding} />
+            )}
+          </ToastProvider>
+        </SearchProvider>
+      </StoreProvider>
+    </ErrorBoundary>
+  );
 }
 
 import ReactDOM from 'react-dom/client';
@@ -268,3 +404,4 @@ import '../assets/css/app-components.css';
 import '../assets/css/app-landing.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+

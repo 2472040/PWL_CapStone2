@@ -102,6 +102,8 @@ function reducer(s, a) {
     case 'SET_SCREEN': return { ...s, screen: a.screen, mobileSidebarOpen: false };
     case 'OPEN_DRAWER': return { ...s, drawer: a.drawer };
     case 'CLOSE_DRAWER': return { ...s, drawer: null };
+    case 'SET_DRAFTS': return { ...s, drafts: a.drafts };
+    case 'SET_INVENTORY': return { ...s, inventory: a.inventory };
     case 'SET_APPROVAL': {
       return {
         ...s,

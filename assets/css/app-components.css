@@ -460,11 +460,12 @@ html[data-theme="light"] .role-popover { background: rgba(255,255,255,0.95); }
 .toggle input:checked + .swc::after { left: 22px; background: #fff; }
 
 /* ── Custom Cursor ── */
-.custom-cursor-active { cursor: none; }
+/* Disabled cursor: none to fix missing pointer issue */
+.custom-cursor-active { /* cursor: none; */ }
 .custom-cursor-active a, .custom-cursor-active button,
 .custom-cursor-active [role="button"], .custom-cursor-active .sb-item,
 .custom-cursor-active input, .custom-cursor-active select,
-.custom-cursor-active textarea { cursor: none; }
+.custom-cursor-active textarea { /* cursor: none; */ }
 
 /* ── Custom Cursor Visuals ── */
 .cursor-dot {
