@@ -4,8 +4,7 @@
 
 import React, {  useState, useEffect, useRef, useReducer, useMemo, createContext, useContext, useCallback  } from 'react';
 import { LOKA as D } from '../data/app-data.jsx';
-import { Icon } from '../components/app-icons.jsx';
-import { QR } from '../components/app-icons.jsx';
+import { Icon, QR, downloadQR } from '../components/app-icons.jsx';
 
 // =========================================================
 // Toast system
@@ -81,6 +80,7 @@ function initStore() {
     theme,
     accent,
     density,
+    currentUser: null,
     drafts: D.drafts.map(d => ({
       ...d,
       items: d.items.map(it => ({ ...it, approval: d.status === 'finalized' || d.status === 'completed' ? 'ok' : null, received: d.status === 'completed' })),
@@ -99,11 +99,14 @@ function initStore() {
 function reducer(s, a) {
   switch (a.type) {
     case 'SET_ROLE':   return { ...s, role: a.role, screen: 'dashboard', mobileSidebarOpen: false };
+    case 'SET_USER':   return { ...s, currentUser: a.user };
     case 'SET_SCREEN': return { ...s, screen: a.screen, mobileSidebarOpen: false };
     case 'OPEN_DRAWER': return { ...s, drawer: a.drawer };
     case 'CLOSE_DRAWER': return { ...s, drawer: null };
     case 'SET_DRAFTS': return { ...s, drafts: a.drafts };
     case 'SET_INVENTORY': return { ...s, inventory: a.inventory };
+    case 'SET_USERS': return { ...s, users: a.users };
+    case 'SET_ROOMS': return { ...s, rooms: a.rooms };
     case 'SET_APPROVAL': {
       return {
         ...s,
@@ -156,6 +159,8 @@ function reducer(s, a) {
       const inv = s.inventory.map(x => x.code !== a.log.asset ? x : ({ ...x, cond: a.log.cond, last: 'baru saja' }));
       return { ...s, maintLog: [a.log, ...s.maintLog], bhp, inventory: inv };
     }
+    case 'SET_MAINT_LOGS': return { ...s, maintLog: a.logs };
+    case 'SET_BHP': return { ...s, bhp: a.bhp };
     case 'ADD_USER':   return { ...s, users: [a.user, ...s.users] };
     case 'TOGGLE_USER': return { ...s, users: s.users.map(u => u.id !== a.id ? u : ({ ...u, status: u.status === 'active' ? 'paused' : 'active' })) };
     case 'ADD_ROOM':   return { ...s, rooms: [a.room, ...s.rooms] };
@@ -270,7 +275,7 @@ function Sidebar() {
   const popRef = useRef();
   const sbRef = useRef();
   const role = D.roles.find(r => r.id === state.role);
-  const me = D.me[state.role];
+  const me = state.currentUser || D.me[state.role] || { name: 'Pengguna', initials: '?' };
   const items = D.nav[state.role];
 
   useEffect(() => {
@@ -312,34 +317,17 @@ function Sidebar() {
         </div>
       </div>
 
-      {/* Role switcher */}
-      <div ref={popRef} data-sb-anim>
-        <div className={`role-switch ${popOpen ? 'open' : ''}`} onClick={() => setPopOpen(o => !o)} role="button" aria-haspopup="listbox" aria-expanded={popOpen} tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setPopOpen(o => !o); }}>
+      {/* User profile card (static display, switcher removed) */}
+      <div data-sb-anim>
+        <div className="role-switch">
           <div className="role-switch-head">
             <div className="role-switch-av" style={{'--role-accent': role.accent}} aria-hidden="true">{me.initials}</div>
             <div className="role-switch-info">
               <div className="role-switch-name">{me.name}</div>
               <div className="role-switch-role">{role.short.toUpperCase()}</div>
             </div>
-            <div className="role-switch-chev"><Icon name="chev" size={14} /></div>
           </div>
         </div>
-        {popOpen && (
-          <div className="role-popover" role="listbox" aria-label="Pilih role">
-            {D.roles.map(r => {
-              const u = D.me[r.id];
-              return (
-                <div key={r.id} className={`role-popover-item ${r.id === state.role ? 'active' : ''}`} style={{'--av-c': r.accent}} onClick={() => setRole(r.id)} role="option" aria-selected={r.id === state.role} tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setRole(r.id); }}>
-                  <div className="role-popover-av" aria-hidden="true" />
-                  <div className="role-popover-tx">
-                    <div className="lbl">{u.name}</div>
-                    <div className="sub">{r.title}</div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
       </div>
 
       <div className="sb-sec" data-sb-anim>Menu</div>
@@ -382,7 +370,7 @@ function Sidebar() {
           <div className="sb-foot-pulse" aria-hidden="true" />
           <div>
             <div className="text-xs text-ink">Sistem operasional</div>
-            <div className="mono text-[10px] mt-0.5">9 lab · 287 aset · live</div>
+            <div className="mono text-[10px] mt-0.5">{state.rooms.length || 9} lab · {state.inventory.length || 287} aset · live</div>
           </div>
         </div>
       </div>
@@ -394,7 +382,7 @@ function Sidebar() {
 // Top bar with functional search
 // =========================================================
 function PageBar({ breadcrumbs, rightContent }) {
-  const { state } = useStore();
+  const { state, dispatch } = useStore();
   const { query, setQuery } = useSearch();
   const inputRef = useRef();
 
@@ -421,6 +409,14 @@ function PageBar({ breadcrumbs, rightContent }) {
           <kbd aria-hidden="true">⌘K</kbd>
         </div>
         {rightContent}
+        <button 
+          className="btn icon" 
+          title="Pindai QR Aset" 
+          onClick={() => dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'qrScanner' } })}
+          style={{ background: 'rgba(183,148,255,0.15)', color: '#b794ff', border: '1px solid rgba(183,148,255,0.2)' }}
+        >
+          <Icon name="qr" size={14} />
+        </button>
         <button className="btn icon" title="Notifikasi" aria-label="Notifikasi"><Icon name="bell" size={14} /></button>
       </div>
     </div>
@@ -724,7 +720,7 @@ export {
   Sidebar, PageBar, PageHost, Drawer, Modal, StatTile, MobileSidebarToggle,
   useKeyboardShortcuts, useRevealFallback, MouseTracker,
   ScrollProgress, SoundIntegration, CursorEnabler, TiltEngine,
-  D, Icon, QR,
+  D, Icon, QR, downloadQR,
 };
 export const DrawerContent = {};
 export const ModalContent = {};

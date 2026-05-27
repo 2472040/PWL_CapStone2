@@ -40,3 +40,7 @@ screenshots/
 **/screenshoots/
 **/screenshot/
 **/screenshots/
+
+# Scratch / temp files
+scratch/
+*.exe

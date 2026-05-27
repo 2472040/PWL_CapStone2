@@ -200,6 +200,11 @@ html[data-theme="light"] .role-popover { background: rgba(255,255,255,0.95); }
 }
 .textarea { min-height: 80px; resize: vertical; }
 .select { appearance: none; cursor: pointer; }
+.select option {
+  background: #18171c;
+  color: #f5f0e6;
+  padding: 8px;
+}
 
 /* ── Activity Feed ── */
 .act-row {

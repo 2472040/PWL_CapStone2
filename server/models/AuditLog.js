@@ -24,6 +24,14 @@ const AuditLog = sequelize.define('AuditLog', {
     type: DataTypes.STRING(45),
     allowNull: true,
   },
+  hash: {
+    type: DataTypes.STRING(64),
+    allowNull: true,
+  },
+  previous_hash: {
+    type: DataTypes.STRING(64),
+    allowNull: true,
+  },
 }, {
   tableName: 'audit_logs',
 });
