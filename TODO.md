@@ -89,18 +89,18 @@
 ## 3. Integrasi Frontend ↔ Backend (Anggota 3)
 
 ### Setup
-- [ ] Buat file `src/services/api.js` — fetch wrapper dengan JWT token dari localStorage
-- [ ] Buat helper: `getToken()`, `setToken()`, `removeToken()`, `authHeaders()`
+- [x] Buat file `src/services/api.js` — fetch wrapper dengan JWT token dari localStorage
+- [x] Buat helper: `getToken()`, `setToken()`, `removeToken()`, `authHeaders()`
 
 ### Login / Logout Flow
-- [ ] Ubah flow login di React — panggil POST /api/auth/login, simpan token
-- [ ] Ubah flow logout — hapus token dari localStorage, redirect ke landing
-- [ ] Proteksi halaman dashboard — kalau tidak ada token, redirect ke login
-- [ ] Tampilkan info user yang sedang login dari GET /api/auth/me
+- [x] Ubah flow login di React — panggil POST /api/auth/login, simpan token
+- [x] Ubah flow logout — hapus token dari localStorage, redirect ke landing
+- [x] Proteksi halaman dashboard — kalau tidak ada token, redirect ke login
+- [x] Tampilkan info user yang sedang login dari GET /api/auth/me
 
 ### Ganti Hardcoded Data → Fetch API
 - [ ] Dashboard — ambil stats dari GET /api/dashboard/stats
-- [ ] Inventaris — ambil data dari GET /api/inventory (semua role)
+- [x] Inventaris — ambil data dari GET /api/inventory (semua role)
 - [ ] Detail inventaris — ambil dari GET /api/inventory/:id
 - [ ] Sysadmin: Pengguna — CRUD dari /api/users
 - [ ] Sysadmin: Ruangan — CRUD dari /api/rooms
@@ -108,16 +108,20 @@
 - [ ] Kalab: Pengadaan — CRUD draf dari /api/procurement/drafts
 - [ ] Kalab: Submit draf — POST /api/procurement/drafts/:id/submit
 - [ ] Kalab: Tambah item — POST /api/procurement/drafts/:id/items
-- [ ] Kaprodi: Review — ambil dari GET /api/procurement/review
-- [ ] Kaprodi: Approve/reject item — POST /api/procurement/drafts/:id/approve
-- [ ] Kaprodi: Finalisasi — POST /api/procurement/drafts/:id/finalize
-- [ ] Kaprodi: Riwayat draf — GET /api/procurement/history
-- [ ] Admin: Penerimaan — GET /api/procurement/receiving
-- [ ] Admin: Input penerimaan — POST /api/procurement/receiving
-- [ ] Admin: Update label — PUT /api/inventory/:id/label
-- [ ] Admin: List label — GET /api/inventory/manage/labels
+- [x] Kaprodi: Review — ambil dari GET /api/procurement/review
+- [x] Kaprodi: Approve/reject item — POST /api/procurement/drafts/:id/approve
+- [x] Kaprodi: Finalisasi — POST /api/procurement/drafts/:id/finalize
+- [x] Kaprodi: Riwayat draf — GET /api/procurement/history
+- [x] Admin: Penerimaan — GET /api/procurement/receiving
+- [x] Admin: Input penerimaan — POST /api/procurement/receiving
+- [x] Admin: Update label — PUT /api/inventory/:id/label
+- [x] Admin: List label — GET /api/inventory/manage/labels
 - [ ] Staf Lab: Maintenance — GET & POST /api/maintenance
-- [ ] Staf Lab: BHP — GET & PUT /api/bhp
+- [ ] Staf Lab: BHP — GET & PUT /api/bhp`
+- Maliq = sysadmin dan kepala lab
+- Fran = Ketua prodi, admin
+- Keyren = staff lab
+
 
 ### UI States
 - [ ] Tambahkan loading spinner saat fetch data

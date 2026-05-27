@@ -28,20 +28,35 @@ export const authHeaders = () => {
 };
 
 // wrapper fetch //
-export async function apiFetch(endpoint, options = {}) {
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers: {
-      ...authHeaders(),
-      ...(options.headers || {}),
-    },
-  });
+  try {
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      ...options,
+      headers: {
+        ...authHeaders(),
+        ...(options.headers || {}),
+      },
+    });
 
-  const result = await response.json();
+    let result;
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+      result = await response.json();
+    } else {
+      // Return a text error if the response isn't JSON (e.g. proxy HTML error)
+      const text = await response.text();
+      throw new Error(`Server error: ${response.status}. Pastikan backend sudah dijalankan (npm run server).`);
+    }
 
-  if (!response.ok) {
-    throw new Error(result.message || "API Error");
+    if (!response.ok) {
+      throw new Error(result.message || "API Error");
+    }
+
+    return result;
+  } catch (err) {
+    // If it's a TypeError like 'Failed to fetch' or our custom error
+    if (err.message.includes('Unexpected end of JSON input') || err.message.includes('Failed to fetch')) {
+      throw new Error("Gagal terhubung ke server. Pastikan backend sudah dijalankan (npm run server atau npm run dev:all).");
+    }
+    throw err;
   }
-
-  return result;
 }
