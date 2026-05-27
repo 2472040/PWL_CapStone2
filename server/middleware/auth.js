@@ -1,8 +1,30 @@
 const jwt = require('jsonwebtoken');
-const { User } = require('../models');
+const { User, RevokedToken } = require('../models');
 
-// In-memory blacklist for JTI values (revoked tokens)
-const tokenBlacklist = new Set();
+// Persistent blacklist for JTI values in MySQL
+const tokenBlacklist = {
+  has: async (jti) => {
+    try {
+      const found = await RevokedToken.findOne({ where: { jti } });
+      return !!found;
+    } catch (e) {
+      console.error('[Blacklist Has Error]', e.message);
+      return false;
+    }
+  },
+  add: async (jti, expiresAt) => {
+    try {
+      await RevokedToken.create({
+        jti,
+        expires_at: expiresAt || new Date(Date.now() + 30 * 60 * 1000) // Default 30 minutes
+      });
+    } catch (e) {
+      if (e.name !== 'SequelizeUniqueConstraintError') {
+        console.error('[Blacklist Add Error]', e.message);
+      }
+    }
+  }
+};
 
 /**
  * Helper to parse cookies from Header
@@ -50,7 +72,7 @@ const authenticate = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Validate blacklist (JTI revocation)
-    if (decoded.jti && tokenBlacklist.has(decoded.jti)) {
+    if (decoded.jti && await tokenBlacklist.has(decoded.jti)) {
       return res.status(401).json({ error: 'Sesi Anda telah berakhir. Silakan login kembali.' });
     }
 

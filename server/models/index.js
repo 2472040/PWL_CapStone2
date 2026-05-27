@@ -13,6 +13,7 @@ const MaintenanceBhp = require('./MaintenanceBhp');
 const Receiving = require('./Receiving');
 const Label = require('./Label');
 const AuditLog = require('./AuditLog');
+const RevokedToken = require('./RevokedToken');
 
 // =============================================
 // Associations
@@ -88,4 +89,5 @@ module.exports = {
   Receiving,
   Label,
   AuditLog,
+  RevokedToken,
 };

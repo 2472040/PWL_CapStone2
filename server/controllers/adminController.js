@@ -250,6 +250,13 @@ const verifyAuditChain = async (req, res) => {
     }
 
     if (issues.length > 0) {
+      console.error('\n⚠️🚨 [SECURITY WARNING] DETEKSI MANIPULASI AUDIT LOG! 🚨⚠️');
+      console.error(`Ditemukan ${issues.length} masalah integritas data pada audit log.`);
+      issues.forEach(issue => {
+        console.error(`  - Log ID ${issue.id} [${issue.action}]: ${issue.error}`);
+      });
+      console.error('======================================================\n');
+
       return res.json({
         valid: false,
         issuesCount: issues.length,
