@@ -61,6 +61,15 @@ const login = async (req, res) => {
       maxAge: 30 * 60 * 1000 // 30 minutes
     });
 
+    // Set CSRF Cookie (Double Submit Cookie Pattern - must be accessible via JS)
+    const csrfToken = crypto.randomBytes(32).toString('hex');
+    res.cookie('csrfToken', csrfToken, {
+      httpOnly: false, // Read by frontend React
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 30 * 60 * 1000 // 30 minutes
+    });
+
     clearLoginAttempts(req.ip, email);
     await logAudit(user.id, 'auth.login', user.email, req.ip);
 
@@ -163,7 +172,7 @@ const logout = async (req, res) => {
       try {
         const decoded = jwt.decode(token);
         if (decoded && decoded.jti) {
-          tokenBlacklist.add(decoded.jti);
+          await tokenBlacklist.add(decoded.jti, new Date(decoded.exp * 1000));
         }
       } catch (e) {
         console.error('[Logout Blacklist Decode Error]', e.message);
@@ -180,6 +189,13 @@ const logout = async (req, res) => {
     // Clear HttpOnly Cookie
     res.clearCookie('token', {
       httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax'
+    });
+
+    // Clear CSRF Cookie
+    res.clearCookie('csrfToken', {
+      httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax'
     });

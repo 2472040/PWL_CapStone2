@@ -10,7 +10,16 @@ const ALGORITHM = 'aes-256-gcm';
 
 // Derives a secure 32-byte encryption key using scrypt and a dynamic or fallback salt
 const getEncryptionKey = (saltHex) => {
-  const secret = process.env.BACKUP_ENCRYPTION_SECRET || process.env.JWT_SECRET || 'lokalab-default-backup-secret-key-2026';
+  const secret = process.env.BACKUP_ENCRYPTION_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('BACKUP_ENCRYPTION_SECRET wajib diatur di lingkungan produksi.');
+    }
+    // Dev fallback
+    const fallbackSecret = process.env.JWT_SECRET || 'lokalab-default-backup-secret-key-2026';
+    const salt = saltHex ? Buffer.from(saltHex, 'hex') : 'loka-backup-salt-v2';
+    return crypto.scryptSync(fallbackSecret, salt, 32);
+  }
   const salt = saltHex ? Buffer.from(saltHex, 'hex') : 'loka-backup-salt-v2';
   return crypto.scryptSync(secret, salt, 32);
 };

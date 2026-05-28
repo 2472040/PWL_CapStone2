@@ -24,6 +24,10 @@ const AuditLog = sequelize.define('AuditLog', {
     type: DataTypes.STRING(45),
     allowNull: true,
   },
+  details: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
   hash: {
     type: DataTypes.STRING(64),
     allowNull: true,

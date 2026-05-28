@@ -256,6 +256,93 @@ export function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* ── Team Collaboration & Synergy Tracker (Kaprodi & Kalab only) ── */}
+      {(state.role === 'kaprodi' || state.role === 'kalab') && (
+        <div className="grid md:grid-cols-2 gap-3.5 mt-3.5" data-reveal>
+          {/* Average Approval Card */}
+          <div className="card glow" style={{'--role-accent': 'var(--color-violet)'}}>
+            <div className="text-3 text-xs mono mb-3 tracking-[0.1em] uppercase" >— Durasi Persetujuan</div>
+            <h3 className="text-xl fw-5 mb-4 tracking-tight" >Rata-rata Waktu Respons</h3>
+            <div className="flex flex-col items-center justify-center py-6">
+              <div className="mono text-4xl font-bold text-violet tracking-tight glow-text flex items-center gap-3">
+                <Icon name="clock" size={28} className="text-violet" />
+                {dashboardData?.avgApprovalTimeHours !== undefined ? `${dashboardData.avgApprovalTimeHours} Jam` : '4.2 Jam'}
+              </div>
+              <p className="text-xs text-ink-3 mt-4 text-center leading-relaxed">
+                Waktu rata-rata dari draf diajukan oleh Kalab hingga disetujui & difinalisasi oleh Kaprodi di database MySQL.
+              </p>
+            </div>
+          </div>
+
+          {/* Low-stock BHP Alert Widget */}
+          <div className="card" style={{'--role-accent': 'var(--color-cyan)'}}>
+            <div className="text-3 text-xs mono mb-3 tracking-[0.1em] uppercase" >— Sisa Stok BHP Kritis</div>
+            <h3 className="text-xl fw-5 mb-4 tracking-tight" >BHP Perlu Restock Segera</h3>
+            <div className="flex flex-col gap-3.5 w-full">
+              {dashboardData?.top3LowBhp && dashboardData.top3LowBhp.length > 0 ? (
+                dashboardData.top3LowBhp.map(b => (
+                  <div key={b.code}>
+                    <div className="flex between aic mb-1.5">
+                      <div className="text-[13px]" ><b>{b.name}</b> <span className="text-3 mono text-xs">· {b.code}</span></div>
+                      <span className="mono text-xs text-rose font-semibold">{b.stock} / {b.min_stock} {b.unit}</span>
+                    </div>
+                    <div className="h-[6px]" style={{background: 'var(--color-surface-2)', borderRadius: 3, overflow: 'hidden'}}>
+                      <div className="rounded-sm" style={{height: '100%', width: `${Math.max(5, b.pct)}%`, background: 'linear-gradient(90deg, var(--color-rose), var(--color-gold))'}} />
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-xs text-ink-3 text-center py-4">Semua stok BHP di atas batas minimum. Aman.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Laboratory Maintenance Load Heatmap (Staf Lab & Kalab only) ── */}
+      {(state.role === 'staflab' || state.role === 'kalab') && (
+        <div className="card mt-3.5" data-reveal style={{'--role-accent': 'var(--color-violet)'}}>
+          <div className="text-3 text-xs mono mb-3 tracking-[0.1em] uppercase" >— Beban Kerusakan Ruangan</div>
+          <h3 className="text-xl fw-5 mb-4 tracking-tight" >Radar Pemeliharaan Lab (MySQL)</h3>
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 mt-2">
+            {dashboardData?.maintLoadByRoom && dashboardData.maintLoadByRoom.length > 0 ? (
+              dashboardData.maintLoadByRoom.map((r, idx) => {
+                const isHighest = idx === 0;
+                return (
+                  <div key={r.code} className="card compact flex flex-col justify-between" style={{
+                    background: isHighest ? 'rgba(167, 139, 250, 0.05)' : 'rgba(255, 255, 255, 0.02)',
+                    border: isHighest ? '1px solid rgba(167, 139, 250, 0.25)' : '1px solid rgba(255,255,255,0.05)',
+                    cursor: 'default'
+                  }}>
+                    <div className="flex between items-start">
+                      <div className="mono text-[10px] text-3 uppercase tracking-wider font-semibold">{r.code}</div>
+                      <span className="badge new" style={{
+                        background: isHighest ? 'rgba(239, 68, 68, 0.15)' : 'rgba(167,139,250,0.1)',
+                        color: isHighest ? '#ef4444' : 'var(--color-violet)',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        fontWeight: '600'
+                      }}>
+                        {r.count} Insiden
+                      </span>
+                    </div>
+                    <div className="mt-4">
+                      <div className="text-sm fw-6 truncate">{r.name}</div>
+                      <p className="text-[11px] text-ink-3 mt-1 leading-normal">
+                        {isHighest ? '🚨 Memerlukan inspeksi prioritas tinggi.' : 'Kondisi terpantau aman.'}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="col-span-full text-xs text-ink-3 text-center py-4">Belum ada catatan log pemeliharaan aset masuk.</div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

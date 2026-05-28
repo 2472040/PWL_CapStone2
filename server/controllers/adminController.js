@@ -204,17 +204,17 @@ const getAuditLogs = async (req, res) => {
   }
 };
 
-/**
- * GET /api/audit-logs/verify
- * Verifies integrity of the audit logs chain using HMAC-SHA256
- */
 const verifyAuditChain = async (req, res) => {
   try {
     const logs = await AuditLog.findAll({
       order: [['id', 'ASC']],
     });
 
-    const secret = process.env.AUDIT_LOG_SECRET || 'lokalab-default-audit-secret-key-2026';
+    const secret = process.env.AUDIT_LOG_SECRET;
+    if (!secret && process.env.NODE_ENV === 'production') {
+      throw new Error('AUDIT_LOG_SECRET wajib diatur di lingkungan produksi.');
+    }
+    const activeSecret = secret || 'lokalab-default-audit-secret-key-2026';
     let previousHash = '0000000000000000000000000000000000000000000000000000000000000000';
     const issues = [];
 
@@ -223,9 +223,9 @@ const verifyAuditChain = async (req, res) => {
       // Convert DATETIME to unix seconds string to avoid TZ / millisecond formatting issues
       const timeSecs = Math.floor(new Date(log.created_at || log.createdAt).getTime() / 1000).toString();
 
-      // Compute expected HMAC hash
-      const dataToHash = `${previousHash}|${timeSecs}|${log.user_id || ''}|${log.action}|${log.target || ''}|${log.ip || ''}`;
-      const computedHash = crypto.createHmac('sha256', secret).update(dataToHash).digest('hex');
+      // Compute expected HMAC hash including details
+      const dataToHash = `${previousHash}|${timeSecs}|${log.user_id || ''}|${log.action}|${log.target || ''}|${log.ip || ''}|${log.details || ''}`;
+      const computedHash = crypto.createHmac('sha256', activeSecret).update(dataToHash).digest('hex');
 
       // 1. Verify previous_hash link (except for genesis log if it has null previous_hash)
       if (log.previous_hash && log.previous_hash !== previousHash) {

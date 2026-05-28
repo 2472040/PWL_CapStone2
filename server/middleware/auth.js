@@ -8,20 +8,43 @@ const tokenBlacklist = {
       const found = await RevokedToken.findOne({ where: { jti } });
       return !!found;
     } catch (e) {
-      console.error('[Blacklist Has Error]', e.message);
-      return false;
+      console.error('[Blacklist Has Error] Database error - treating as revoked (fail-closed):', e.message);
+      return true; // Fail-closed: block access if JTI check fails
     }
   },
   add: async (jti, expiresAt) => {
     try {
+      let expiry = expiresAt;
+      if (typeof expiresAt === 'number') {
+        expiry = new Date(expiresAt * 1000);
+      } else if (!expiresAt) {
+        expiry = new Date(Date.now() + 30 * 60 * 1000); // Default 30 minutes
+      }
       await RevokedToken.create({
         jti,
-        expires_at: expiresAt || new Date(Date.now() + 30 * 60 * 1000) // Default 30 minutes
+        expires_at: expiry
       });
     } catch (e) {
       if (e.name !== 'SequelizeUniqueConstraintError') {
         console.error('[Blacklist Add Error]', e.message);
       }
+    }
+  },
+  cleanup: async () => {
+    try {
+      const { Op } = require('sequelize');
+      const deletedCount = await RevokedToken.destroy({
+        where: {
+          expires_at: {
+            [Op.lt]: new Date()
+          }
+        }
+      });
+      if (deletedCount > 0) {
+        console.log(`🧹 [Blacklist Cleanup] Berhasil menghapus ${deletedCount} token kedaluwarsa.`);
+      }
+    } catch (e) {
+      console.error('[Blacklist Cleanup Error]', e.message);
     }
   }
 };
@@ -53,8 +76,8 @@ const authenticate = async (req, res, next) => {
       token = cookies.token || null;
     }
 
-    // 2. Fallback to Bearer Authorization header
-    if (!token) {
+    // 2. Fallback to Bearer Authorization header (Blocked in production to reduce attack surface)
+    if (!token && process.env.NODE_ENV !== 'production') {
       const authHeader = req.headers.authorization;
       if (authHeader && authHeader.startsWith('Bearer ')) {
         const bearerToken = authHeader.split(' ')[1];
