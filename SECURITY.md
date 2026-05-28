@@ -18,9 +18,10 @@
 8. [Security Headers & CORS](#8-security-headers--cors)
 9. [Proteksi Frontend](#9-proteksi-frontend)
 10. [Pemisahan Kunci Rahasia](#10-pemisahan-kunci-rahasia)
-11. [Pengujian Keamanan](#11-pengujian-keamanan)
-12. [Pemetaan Kepatuhan Standar](#12-pemetaan-kepatuhan-standar)
-13. [Rekomendasi untuk Produksi](#13-rekomendasi-untuk-produksi)
+11. [Validasi Zod, Transaksi ACID & Winston Logger](#11-validasi-zod-transaksi-acid--winston-logger)
+12. [Pengujian Keamanan](#12-pengujian-keamanan)
+13. [Pemetaan Kepatuhan Standar](#13-pemetaan-kepatuhan-standar)
+14. [Rekomendasi untuk Produksi](#14-rekomendasi-untuk-produksi)
 
 ---
 
@@ -35,10 +36,13 @@ LokaLab menerapkan pendekatan keamanan **defense-in-depth** (pertahanan berlapis
 | **Pembatalan Sesi** | Persistent JTI Blacklist (MySQL) + Token Version | ✅ Aktif |
 | **Enkripsi Data** | AES-256-GCM + Dynamic Salt KDF (scrypt) | ✅ Aktif |
 | **Audit Trail** | Tamper-Evident HMAC-SHA256 Hash Chaining | ✅ Aktif |
-| **HTTP Headers** | CSP, X-Frame-Options, nosniff, Referrer-Policy | ✅ Aktif |
+| **HTTP Headers** | Helmet + CSP, X-Frame-Options, nosniff, Referrer-Policy | ✅ Aktif |
 | **CORS** | Strict Origin + Credentials | ✅ Aktif |
 | **Frontend** | Auto-logout 401, Validasi Upload, Cookie Credentials | ✅ Aktif |
 | **Kunci Rahasia** | 3 kunci terpisah (JWT, Backup, Audit) | ✅ Aktif |
+| **Validasi Input** | Zod Schema Validation (Frontend & Backend) | ✅ Aktif (Procurement) |
+| **Konsistensi Transaksi** | Sequelize ACID Transactions | ✅ Aktif (Procurement/Maintenance) |
+| **Structured Logging** | Winston Daily Rotate File (JSON logs) | ✅ Aktif |
 
 ---
 
@@ -988,7 +992,30 @@ Untuk menjamin keamanan tingkat industri, LokaLab menerapkan **kebijakan nihil-f
 
 ---
 
-## 11. Pengujian Keamanan
+## 11. Validasi Zod, Transaksi ACID & Winston Logger
+
+### 11.1 Validasi Input Terpadu (Zod Validation)
+
+Untuk memitigasi risiko *data injection* dan penolakan data malformed, LokaLab menerapkan **Validasi Skema Zod** secara terpadu baik di sisi client (frontend) maupun server (backend):
+- **Frontend (`src/schemas/procurementSchema.js` & `NewDraftForm.jsx`)**: Melakukan pemeriksaan validasi awal di peramban menggunakan `createDraftSchema.safeParse`. Jika masukan tidak valid, form tidak akan dikirim dan pesan kesalahan spesifik akan langsung dimunculkan melalui `toast`.
+- **Backend (`server/schemas/procurement.js` & `server/middleware/validation.js`)**: Menerapkan middleware kustom `validate(schema)` sebelum memproses rute krusial. Middleware secara otomatis menangkap `ZodError` dan membalas dengan status `400 Bad Request` beserta deskripsi kolom yang bermasalah.
+
+### 11.2 Konsistensi Database Tingkat Tinggi (Sequelize ACID Transactions)
+
+Logika mutasi multi-baris di dalam rute pengadaan (`procurementController.js`) diamankan menggunakan **Sequelize Transactions (`sequelize.transaction()`)**:
+- **Alur `createDraft`**: Pembuatan record `Draft` dan bulk-insert barang (`DraftItem.bulkCreate`) dieksekusi di dalam lingkup satu transaksi tunggal. Jika penyimpanan salah satu item gagal, seluruh operasi dibatalkan secara otomatis (*rollback*), sehingga database bebas dari draf kosong (*orphan records*).
+- **Alur `approveDraftItems`**: Persetujuan multi-item oleh Kaprodi diamankan di bawah kontrol transaksi atomik agar perubahan status tidak tersimpan setengah-setengah.
+
+### 11.3 Enterprise Structured Logging (Winston & Daily Rotate File)
+
+Untuk memenuhi kepatuhan audit sistem informasi dan pemantauan kesalahan aktif, sistem logging beralih dari `console.log` tidak terstruktur ke sistem **Winston Structured Logger** (`server/utils/logger.js`):
+- **Request Logger**: Middleware `requestLogger` di `server/app.js` secara otomatis melacak setiap request HTTP masuk, durasi response dalam `ms`, status HTTP, alamat IP klien, browser User-Agent, serta user ID & role yang terautentikasi.
+- **JSON Daily Rolling Log File**: Log disimpan harian ke berkas fisik `server/logs/app-YYYY-MM-DD.log` (level info) dan `server/logs/error-YYYY-MM-DD.log` (level error) dengan format JSON terkompresi bergulir otomatis (retensi 14 hari).
+- **Global Error Logging**: Log stack trace kesalahan Express global otomatis ditangkap menggunakan `logger.error` untuk konsistensi investigasi Sysadmin.
+
+---
+
+## 12. Pengujian Keamanan
 
 **File**: `server/tests/security.test.cjs`
 
@@ -1034,7 +1061,7 @@ node server/tests/security.test.cjs
 
 ---
 
-## 12. Pemetaan Kepatuhan Standar
+## 13. Pemetaan Kepatuhan Standar
 
 ### OWASP Top 10:2025
 
@@ -1063,7 +1090,7 @@ node server/tests/security.test.cjs
 
 ---
 
-## 13. Rekomendasi untuk Produksi
+## 14. Rekomendasi untuk Produksi
 
 Berikut peningkatan yang **disarankan** jika LokaLab akan di-deploy ke lingkungan produksi tingkat lanjut:
 
@@ -1081,7 +1108,7 @@ Berikut peningkatan yang **disarankan** jika LokaLab akan di-deploy ke lingkunga
 |---|---|---|
 | 5 | **Upgrade ke Argon2id** | bcrypt bagus, Argon2id lebih baik (rekomendasi utama OWASP). Gunakan package `argon2` |
 | 6 | **Refresh Token** | Access token 15m + Refresh token (HttpOnly cookie, 7 hari) untuk UX lebih baik |
-| 7 | **Input validation library** | Gunakan `joi` atau `zod` untuk validasi input yang lebih ketat di semua endpoint |
+| 7 | **Input validation library (Terintegrasi)** | Pustaka `zod` telah sukses diintegrasikan pada alur pengadaan barang (baik sisi frontend maupun backend via middleware) untuk menjamin validitas data input secara ketat. |
 | 8 | **Monitoring & alerting** | Kirim notifikasi saat audit chain verification gagal |
 
 ### Prioritas Rendah
