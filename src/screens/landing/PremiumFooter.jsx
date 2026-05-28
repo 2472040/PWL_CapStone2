@@ -10,7 +10,7 @@ export default function PremiumFooter() {
           {/* Brand Column */}
           <div className="md:col-span-1">
             <div className="flex items-center gap-2 mb-6">
-              <div className="w-3 h-3 rounded-full bg-gradient-to-tr from-[#6366F1] to-[#D69DDE]" />
+              <img src="/assets/loka_lab.png" alt="Loka Lab" style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }} />
               <span className="text-xl font-semibold text-white tracking-tight">Loka <span className="font-normal text-[#A1A1AA]">· Lab Suite</span></span>
             </div>
             <p className="text-sm leading-relaxed mb-6">

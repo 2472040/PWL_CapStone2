@@ -47,7 +47,7 @@ export function Sparkline() {
   );
 }
 
-export default function HeroSection() {
+export default function HeroSection({ onEnterApp }) {
   const [tab, setTab] = useState('draft');
   const previewRef = useRef(null);
   const bodyRef = useRef(null);
@@ -97,16 +97,9 @@ export default function HeroSection() {
         Sistem terintegrasi untuk Kepala Lab, Kaprodi, Staf Administrasi, dan Staf Lab — dari draf pengadaan tahunan, approval per-item, sampai log maintenance dan stok BHP yang menyusut otomatis.
       </p>
       <div className="au-hero-ctas">
-        <ShinyButton onClick={() => window.location.href='#bento-features'}>
-          Mulai uji coba &rarr;
+        <ShinyButton onClick={onEnterApp}>
+          Sign In &rarr;
         </ShinyButton>
-        <button className="au-btn au-btn-outline" onClick={() => window.location.href='#bento-features'}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="m10 8 6 4-6 4Z"/>
-          </svg>
-          Lihat dokumentasi
-        </button>
       </div>
 
       <div style={{ position: 'relative' }}>

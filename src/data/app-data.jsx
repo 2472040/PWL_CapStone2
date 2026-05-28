@@ -43,6 +43,7 @@
       { id: 'dashboard',  label: 'Dashboard', icon: 'grid' },
       { id: 'receiving',  label: 'Penerimaan', icon: 'truck', badge: 8 },
       { id: 'inventaris', label: 'Inventaris', icon: 'box' },
+      { id: 'bhp',        label: 'Stok BHP', icon: 'flask' },
       { id: 'labels',     label: 'Cetak label', icon: 'qr' },
     ],
     staflab: [

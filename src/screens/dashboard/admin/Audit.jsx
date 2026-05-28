@@ -33,35 +33,59 @@ export function Audit() {
       return;
     }
     
-    // CSV headers
-    const headers = ['ID', 'User ID', 'Nama Pengguna', 'Aksi', 'Target', 'IP Address', 'Detail', 'Hash', 'Previous Hash', 'Waktu'];
-    
-    // CSV rows
-    const rows = logs.map(l => [
-      l.id,
-      l.user_id || '',
-      `"${(l.User?.name || 'Sistem').replace(/"/g, '""')}"`,
-      l.action,
-      `"${(l.target || '').replace(/"/g, '""')}"`,
-      l.ip || '',
-      `"${(l.details || '').replace(/"/g, '""')}"`,
-      l.hash || '',
-      l.previous_hash || '',
-      new Date(l.created_at).toISOString()
-    ]);
-    
-    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `lokalab_audit_logs_${new Date().toISOString().substring(0, 10)}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    toast('Audit log berhasil diekspor ke CSV!', 'ok');
+    try {
+      // CSV headers
+      const headers = ['ID', 'User ID', 'Nama Pengguna', 'Aksi', 'Target', 'IP Address', 'Detail', 'Hash', 'Previous Hash', 'Waktu'];
+      
+      const parseDate = (d) => {
+        if (!d) return '';
+        const date = new Date(d);
+        return isNaN(date.getTime()) ? String(d) : date.toISOString();
+      };
+
+      // CSV rows
+      const rows = logs.map(l => {
+        const userName = l.User?.name || 'Sistem';
+        const cleanName = String(userName).replace(/"/g, '""');
+        const cleanTarget = String(l.target || '').replace(/"/g, '""');
+        const cleanDetails = String(l.details || '').replace(/"/g, '""');
+        const actionStr = l.action ? String(l.action).replace(/"/g, '""') : '';
+        const ipStr = l.ip ? String(l.ip).replace(/"/g, '""') : '';
+        const hashStr = l.hash ? String(l.hash).replace(/"/g, '""') : '';
+        const prevHashStr = l.previous_hash ? String(l.previous_hash).replace(/"/g, '""') : '';
+        
+        const timestamp = l.created_at ? parseDate(l.created_at) : (l.createdAt ? parseDate(l.createdAt) : '');
+
+        return [
+          l.id,
+          l.user_id || '',
+          `"${cleanName}"`,
+          `"${actionStr}"`,
+          `"${cleanTarget}"`,
+          `"${ipStr}"`,
+          `"${cleanDetails}"`,
+          `"${hashStr}"`,
+          `"${prevHashStr}"`,
+          `"${timestamp}"`
+        ];
+      });
+      
+      const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `lokalab_audit_logs_${new Date().toISOString().substring(0, 10)}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast('Audit log berhasil diekspor ke CSV!', 'ok');
+    } catch (err) {
+      console.error(err);
+      toast('Gagal mengekspor audit log CSV: ' + err.message, 'warn');
+    }
   }
 
   const formattedLogs = useMemo(() => {

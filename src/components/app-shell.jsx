@@ -310,7 +310,7 @@ function Sidebar() {
       aria-label="Menu utama"
     >
       <div className="sb-brand" data-sb-anim>
-        <div className="sb-brand-dot" aria-hidden="true" />
+        <img src="/assets/loka_lab.png" alt="Loka Lab" className="sb-brand-dot" aria-hidden="true" />
         <div>
           <div className="sb-brand-name">Loka</div>
           <div className="sb-brand-sub">// lab inv. 2.0</div>
@@ -486,9 +486,39 @@ function Drawer() {
   const backdropRef = useRef();
   const drawer = state.drawer;
 
+  const [activeDrawer, setActiveDrawer] = useState(null);
+  const [isClosing, setIsClosing] = useState(false);
+
+  // Sync state.drawer to activeDrawer
+  useEffect(() => {
+    if (drawer) {
+      setActiveDrawer(drawer);
+      setIsClosing(false);
+    } else if (activeDrawer) {
+      setIsClosing(true);
+      if (window.gsap && ref.current && backdropRef.current) {
+        window.gsap.killTweensOf([ref.current, backdropRef.current]);
+        window.gsap.to(backdropRef.current, { opacity: 0, duration: 0.25, ease: 'power3.inOut' });
+        window.gsap.to(ref.current, { 
+          x: 80, 
+          opacity: 0, 
+          duration: 0.3, 
+          ease: 'power3.inOut',
+          onComplete: () => {
+            setActiveDrawer(null);
+            setIsClosing(false);
+          }
+        });
+      } else {
+        setActiveDrawer(null);
+        setIsClosing(false);
+      }
+    }
+  }, [drawer]);
+
   // Focus trap
   useEffect(() => {
-    if (!drawer || !ref.current) return;
+    if (!activeDrawer || isClosing || !ref.current) return;
     const drawerEl = ref.current;
     const focusable = drawerEl.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
     const first = focusable[0];
@@ -507,21 +537,23 @@ function Drawer() {
     };
     drawerEl.addEventListener('keydown', trap);
     return () => drawerEl.removeEventListener('keydown', trap);
-  }, [drawer]);
+  }, [activeDrawer, isClosing]);
 
+  // Entrance animation
   useEffect(() => {
     if (!drawer || !window.gsap) return;
+    window.gsap.killTweensOf([ref.current, backdropRef.current]);
     window.gsap.fromTo(backdropRef.current, { opacity: 0 }, { opacity: 1, duration: 0.25, ease: 'power3.out' });
     window.gsap.fromTo(ref.current, { x: 80, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: 'power3.out' });
   }, [drawer]);
 
-  if (!drawer) return null;
-  const Comp = DrawerContent[drawer.kind];
+  if (!activeDrawer) return null;
+  const Comp = DrawerContent[activeDrawer.kind];
   return (
     <>
       <div ref={backdropRef} className="modal-backdrop" onClick={() => dispatch({ type: 'CLOSE_DRAWER' })} aria-hidden="true" />
       <div ref={ref} className="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
-        {Comp && <Comp payload={drawer.payload} close={() => dispatch({ type: 'CLOSE_DRAWER' })} />}
+        {Comp && <Comp payload={activeDrawer.payload} close={() => dispatch({ type: 'CLOSE_DRAWER' })} />}
       </div>
     </>
   );
@@ -534,9 +566,42 @@ function Modal() {
   const { state, dispatch } = useStore();
   const ref = useRef();
   const backdropRef = useRef();
+  const modal = state.modal;
 
+  const [activeModal, setActiveModal] = useState(null);
+  const [isClosing, setIsClosing] = useState(false);
+
+  // Sync state.modal to activeModal
   useEffect(() => {
-    if (!state.modal || !ref.current) return;
+    if (modal) {
+      setActiveModal(modal);
+      setIsClosing(false);
+    } else if (activeModal) {
+      setIsClosing(true);
+      if (window.gsap && ref.current && backdropRef.current) {
+        window.gsap.killTweensOf([ref.current, backdropRef.current]);
+        window.gsap.to(backdropRef.current, { opacity: 0, duration: 0.2, ease: 'power3.inOut' });
+        window.gsap.to(ref.current, { 
+          y: 20, 
+          scale: 0.95, 
+          opacity: 0, 
+          duration: 0.25, 
+          ease: 'power3.inOut',
+          onComplete: () => {
+            setActiveModal(null);
+            setIsClosing(false);
+          }
+        });
+      } else {
+        setActiveModal(null);
+        setIsClosing(false);
+      }
+    }
+  }, [modal]);
+
+  // Focus trap
+  useEffect(() => {
+    if (!activeModal || isClosing || !ref.current) return;
     const modalEl = ref.current;
     const focusable = modalEl.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
     const first = focusable[0];
@@ -555,21 +620,23 @@ function Modal() {
     };
     modalEl.addEventListener('keydown', trap);
     return () => modalEl.removeEventListener('keydown', trap);
-  }, [state.modal]);
+  }, [activeModal, isClosing]);
 
+  // Entrance animation
   useEffect(() => {
-    if (!state.modal || !window.gsap) return;
+    if (!modal || !window.gsap) return;
+    window.gsap.killTweensOf([ref.current, backdropRef.current]);
     window.gsap.fromTo(backdropRef.current, { opacity: 0 }, { opacity: 1, duration: 0.25, ease: 'power3.out' });
     window.gsap.fromTo(ref.current, { y: 20, scale: 0.95, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.35, ease: 'power3.out' });
-  }, [state.modal]);
+  }, [modal]);
 
-  if (!state.modal) return null;
-  const Comp = ModalContent[state.modal.kind];
+  if (!activeModal) return null;
+  const Comp = ModalContent[activeModal.kind];
   return (
     <>
       <div ref={backdropRef} className="modal-backdrop z-[95]" onClick={() => dispatch({ type: 'CLOSE_MODAL' })} aria-hidden="true" />
       <div ref={ref} className="modal-center z-[96]" role="dialog" aria-modal="true">
-        {Comp && <Comp payload={state.modal.payload} close={() => dispatch({ type: 'CLOSE_MODAL' })} />}
+        {Comp && <Comp payload={activeModal.payload} close={() => dispatch({ type: 'CLOSE_MODAL' })} />}
       </div>
     </>
   );

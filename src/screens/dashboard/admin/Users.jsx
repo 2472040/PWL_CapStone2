@@ -64,33 +64,66 @@ export function Users() {
       return;
     }
     
-    // CSV headers
-    const headers = ['ID', 'Nama', 'Email', 'Role', 'Status', 'Initials', 'Login Terakhir', 'Dibuat Pada'];
-    
-    // CSV rows
-    const rows = state.users.map(u => [
-      u.id,
-      `"${u.name.replace(/"/g, '""')}"`,
-      u.email,
-      u.role,
-      u.status,
-      u.initials || '',
-      u.last_login ? new Date(u.last_login).toISOString() : 'belum pernah',
-      u.created_at ? new Date(u.created_at).toISOString() : ''
-    ]);
-    
-    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `lokalab_users_${new Date().toISOString().substring(0, 10)}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    toast('Data pengguna berhasil diekspor ke CSV!', 'ok');
+    try {
+      // CSV headers
+      const headers = ['ID', 'Nama', 'Email', 'Role', 'Status', 'Initials', 'Login Terakhir', 'Dibuat Pada'];
+      
+      const parseDate = (d) => {
+        if (!d) return '';
+        const date = new Date(d);
+        return isNaN(date.getTime()) ? String(d) : date.toISOString();
+      };
+
+      // CSV rows
+      const rows = state.users.map(u => {
+        const nameStr = u.name ? String(u.name).replace(/"/g, '""') : '';
+        const emailStr = u.email ? String(u.email).replace(/"/g, '""') : '';
+        const roleStr = u.role ? String(u.role).replace(/"/g, '""') : '';
+        const statusStr = u.status ? String(u.status).replace(/"/g, '""') : '';
+        const initialsStr = u.initials ? String(u.initials).replace(/"/g, '""') : '';
+        
+        let lastLoginStr = 'belum pernah';
+        if (u.last_login) {
+          lastLoginStr = parseDate(u.last_login);
+        } else if (u.lastLogin) {
+          lastLoginStr = parseDate(u.lastLogin);
+        }
+
+        let createdAtStr = '';
+        if (u.createdAt) {
+          createdAtStr = parseDate(u.createdAt);
+        } else if (u.created_at) {
+          createdAtStr = parseDate(u.created_at);
+        }
+
+        return [
+          u.id,
+          `"${nameStr}"`,
+          `"${emailStr}"`,
+          `"${roleStr}"`,
+          `"${statusStr}"`,
+          `"${initialsStr}"`,
+          `"${lastLoginStr}"`,
+          `"${createdAtStr}"`
+        ];
+      });
+      
+      const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `lokalab_users_${new Date().toISOString().substring(0, 10)}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast('Data pengguna berhasil diekspor ke CSV!', 'ok');
+    } catch (err) {
+      console.error(err);
+      toast('Gagal mengekspor CSV: ' + err.message, 'warn');
+    }
   }
 
   return (

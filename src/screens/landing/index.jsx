@@ -225,8 +225,8 @@ export default function AuroraSite({ onEnterApp }) {
       <div className="au-grain" />
 
       <div className="au-layer">
-        <Nav onEnterApp={onEnterApp} />
-        <HeroSection />
+        <Nav />
+        <HeroSection onEnterApp={onEnterApp} />
         <AdvancedMarquee />
         <RolesSection />
         <FlowSection
@@ -249,11 +249,11 @@ export default function AuroraSite({ onEnterApp }) {
   );
 }
 
-function Nav({ onEnterApp }) {
+function Nav() {
   return (
     <nav className="au-nav">
       <div className="au-brand">
-        <div className="au-brand-dot" />
+        <img src="/assets/loka_lab.png" alt="Loka Lab" className="au-brand-dot" />
         <span>Loka</span>
         <span style={{ color: 'var(--ink-3)', fontWeight: 400, fontSize: 12, marginLeft: 4 }}>· Lab Suite</span>
       </div>
@@ -264,10 +264,7 @@ function Nav({ onEnterApp }) {
         <a>Inventaris</a>
         <a>Harga</a>
       </div>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <a onClick={onEnterApp} style={{ fontSize: 13, color: 'var(--ink-2)', cursor: 'pointer', padding: '6px 12px' }}>Sign in</a>
-        <button className="au-nav-cta" onClick={onEnterApp}>Mulai uji coba →</button>
-      </div>
+      <div style={{ width: 80 }} />
     </nav>
   );
 }
@@ -277,13 +274,6 @@ function CTA() {
     <AuRise as="section" className="au-cta">
       <h2 className="au-cta-h">Inventaris yang akhirnya<br/><em>ngomong sendiri.</em></h2>
       <p className="au-cta-sub">Coba gratis 30 hari untuk satu prodi. Tanpa kartu kredit. Migrasi data dibantu.</p>
-      <div className="au-cta-btns">
-        <button className="au-btn-primary">
-          Mulai uji coba
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
-        </button>
-        <button className="au-btn-ghost">Jadwalkan demo</button>
-      </div>
     </AuRise>
   );
 }
@@ -292,7 +282,7 @@ function Foot() {
   return (
     <footer className="au-foot">
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div className="au-brand-dot" style={{ width: 18, height: 18 }} />
+        <img src="/assets/loka_lab.png" alt="Loka Lab" className="au-brand-dot" style={{ width: 18, height: 18 }} />
         <span>© 2026 Loka Lab Suite · Dibuat di Bandung</span>
       </div>
       <div className="au-foot-links">

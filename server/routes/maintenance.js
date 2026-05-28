@@ -8,9 +8,9 @@ router.use(authenticate);
 router.get('/maintenance', authorize('staflab'), getMaintenanceLogs);
 router.post('/maintenance', authorize('staflab'), createMaintenance);
 
-// BHP — staf lab & kalab can view, staflab can modify
-router.get('/bhp', authorize('staflab', 'kalab'), getBhp);
-router.post('/bhp', authorize('staflab'), createBhp);
-router.put('/bhp/:id', authorize('staflab'), updateBhp);
+// BHP — staf lab & kalab & admin & sysadmin can view, staflab & admin can modify
+router.get('/bhp', authorize('staflab', 'kalab', 'admin', 'sysadmin'), getBhp);
+router.post('/bhp', authorize('staflab', 'admin'), createBhp);
+router.put('/bhp/:id', authorize('staflab', 'admin'), updateBhp);
 
 module.exports = router;

@@ -62,7 +62,7 @@
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 8px 32px rgba(0,0,0,0.3);
 }
 .au-brand { display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: -0.01em; }
-.au-brand-dot { width: 24px; height: 24px; border-radius: 50%; background: conic-gradient(from 220deg, #b794ff, #7eebd8, #ff9bb3, #b794ff); box-shadow: 0 0 18px rgba(183,148,255,0.5); }
+.au-brand-dot { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 18px rgba(183,148,255,0.3); flex-shrink: 0; }
 .au-nav-links { display: flex; gap: 4px; font-size: 13px; color: var(--ink-2); }
 .au-nav-links a { color: inherit; text-decoration: none; padding: 6px 12px; border-radius: 999px; transition: all 0.2s; cursor: pointer; }
 .au-nav-links a:hover { background: var(--glass-2); color: var(--ink); }
@@ -711,34 +711,51 @@
   width: 100%; min-height: 100vh;
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
-  background: #08070d;
+  background: #07060a;
   font-family: 'Inter', system-ui, sans-serif;
-  --bg: #08070d; --ink: #f4f1ea;
+  --bg: #07060a; --ink: #f4f1ea;
   --ink-2: rgba(244,241,234,0.66);
   --ink-3: rgba(244,241,234,0.38);
   --line: rgba(244,241,234,0.08);
-  --line-2: rgba(244,241,234,0.14);
-  --glass: rgba(255,255,255,0.06);
-  --glass-2: rgba(255,255,255,0.1);
-  --violet: #b794ff; --cyan: #7eebd8;
-  --rose: #ff9bb3; --green: #a3e635;
+  --line-2: rgba(244,241,234,0.12);
+  --glass: rgba(255,255,255,0.04);
+  --glass-2: rgba(255,255,255,0.08);
+  --violet: #6366f1; --cyan: #2dd4bf;
+  --rose: #f43f5e; --green: #10b981;
 }
 
-/* Background blobs */
-.loka-login-bg { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
-.loka-login-blob {
-  position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.5;
-  animation: au-mesh 20s infinite alternate ease-in-out;
+/* SaaS Background Grid & Glow */
+.loka-login-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: radial-gradient(circle at 50% 50%, black 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, black 30%, transparent 80%);
+  z-index: 1;
 }
-.loka-login-blob:nth-child(1) { width: 60vw; height: 60vh; top: -20vh; left: -10vw; background: radial-gradient(circle, #6b3dff 0%, transparent 70%); }
-.loka-login-blob:nth-child(2) { width: 50vw; height: 50vh; bottom: -10vh; right: -10vw; background: radial-gradient(circle, #2dd4bf 0%, transparent 70%); animation-delay: -7s; opacity: 0.3; }
-.loka-login-blob:nth-child(3) { width: 40vw; height: 40vh; top: 30vh; left: 40vw; background: radial-gradient(circle, #ff6b9d 0%, transparent 70%); animation-delay: -12s; opacity: 0.25; }
+
+.loka-login-glow {
+  position: absolute;
+  top: -15%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 700px;
+  height: 350px;
+  background: radial-gradient(ellipse at center, rgba(99, 102, 241, 0.08) 0%, rgba(99, 102, 241, 0) 70%);
+  filter: blur(40px);
+  pointer-events: none;
+  z-index: 0;
+}
 
 /* Grain overlay */
 .loka-login-grain {
   position: absolute; inset: 0; pointer-events: none; z-index: 1;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='200' height='200' filter='url(%23n)' opacity='0.4'/></svg>");
-  opacity: 0.06; mix-blend-mode: overlay;
+  opacity: 0.03; mix-blend-mode: overlay;
 }
 
 /* Card */
@@ -746,45 +763,49 @@
   position: relative; z-index: 2;
   width: 100%; max-width: 420px;
   padding: 44px 40px 40px;
-  border-radius: 28px;
-  background: linear-gradient(145deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02));
-  backdrop-filter: blur(50px) saturate(200%);
-  -webkit-backdrop-filter: blur(50px) saturate(200%);
-  border: 1px solid var(--line-2);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 40px 80px -20px rgba(0,0,0,0.7);
+  border-radius: 20px;
+  background: rgba(13, 12, 20, 0.65);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 
+    0 0 0 1px rgba(255, 255, 255, 0.01),
+    0 20px 50px -12px rgba(0, 0, 0, 0.8),
+    0 0 80px -20px rgba(99, 102, 241, 0.05);
   animation: loka-login-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   opacity: 0;
 }
 @keyframes loka-login-in {
-  from { opacity: 0; transform: translateY(24px) scale(0.97); }
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 /* Brand */
 .loka-login-brand {
-  display: flex; align-items: center; gap: 12px;
-  margin-bottom: 32px;
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 28px;
 }
 .loka-login-dot {
   width: 28px; height: 28px; border-radius: 50%;
-  background: conic-gradient(from 220deg, #b794ff, #7eebd8, #ff9bb3, #b794ff);
-  box-shadow: 0 0 18px rgba(183,148,255,0.5);
+  object-fit: cover;
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.25);
+  flex-shrink: 0;
 }
 .loka-login-brand-text {
-  font-size: 18px; font-weight: 600; color: var(--ink);
+  font-size: 17px; font-weight: 600; color: var(--ink);
   letter-spacing: -0.01em;
 }
 .loka-login-brand-sub {
-  font-size: 11px; color: var(--ink-3); margin-left: 6px; font-weight: 400;
+  font-size: 11px; color: var(--ink-3); margin-left: 5px; font-weight: 400;
 }
 
 /* Heading */
 .loka-login-heading {
-  font-size: 26px; font-weight: 600; letter-spacing: -0.025em;
+  font-size: 24px; font-weight: 600; letter-spacing: -0.025em;
   color: var(--ink); margin: 0 0 6px;
 }
 .loka-login-subheading {
-  font-size: 14px; color: var(--ink-2); margin: 0 0 28px; line-height: 1.5;
+  font-size: 13.5px; color: var(--ink-2); margin: 0 0 24px; line-height: 1.5;
 }
 
 /* Form */
@@ -796,44 +817,46 @@
   letter-spacing: 0.02em;
 }
 .loka-login-input {
-  width: 100%; padding: 13px 16px;
-  border-radius: 14px;
-  border: 1px solid var(--line-2);
-  background: rgba(255,255,255,0.04);
+  width: 100%; padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
   color: var(--ink);
   font-size: 14px;
   font-family: inherit;
   outline: none;
-  transition: border-color 0.25s, background 0.25s, box-shadow 0.25s;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
   box-sizing: border-box;
 }
 .loka-login-input::placeholder { color: var(--ink-3); }
 .loka-login-input:focus {
-  border-color: var(--violet);
-  background: rgba(183,148,255,0.06);
-  box-shadow: 0 0 0 3px rgba(183,148,255,0.12);
+  border-color: rgba(99, 102, 241, 0.5);
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
 }
 .loka-login-input.error {
   border-color: var(--rose);
-  background: rgba(255,107,131,0.06);
-  box-shadow: 0 0 0 3px rgba(255,107,131,0.1);
+  background: rgba(244,63,94,0.06);
+  box-shadow: 0 0 0 2px rgba(244,63,94,0.15);
 }
 
 /* Submit button */
 .loka-login-btn {
-  width: 100%; padding: 14px;
-  border-radius: 14px; border: none;
-  background: var(--ink); color: var(--bg);
-  font-size: 14px; font-weight: 600;
+  width: 100%; padding: 12px;
+  border-radius: 8px; border: none;
+  background: #6366F1; color: #ffffff;
+  font-size: 14px; font-weight: 500;
   font-family: inherit;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+  transition: all 0.2s;
   display: flex; align-items: center; justify-content: center; gap: 8px;
   margin-top: 4px;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
 }
 .loka-login-btn:hover:not(:disabled) {
+  background: #4F46E5;
   transform: translateY(-1px);
-  box-shadow: 0 12px 32px rgba(244,241,234,0.15);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.3);
 }
 .loka-login-btn:active:not(:disabled) { transform: translateY(0); }
 .loka-login-btn:disabled {
@@ -842,9 +865,9 @@
 
 /* Spinner */
 .loka-login-spinner {
-  width: 16px; height: 16px;
-  border: 2px solid rgba(8,7,13,0.3);
-  border-top-color: var(--bg);
+  width: 15px; height: 15px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #ffffff;
   border-radius: 50%;
   animation: loka-spin 0.6s linear infinite;
 }
@@ -853,9 +876,9 @@
 /* Error message */
 .loka-login-error {
   padding: 10px 14px;
-  border-radius: 12px;
-  background: rgba(255,107,131,0.1);
-  border: 1px solid rgba(255,107,131,0.25);
+  border-radius: 8px;
+  background: rgba(244,63,94,0.1);
+  border: 1px solid rgba(244,63,94,0.2);
   color: var(--rose);
   font-size: 13px;
   display: flex; align-items: center; gap: 8px;
@@ -863,10 +886,10 @@
 }
 @keyframes loka-shake {
   0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-6px); }
-  40% { transform: translateX(6px); }
-  60% { transform: translateX(-4px); }
-  80% { transform: translateX(4px); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
 }
 
 /* Back link */
@@ -878,6 +901,8 @@
   font-family: inherit;
   transition: color 0.2s;
   padding: 0;
+  width: 100%;
+  justify-content: center;
 }
 .loka-login-back:hover { color: var(--ink); }
 
@@ -899,20 +924,19 @@
   display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;
 }
 .loka-login-demo-btn {
-  padding: 5px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: var(--glass);
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.02);
   color: var(--ink-2);
   font-size: 11px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: inherit;
   cursor: pointer;
   transition: all 0.2s;
-  letter-spacing: 0.02em;
 }
 .loka-login-demo-btn:hover {
-  background: var(--glass-2);
-  border-color: var(--line-2);
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(99, 102, 241, 0.3);
   color: var(--ink);
 }
 
@@ -929,7 +953,7 @@
 .loka-login-toggle-pw {
   position: absolute;
   top: 50%;
-  right: 14px;
+  right: 12px;
   transform: translateY(-50%);
   background: none;
   border: none;
