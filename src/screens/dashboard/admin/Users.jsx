@@ -44,6 +44,55 @@ export function Users() {
     }
   }
 
+  async function handleDeleteUser(user) {
+    if (!confirm(`Apakah Anda yakin ingin menonaktifkan pengguna "${user.name}"? Sesi aktif pengguna akan dicabut.`)) return;
+    try {
+      await apiFetch(`/users/${user.id}`, { method: 'DELETE' });
+      const res = await apiFetch('/users');
+      if (res.data) {
+        dispatch({ type: 'SET_USERS', users: res.data });
+      }
+      toast(`Pengguna "${user.name}" berhasil dinonaktifkan.`, 'ok');
+    } catch (err) {
+      toast('Gagal menghapus pengguna: ' + err.message, 'warn');
+    }
+  }
+
+  function exportToCSV() {
+    if (state.users.length === 0) {
+      toast('Tidak ada data pengguna untuk diekspor.', 'warn');
+      return;
+    }
+    
+    // CSV headers
+    const headers = ['ID', 'Nama', 'Email', 'Role', 'Status', 'Initials', 'Login Terakhir', 'Dibuat Pada'];
+    
+    // CSV rows
+    const rows = state.users.map(u => [
+      u.id,
+      `"${u.name.replace(/"/g, '""')}"`,
+      u.email,
+      u.role,
+      u.status,
+      u.initials || '',
+      u.last_login ? new Date(u.last_login).toISOString() : 'belum pernah',
+      u.created_at ? new Date(u.created_at).toISOString() : ''
+    ]);
+    
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `lokalab_users_${new Date().toISOString().substring(0, 10)}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast('Data pengguna berhasil diekspor ke CSV!', 'ok');
+  }
+
   return (
     <div className="page" style={{'--role-accent': role.accent}}>
       <div className="page-head" data-reveal>
@@ -51,9 +100,12 @@ export function Users() {
           <h1 className="page-title">Pengguna</h1>
           <p className="page-sub">{state.users.filter(u => u.status === 'active').length} aktif · {state.users.filter(u => u.status === 'paused').length} di-pause</p>
         </div>
-        <button className="btn primary" onClick={() => dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'newUser' } })}>
-          <Icon name="plus" size={13} strokeWidth={2.4} /> Tambah pengguna
-        </button>
+        <div className="flex gap-2" >
+          <button className="btn" onClick={exportToCSV} title="Export ke CSV"><Icon name="download" size={13} /> Export CSV</button>
+          <button className="btn primary" onClick={() => dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'newUser' } })}>
+            <Icon name="plus" size={13} strokeWidth={2.4} /> Tambah pengguna
+          </button>
+        </div>
       </div>
 
       <div className="stats">
@@ -72,7 +124,7 @@ export function Users() {
 
       <div className="table-wrap" data-reveal>
         <table className="tbl">
-          <thead><tr><th>Nama</th><th>Email</th><th>Role</th><th>Status</th><th>Login terakhir</th><th></th></tr></thead>
+          <thead><tr><th>Nama</th><th>Email</th><th>Role</th><th>Status</th><th>Login terakhir</th><th>Aksi</th></tr></thead>
           <tbody>
             {filteredUsers.map(u => {
               const r = D.roles.find(x => x.id === u.role) || { short: u.role, accent: 'var(--color-primary)' };
@@ -90,8 +142,9 @@ export function Users() {
                   <td className="text-xs">{u.last_login ? new Date(u.last_login).toLocaleString('id-ID') : (u.lastLogin || 'belum pernah')}</td>
                   <td>
                     <div className="flex gap-1 justify-end" >
-                      <button className="act-btn" onClick={() => toggleStatus(u)} title="Toggle" aria-label={`Toggle status ${u.name}`}><Icon name="swap" size={12} /></button>
-                      <button className="act-btn" title="Edit" aria-label={`Edit ${u.name}`}><Icon name="edit" size={12} /></button>
+                      <button className="act-btn" onClick={() => toggleStatus(u)} title="Aktif/Pause Pengguna" aria-label={`Toggle status ${u.name}`}><Icon name="swap" size={12} /></button>
+                      <button className="act-btn" onClick={() => dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'newUser', payload: u } })} title="Ubah Pengguna" aria-label={`Edit ${u.name}`}><Icon name="edit" size={12} /></button>
+                      <button className="act-btn danger" onClick={() => handleDeleteUser(u)} title="Hapus (Nonaktifkan)" aria-label={`Hapus ${u.name}`}><Icon name="trash" size={12} /></button>
                     </div>
                   </td>
                 </tr>
@@ -104,34 +157,48 @@ export function Users() {
   );
 }
 
-export function NewUserForm({ close }) {
+export function NewUserForm({ payload, close }) {
   const { dispatch } = useStore();
   const toast = useToast();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [role, setRole] = useState('staflab');
+  const isEdit = !!payload;
+
+  const [name, setName] = useState(payload?.name || '');
+  const [email, setEmail] = useState(payload?.email || '');
+  const [role, setRole] = useState(payload?.role || 'staflab');
   const [loading, setLoading] = useState(false);
 
   async function save() {
     if (!name || !email) { toast('Isi nama dan email', 'warn'); return; }
     setLoading(true);
     try {
-      const res = await apiFetch('/users', {
-        method: 'POST',
-        body: JSON.stringify({
-          name,
-          email,
-          role,
-          password: 'password123'
-        })
+      const endpoint = isEdit ? `/users/${payload.id}` : '/users';
+      const method = isEdit ? 'PUT' : 'POST';
+      
+      const body = {
+        name,
+        email,
+        role
+      };
+      
+      // Password is only set on creation
+      if (!isEdit) {
+        body.password = 'password123';
+      }
+
+      const res = await apiFetch(endpoint, {
+        method: method,
+        body: JSON.stringify(body)
       });
       if (res.data) {
-        dispatch({ type: 'ADD_USER', user: res.data });
-        toast('Pengguna ditambahkan', 'ok');
+        const refreshRes = await apiFetch('/users');
+        if (refreshRes.data) {
+          dispatch({ type: 'SET_USERS', users: refreshRes.data });
+        }
+        toast(isEdit ? 'Pengguna berhasil diperbarui' : 'Pengguna ditambahkan', 'ok');
         close();
       }
     } catch (err) {
-      toast('Gagal menambahkan pengguna: ' + err.message, 'warn');
+      toast(`Gagal ${isEdit ? 'memperbarui' : 'menambahkan'} pengguna: ` + err.message, 'warn');
     } finally {
       setLoading(false);
     }
@@ -139,21 +206,33 @@ export function NewUserForm({ close }) {
 
   return (
     <>
-      <div className="drawer-bar"><div className="drawer-title">Tambah pengguna</div><button className="x-btn" onClick={close}><Icon name="x" size={14} /></button></div>
+      <div className="drawer-bar">
+        <div className="drawer-title">{isEdit ? 'Ubah pengguna' : 'Tambah pengguna'}</div>
+        <button className="x-btn" onClick={close} disabled={loading}><Icon name="x" size={14} /></button>
+      </div>
       <div className="drawer-body">
-        <div className="field"><div className="field-lbl">Nama lengkap <span className="req">*</span></div><input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="Misal: Tirta Halim" disabled={loading} /></div>
-        <div className="field"><div className="field-lbl">Email <span className="req">*</span></div><input className="input" value={email} onChange={e => setEmail(e.target.value)} placeholder="tirta@kampus.id" disabled={loading} /></div>
-        <div className="field"><div className="field-lbl">Role</div>
+        <div className="field">
+          <div className="field-lbl">Nama lengkap <span className="req">*</span></div>
+          <input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="Misal: Tirta Halim" disabled={loading} />
+        </div>
+        <div className="field">
+          <div className="field-lbl">Email <span className="req">*</span></div>
+          <input className="input" value={email} onChange={e => setEmail(e.target.value)} placeholder="tirta@kampus.id" disabled={loading} />
+        </div>
+        <div className="field">
+          <div className="field-lbl">Role</div>
           <select className="select" value={role} onChange={e => setRole(e.target.value)} disabled={loading}>
             {D.roles.map(r => <option key={r.id} value={r.id}>{r.title}</option>)}
           </select>
         </div>
-        <div className="card compact text-xs text-3 mt-4" ><Icon name="info" size={11} /> Pengguna akan menerima email konfirmasi.</div>
+        <div className="card compact text-xs text-3 mt-4" >
+          <Icon name="info" size={11} /> {isEdit ? 'Perubahan role akan segera mencabut sesi aktif pengguna tersebut.' : 'Pengguna baru dapat langsung login menggunakan password default.'}
+        </div>
       </div>
       <div className="drawer-foot">
         <button className="btn" onClick={close} disabled={loading}>Batal</button>
         <button className="btn primary" onClick={save} disabled={loading}>
-          {loading ? 'Memproses...' : 'Buat akun'}
+          {loading ? 'Memproses...' : (isEdit ? 'Simpan Perubahan' : 'Buat Akun')}
         </button>
       </div>
     </>

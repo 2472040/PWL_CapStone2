@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const { authenticate, authorize } = require('../middleware/auth');
 const {
-  getDrafts, createDraft, updateDraft, submitDraft, addDraftItem,
+  getDrafts, createDraft, updateDraft, submitDraft, addDraftItem, deleteDraftItem,
   getDraftsForReview, approveDraftItems, finalizeDraft, getDraftHistory,
   getReceiving, receiveItem,
 } = require('../controllers/procurementController');
@@ -14,6 +14,7 @@ router.post('/drafts', authorize('kalab'), createDraft);
 router.put('/drafts/:id', authorize('kalab'), updateDraft);
 router.post('/drafts/:id/submit', authorize('kalab'), submitDraft);
 router.post('/drafts/:id/items', authorize('kalab'), addDraftItem);
+router.delete('/items/:itemId', authorize('kalab'), deleteDraftItem);
 
 // Kaprodi — review
 router.get('/review', authorize('kaprodi'), getDraftsForReview);

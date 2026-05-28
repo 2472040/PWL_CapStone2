@@ -65,7 +65,11 @@ export function DraftDetail({ draft, onBack, mode }) {
       try {
         await apiFetch(`/procurement/receiving`, {
           method: 'POST',
-          body: JSON.stringify({ draft_item_id: itemId, qty_received: item.qty })
+          body: JSON.stringify({
+            draft_item_id: itemId,
+            qty_received: item.qty,
+            received_date: new Date().toISOString().substring(0, 10)
+          })
         });
         dispatch({ type: 'MARK_RECEIVED', code: d.code, itemId, date: new Date().toLocaleDateString('id-ID') });
         toast('Status diperbarui', 'info');
@@ -92,6 +96,17 @@ export function DraftDetail({ draft, onBack, mode }) {
       dispatch({ type: 'SET_APPROVAL', code: d.code, itemId, value });
     } catch (err) {
       toast(err.message, 'warn');
+    }
+  }
+
+  async function handleRemoveItem(itemId) {
+    if (!confirm('Apakah Anda yakin ingin menghapus item ini dari draf?')) return;
+    try {
+      await apiFetch(`/procurement/items/${itemId}`, { method: 'DELETE' });
+      dispatch({ type: 'REMOVE_DRAFT_ITEM', code: d.code, itemId });
+      toast('Item berhasil dihapus', 'ok');
+    } catch (err) {
+      toast('Gagal menghapus item: ' + err.message, 'warn');
     }
   }
 
@@ -180,7 +195,7 @@ export function DraftDetail({ draft, onBack, mode }) {
       {mode === 'admin' ? (
         <AdminReceiveGrid draft={d} totals={totals} onToggle={markReceived} />
       ) : (
-        <KalabKaprodiItems draft={d} mode={mode} locked={locked} setApproval={setApproval} totals={totals} />
+        <KalabKaprodiItems draft={d} mode={mode} locked={locked} setApproval={setApproval} totals={totals} onRemoveItem={handleRemoveItem} />
       )}
     </div>
   );
@@ -190,7 +205,7 @@ function eligibleCount(items) {
   return items.filter(it => it.approval !== 'no').length;
 }
 
-export function KalabKaprodiItems({ draft, mode, locked, setApproval, totals }) {
+export function KalabKaprodiItems({ draft, mode, locked, setApproval, totals, onRemoveItem }) {
   return (
     <>
       <div className="items-table with-actions" data-reveal>
@@ -230,8 +245,10 @@ export function KalabKaprodiItems({ draft, mode, locked, setApproval, totals }) 
                       <Icon name="check" size={13} strokeWidth={2.4} />
                     </button>
                   </>
+                ) : mode === 'kalab' && !locked ? (
+                  <button className="act-btn danger" onClick={() => onRemoveItem(it.id)} title="Hapus item draf"><Icon name="trash" size={12} /></button>
                 ) : (
-                  <button className="act-btn" title="Edit"><Icon name="edit" size={12} /></button>
+                  <button className="act-btn" title="Detail"><Icon name="eye" size={12} /></button>
                 )}
               </div>
             </div>

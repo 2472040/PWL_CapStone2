@@ -135,7 +135,9 @@ export function Dashboard() {
         </div>
         <div className="flex gap-2" >
           <button className="btn" onClick={() => window.showToast && window.showToast('Mengekspor data ke CSV…', 'info', 'download')} title="Export ke CSV"><Icon name="download" size={13} /> Export</button>
-          <button className="btn primary" onClick={() => dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'newDraft' } })}><Icon name="plus" size={13} strokeWidth={2.4} /> Quick action</button>
+          {state.role === 'kalab' && (
+            <button className="btn primary" onClick={() => dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'newDraft' } })}><Icon name="plus" size={13} strokeWidth={2.4} /> Pengajuan Baru</button>
+          )}
         </div>
       </div>
 

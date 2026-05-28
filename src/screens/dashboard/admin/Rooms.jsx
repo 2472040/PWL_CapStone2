@@ -21,6 +21,20 @@ export function Rooms() {
     loadRooms();
   }, [dispatch]);
 
+  async function handleDeleteRoom(room) {
+    if (!confirm(`Apakah Anda yakin ingin menghapus ruangan "${room.name}"? Semua aset di dalamnya akan diatur ke ruangan 'Gudang' secara otomatis.`)) return;
+    try {
+      await apiFetch(`/rooms/${room.id}`, { method: 'DELETE' });
+      const res = await apiFetch('/rooms');
+      if (res.data) {
+        dispatch({ type: 'SET_ROOMS', rooms: res.data });
+      }
+      toast(`Ruangan "${room.name}" berhasil dihapus.`, 'ok');
+    } catch (err) {
+      toast('Gagal menghapus ruangan: ' + err.message, 'warn');
+    }
+  }
+
   return (
     <div className="page" style={{'--role-accent': role.accent}}>
       <div className="page-head" data-reveal>
@@ -51,7 +65,10 @@ export function Rooms() {
               </div>
               <div className="flex between aic mt-4">
                 <div className="text-xs text-3">PIC <b className="text-ink-2" >{picName}</b></div>
-                <button className="btn sm"><Icon name="edit" size={11} /> Ubah</button>
+                <div className="flex gap-2">
+                  <button className="btn sm" onClick={() => dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'newRoom', payload: r } })}><Icon name="edit" size={11} /> Ubah</button>
+                  <button className="btn sm danger" onClick={() => handleDeleteRoom(r)}><Icon name="trash" size={11} /> Hapus</button>
+                </div>
               </div>
             </div>
           );
@@ -61,14 +78,16 @@ export function Rooms() {
   );
 }
 
-export function NewRoomForm({ close }) {
+export function NewRoomForm({ payload, close }) {
   const { dispatch } = useStore();
   const toast = useToast();
-  const [code, setCode] = useState('');
-  const [name, setName] = useState('');
-  const [floor, setFloor] = useState(1);
-  const [capacity, setCapacity] = useState(30);
-  const [picUserId, setPicUserId] = useState('');
+  const isEdit = !!payload;
+
+  const [code, setCode] = useState(payload?.code || '');
+  const [name, setName] = useState(payload?.name || '');
+  const [floor, setFloor] = useState(payload?.floor || 1);
+  const [capacity, setCapacity] = useState(payload?.capacity || 30);
+  const [picUserId, setPicUserId] = useState(payload?.pic_user_id || '');
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -79,7 +98,6 @@ export function NewRoomForm({ close }) {
         if (res.data) {
           const activeUsers = res.data.filter(u => u.status === 'active');
           setUsers(activeUsers);
-          if (activeUsers.length > 0) setPicUserId(activeUsers[0].id);
         }
       } catch (err) {
         console.error('Failed to load users for PIC selection:', err);
@@ -92,8 +110,11 @@ export function NewRoomForm({ close }) {
     if (!code || !name) { toast('Isi kode dan nama ruangan', 'warn'); return; }
     setLoading(true);
     try {
-      const res = await apiFetch('/rooms', {
-        method: 'POST',
+      const endpoint = isEdit ? `/rooms/${payload.id}` : '/rooms';
+      const method = isEdit ? 'PUT' : 'POST';
+
+      const res = await apiFetch(endpoint, {
+        method: method,
         body: JSON.stringify({
           code,
           name,
@@ -106,14 +127,12 @@ export function NewRoomForm({ close }) {
         const refreshRes = await apiFetch('/rooms');
         if (refreshRes.data) {
           dispatch({ type: 'SET_ROOMS', rooms: refreshRes.data });
-        } else {
-          dispatch({ type: 'ADD_ROOM', room: res.data });
         }
-        toast('Ruangan berhasil dibuat', 'ok');
+        toast(isEdit ? 'Ruangan berhasil diperbarui' : 'Ruangan berhasil dibuat', 'ok');
         close();
       }
     } catch (err) {
-      toast('Gagal membuat ruangan: ' + err.message, 'warn');
+      toast(`Gagal ${isEdit ? 'memperbarui' : 'membuat'} ruangan: ` + err.message, 'warn');
     } finally {
       setLoading(false);
     }
@@ -121,13 +140,29 @@ export function NewRoomForm({ close }) {
 
   return (
     <>
-      <div className="drawer-bar"><div className="drawer-title">Tambah ruangan</div><button className="x-btn" onClick={close} disabled={loading}><Icon name="x" size={14} /></button></div>
+      <div className="drawer-bar">
+        <div className="drawer-title">{isEdit ? 'Ubah ruangan' : 'Tambah ruangan'}</div>
+        <button className="x-btn" onClick={close} disabled={loading}><Icon name="x" size={14} /></button>
+      </div>
       <div className="drawer-body">
-        <div className="field"><div className="field-lbl">Kode ruangan <span className="req">*</span></div><input className="input" value={code} onChange={e => setCode(e.target.value)} placeholder="Misal: L-202" disabled={loading} /></div>
-        <div className="field"><div className="field-lbl">Nama ruangan <span className="req">*</span></div><input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="Misal: Lab Rekayasa Perangkat Lunak" disabled={loading} /></div>
-        <div className="field"><div className="field-lbl">Lantai <span className="req">*</span></div><input className="input" type="number" value={floor} onChange={e => setFloor(e.target.value)} placeholder="1" disabled={loading} /></div>
-        <div className="field"><div className="field-lbl">Kapasitas (orang)</div><input className="input" type="number" value={capacity} onChange={e => setCapacity(e.target.value)} placeholder="30" disabled={loading} /></div>
-        <div className="field"><div className="field-lbl">Penanggung Jawab (PIC)</div>
+        <div className="field">
+          <div className="field-lbl">Kode ruangan <span className="req">*</span></div>
+          <input className="input" value={code} onChange={e => setCode(e.target.value)} placeholder="Misal: L-202" disabled={loading} />
+        </div>
+        <div className="field">
+          <div className="field-lbl">Nama ruangan <span className="req">*</span></div>
+          <input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="Misal: Lab Rekayasa Perangkat Lunak" disabled={loading} />
+        </div>
+        <div className="field">
+          <div className="field-lbl">Lantai <span className="req">*</span></div>
+          <input className="input" type="number" value={floor} onChange={e => setFloor(e.target.value)} placeholder="1" disabled={loading} />
+        </div>
+        <div className="field">
+          <div className="field-lbl">Kapasitas (orang)</div>
+          <input className="input" type="number" value={capacity} onChange={e => setCapacity(e.target.value)} placeholder="30" disabled={loading} />
+        </div>
+        <div className="field">
+          <div className="field-lbl">Penanggung Jawab (PIC)</div>
           <select className="select" value={picUserId} onChange={e => setPicUserId(e.target.value)} disabled={loading}>
             <option value="">Pilih PIC...</option>
             {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.role})</option>)}
@@ -137,7 +172,7 @@ export function NewRoomForm({ close }) {
       <div className="drawer-foot">
         <button className="btn" onClick={close} disabled={loading}>Batal</button>
         <button className="btn primary" onClick={save} disabled={loading}>
-          {loading ? 'Memproses...' : 'Tambah ruangan'}
+          {loading ? 'Memproses...' : (isEdit ? 'Simpan Perubahan' : 'Tambah Ruangan')}
         </button>
       </div>
     </>
