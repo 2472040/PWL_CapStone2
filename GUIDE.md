@@ -1,5 +1,5 @@
 # LokaLab — Panduan Setup & Testing
-
+  
 LokaLab Suite adalah aplikasi sistem inventaris & pengadaan laboratorium tingkat SaaS dengan integrasi WebSockets real-time, cetak BAST (Berita Acara Serah Terima) dalam format PDF resmi, audit log diffing ("Sebelum ➔ Sesudah"), serta dukungan penuh Dockerization.
 
 ## 🚀 OPSI 1: Setup Mudah & Instan (Menggunakan Docker - Direkomendasikan)
