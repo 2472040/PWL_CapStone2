@@ -129,6 +129,9 @@ const updateBhp = async (req, res) => {
       }
     } else if (diff < 0) {
       detailStr += ` (Penambahan: +${Math.abs(diff)} ${bhp.unit || 'unit'})`;
+      if (reason) {
+        detailStr += `, Sumber: ${reason}`;
+      }
     }
 
     await logAudit(req.user.id, 'bhp.update', `${bhp.code} (${bhp.name})`, req.ip, detailStr);

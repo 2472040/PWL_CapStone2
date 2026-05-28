@@ -13,6 +13,11 @@ export function BHP() {
   const [reductionReason, setReductionReason] = useState('');
   const [reducing, setReducing] = useState(false);
 
+  const [restockItem, setRestockItem] = useState(null);
+  const [restockQty, setRestockQty] = useState('');
+  const [restockReason, setRestockReason] = useState('');
+  const [restocking, setRestocking] = useState(false);
+
   useEffect(() => {
     async function loadBhpData() {
       try {
@@ -37,27 +42,38 @@ export function BHP() {
     loadBhpData();
   }, [dispatch]);
 
-  async function restock(id) {
-    const b = state.bhp.find(x => x.id === id);
-    const amount = prompt(`Restock ${b.name} (stok: ${b.stock} ${b.unit})\nMasukkan jumlah:`, '10');
-    if (!amount) return;
-    const addAmt = parseFloat(amount);
-    if (isNaN(addAmt) || addAmt <= 0) return;
+  async function submitRestock() {
+    if (!restockQty || isNaN(parseFloat(restockQty)) || parseFloat(restockQty) <= 0) {
+      toast('Jumlah penambahan tidak valid!', 'warn');
+      return;
+    }
+    if (!restockReason.trim()) {
+      toast('Keterangan sumber barang wajib diisi!', 'warn');
+      return;
+    }
 
+    setRestocking(true);
     try {
-      const res = await apiFetch(`/bhp/${b.dbId}`, {
+      const qty = parseFloat(restockQty);
+      const newStock = restockItem.stock + qty;
+
+      const res = await apiFetch(`/bhp/${restockItem.dbId}`, {
         method: 'PUT',
         body: JSON.stringify({
-          stock: b.stock + addAmt,
-          last_in: new Date().toISOString().substring(0, 10)
+          stock: newStock,
+          last_in: new Date().toISOString().substring(0, 10),
+          reason: restockReason.trim()
         })
       });
       if (res.data) {
-        dispatch({ type: 'BHP_RESTOCK', id, amount: addAmt, date: new Date().toISOString().slice(0, 10) });
-        toast(`+${addAmt} ${b.unit} ditambahkan`, 'ok');
+        dispatch({ type: 'BHP_RESTOCK', id: restockItem.id, amount: qty, date: new Date().toISOString().slice(0, 10) });
+        toast(`+${qty} ${restockItem.unit} (${restockItem.name}) berhasil ditambahkan`, 'ok');
+        setRestockItem(null);
       }
     } catch (err) {
       toast('Gagal melakukan restock: ' + err.message, 'warn');
+    } finally {
+      setRestocking(false);
     }
   }
 
@@ -151,7 +167,7 @@ export function BHP() {
               <div className="text-3 mono text-xs">{b.lastIn}</div>
               <div className="flex gap-1" >
                 <button className="act-btn text-violet hover:bg-violet/10" style={{ color: '#a855f7' }} onClick={() => dispatch({ type: 'OPEN_MODAL', modal: { kind: 'aiPredictive', payload: { bhpId: b.dbId, bhpName: b.name } } })} title="AI Predictive Analysis"><Icon name="bolt" size={12} strokeWidth={2.4} /></button>
-                <button className="act-btn" onClick={() => restock(b.id)} title="Restock" aria-label={`Restock ${b.name}`}><Icon name="plus" size={12} strokeWidth={2.4} /></button>
+                <button className="act-btn" onClick={() => { setRestockItem(b); setRestockQty(''); setRestockReason(''); }} title="Tambah Stok" aria-label={`Tambah stok ${b.name}`}><Icon name="plus" size={12} strokeWidth={2.4} /></button>
                 <button className="act-btn" onClick={() => { setReductionItem(b); setReductionQty('1'); setReductionReason(''); }} title="Kurangi Stok" aria-label={`Kurangi stok ${b.name}`}><Icon name="minus" size={12} strokeWidth={2.4} /></button>
               </div>
             </div>
@@ -159,6 +175,7 @@ export function BHP() {
         })}
       </div>
 
+      {/* ── Reduction Modal ── */}
       {reductionItem && (
         <div style={{
           position: 'fixed',
@@ -166,8 +183,7 @@ export function BHP() {
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'rgba(0,0,0,0.6)',
-          backdropFilter: 'blur(8px)',
+          background: '#111113',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -176,24 +192,28 @@ export function BHP() {
         }}>
           <div className="card" style={{
             width: '90%',
-            maxWidth: '420px',
+            maxWidth: '440px',
             background: 'var(--surface)',
             border: '1px solid var(--line-2)',
-            boxShadow: 'var(--shadow-lg)',
+            boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
             borderRadius: '16px',
-            padding: '24px',
+            padding: '28px',
             animation: 'scale-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)'
           }}>
-            <div className="h-12 w-12 mb-4 flex items-center justify-center" style={{borderRadius: '50%', background: 'rgba(239,68,68,0.15)', color: '#ef4444'}}>
-              <Icon name="minus" size={20} strokeWidth={2.4} />
+            <div style={{display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20}}>
+              <div style={{width: 44, height: 44, borderRadius: '50%', background: 'rgba(239,68,68,0.15)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0}}>
+                <Icon name="minus" size={20} strokeWidth={2.4} />
+              </div>
+              <div>
+                <h3 style={{fontSize: 16, fontWeight: 700, color: 'var(--color-ink)', margin: 0, letterSpacing: '-0.01em'}}>Pengurangan Stok BHP</h3>
+                <p style={{fontSize: 12, color: 'var(--ink-3)', margin: '4px 0 0', lineHeight: 1.5}}>Kurangi stok <b>{reductionItem.name}</b> · Stok saat ini: <b>{reductionItem.stock} {reductionItem.unit}</b></p>
+              </div>
             </div>
-            <h3 className="text-lg font-bold tracking-tight mb-1" style={{color: 'var(--color-ink)'}}>Pengurangan Stok BHP</h3>
-            <p className="text-xs text-ink-3 mb-5 leading-relaxed">Silakan tentukan jumlah pengurangan untuk <b>{reductionItem.name}</b> dan berikan keterangan lengkap penggunaannya.</p>
             
-            <div className="field mb-4">
+            <div className="field" style={{marginBottom: 14}}>
               <label className="field-lbl">Jumlah Pengurangan ({reductionItem.unit}) <span className="req">*</span></label>
               <input 
-                className="input w-full" 
+                className="input" 
                 type="number" 
                 step="any" 
                 min="0.1" 
@@ -203,25 +223,101 @@ export function BHP() {
                 placeholder={`Maksimal ${reductionItem.stock} ${reductionItem.unit}`} 
                 disabled={reducing}
                 autoFocus 
+                style={{width: '100%'}}
               />
             </div>
             
-            <div className="field mb-6">
+            <div className="field" style={{marginBottom: 24}}>
               <label className="field-lbl">Keterangan / Keperluan Penggunaan <span className="req">*</span></label>
               <textarea 
-                className="textarea w-full" 
+                className="textarea" 
                 value={reductionReason} 
                 onChange={e => setReductionReason(e.target.value)} 
                 placeholder="Contoh: Digunakan untuk bahan praktikum Jaringan Komputer Kelas B" 
                 disabled={reducing}
                 rows={3}
+                style={{width: '100%'}}
               />
             </div>
             
-            <div className="flex gap-2 justify-end pt-4" style={{borderTop: '1px solid var(--line)'}}>
+            <div style={{display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 16, borderTop: '1px solid var(--line)'}}>
               <button className="btn" onClick={() => setReductionItem(null)} disabled={reducing}>Batal</button>
               <button className="btn danger" onClick={submitReduction} disabled={reducing}>
                 {reducing ? 'Mengurangi...' : 'Kurangi Stok'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Restock (Addition) Modal ── */}
+      {restockItem && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: '#111113',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          animation: 'fade-in 0.2s ease-out'
+        }}>
+          <div className="card" style={{
+            width: '90%',
+            maxWidth: '440px',
+            background: 'var(--surface)',
+            border: '1px solid var(--line-2)',
+            boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
+            borderRadius: '16px',
+            padding: '28px',
+            animation: 'scale-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)'
+          }}>
+            <div style={{display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20}}>
+              <div style={{width: 44, height: 44, borderRadius: '50%', background: 'rgba(34,197,94,0.15)', color: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0}}>
+                <Icon name="plus" size={20} strokeWidth={2.4} />
+              </div>
+              <div>
+                <h3 style={{fontSize: 16, fontWeight: 700, color: 'var(--color-ink)', margin: 0, letterSpacing: '-0.01em'}}>Penambahan Stok BHP</h3>
+                <p style={{fontSize: 12, color: 'var(--ink-3)', margin: '4px 0 0', lineHeight: 1.5}}>Tambah stok <b>{restockItem.name}</b> · Stok saat ini: <b>{restockItem.stock} {restockItem.unit}</b></p>
+              </div>
+            </div>
+            
+            <div className="field" style={{marginBottom: 14}}>
+              <label className="field-lbl">Jumlah Penambahan ({restockItem.unit}) <span className="req">*</span></label>
+              <input 
+                className="input" 
+                type="number" 
+                step="any" 
+                min="0.1" 
+                value={restockQty} 
+                onChange={e => setRestockQty(e.target.value)} 
+                placeholder="Misal: 50" 
+                disabled={restocking}
+                autoFocus 
+                style={{width: '100%'}}
+              />
+            </div>
+            
+            <div className="field" style={{marginBottom: 24}}>
+              <label className="field-lbl">Keterangan / Sumber Barang <span className="req">*</span></label>
+              <textarea 
+                className="textarea" 
+                value={restockReason} 
+                onChange={e => setRestockReason(e.target.value)} 
+                placeholder="Contoh: Pengadaan semester ganjil 2025/2026, PO #12345" 
+                disabled={restocking}
+                rows={3}
+                style={{width: '100%'}}
+              />
+            </div>
+            
+            <div style={{display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 16, borderTop: '1px solid var(--line)'}}>
+              <button className="btn" onClick={() => setRestockItem(null)} disabled={restocking}>Batal</button>
+              <button className="btn primary" onClick={submitRestock} disabled={restocking}>
+                {restocking ? 'Menambahkan...' : 'Tambah Stok'}
               </button>
             </div>
           </div>
@@ -241,6 +337,7 @@ export function NewBhpForm({ payload, close }) {
   // Mode Restock
   const [selectedId, setSelectedId] = useState('');
   const [restockQty, setRestockQty] = useState('');
+  const [drawerReason, setDrawerReason] = useState('');
 
   // Mode New
   const [code, setCode] = useState('');
@@ -286,7 +383,8 @@ export function NewBhpForm({ payload, close }) {
           method: 'PUT',
           body: JSON.stringify({
             stock: b.stock + qty,
-            last_in: new Date().toISOString().substring(0, 10)
+            last_in: new Date().toISOString().substring(0, 10),
+            reason: drawerReason.trim() || 'Restock manual via drawer'
           })
         });
 
@@ -410,6 +508,19 @@ export function NewBhpForm({ payload, close }) {
                   {selectedId ? state.bhp.find(x => x.id === selectedId)?.unit : ''}
                 </span>
               </div>
+            </div>
+
+            <div className="field">
+              <div className="field-lbl">Keterangan / Sumber Barang</div>
+              <textarea 
+                className="textarea" 
+                value={drawerReason} 
+                onChange={e => setDrawerReason(e.target.value)} 
+                placeholder="Contoh: Pengadaan semester ganjil 2025/2026" 
+                disabled={loading}
+                rows={2}
+                style={{width: '100%'}}
+              />
             </div>
           </div>
         ) : (

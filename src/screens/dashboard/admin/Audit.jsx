@@ -98,6 +98,7 @@ export function Audit() {
         role: uRole,
         action: a.action,
         target: a.target,
+        details: a.details || '',
         ip: a.ip || '-'
       };
     });
@@ -115,7 +116,8 @@ export function Audit() {
       a.user.toLowerCase().includes(q) ||
       a.action.toLowerCase().includes(q) ||
       a.target.toLowerCase().includes(q) ||
-      a.role.toLowerCase().includes(q)
+      a.role.toLowerCase().includes(q) ||
+      (a.details || '').toLowerCase().includes(q)
     );
   }, [baseFiltered, query]);
 
@@ -145,7 +147,7 @@ export function Audit() {
 
       <div className="table-wrap" data-reveal>
         <table className="tbl">
-          <thead><tr><th>Waktu</th><th>Pengguna</th><th>Role</th><th>Aksi</th><th>Target</th><th>IP</th></tr></thead>
+          <thead><tr><th>Waktu</th><th>Pengguna</th><th>Role</th><th>Aksi</th><th>Target</th><th>Detail</th><th>IP</th></tr></thead>
           <tbody>
             {filtered.map((a) => (
               <tr key={a.id}>
@@ -154,6 +156,7 @@ export function Audit() {
                 <td><span className="chip">{a.role}</span></td>
                 <td className="mono text-xs text-cyan" >{a.action}</td>
                 <td className="text-sm">{a.target}</td>
+                <td className="text-xs" style={{maxWidth: 260, wordBreak: 'break-word', color: 'var(--ink-2)'}}>{a.details || <span style={{opacity: 0.3}}>—</span>}</td>
                 <td className="mono text-xs text-3">{a.ip}</td>
               </tr>
             ))}
