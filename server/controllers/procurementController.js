@@ -249,8 +249,32 @@ const receiveItem = async (req, res) => {
   }
 };
 
+const deleteDraftItem = async (req, res) => {
+  try {
+    const { itemId } = req.params;
+    const item = await DraftItem.findByPk(itemId, {
+      include: [{ model: Draft, as: 'draft' }]
+    });
+    if (!item) return res.status(404).json({ error: 'Item draf tidak ditemukan.' });
+    if (item.draft.status !== 'draft') {
+      return res.status(400).json({ error: 'Tidak bisa menghapus item dari draf yang sudah diajukan.' });
+    }
+    
+    const draftCode = item.draft.code;
+    const itemName = item.name;
+    
+    await item.destroy();
+    
+    await logAudit(req.user.id, 'procurement.remove_item', `${itemName} dari ${draftCode}`, req.ip);
+    res.json({ message: 'Item draf berhasil dihapus.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Gagal menghapus item draf.' });
+  }
+};
+
 module.exports = {
-  getDrafts, createDraft, updateDraft, submitDraft, addDraftItem,
+  getDrafts, createDraft, updateDraft, submitDraft, addDraftItem, deleteDraftItem,
   getDraftsForReview, approveDraftItems, finalizeDraft, getDraftHistory,
   getReceiving, receiveItem,
 };

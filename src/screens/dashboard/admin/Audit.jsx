@@ -27,6 +27,43 @@ export function Audit() {
     loadLogs();
   }, [toast]);
 
+  function exportAuditToCSV() {
+    if (logs.length === 0) {
+      toast('Tidak ada data audit log untuk diekspor.', 'warn');
+      return;
+    }
+    
+    // CSV headers
+    const headers = ['ID', 'User ID', 'Nama Pengguna', 'Aksi', 'Target', 'IP Address', 'Detail', 'Hash', 'Previous Hash', 'Waktu'];
+    
+    // CSV rows
+    const rows = logs.map(l => [
+      l.id,
+      l.user_id || '',
+      `"${(l.User?.name || 'Sistem').replace(/"/g, '""')}"`,
+      l.action,
+      `"${(l.target || '').replace(/"/g, '""')}"`,
+      l.ip || '',
+      `"${(l.details || '').replace(/"/g, '""')}"`,
+      l.hash || '',
+      l.previous_hash || '',
+      new Date(l.created_at).toISOString()
+    ]);
+    
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `lokalab_audit_logs_${new Date().toISOString().substring(0, 10)}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast('Audit log berhasil diekspor ke CSV!', 'ok');
+  }
+
   const formattedLogs = useMemo(() => {
     return logs.map((a, i) => {
       const uRole = a.User?.role || '';
@@ -65,7 +102,7 @@ export function Audit() {
           <h1 className="page-title">Audit log</h1>
           <p className="page-sub">Semua aksi tercatat. Bisa di-filter per role atau di-export ke CSV.</p>
         </div>
-        <button className="btn" onClick={() => window.showToast && window.showToast('Mengekspor audit log ke CSV…', 'info', 'download')}><Icon name="download" size={13} /> Export CSV</button>
+        <button className="btn" onClick={exportAuditToCSV}><Icon name="download" size={13} /> Export CSV</button>
       </div>
 
       <div data-reveal className="flex flex-wrap gap-1.5 mb-3.5" >

@@ -2,23 +2,30 @@ import React, { useState } from 'react';
 import { useStore, useToast, D, Icon } from '../../../components/app-shell.jsx';
 import { apiFetch } from '../../../services/api.js';
 
+function formatThousand(val) {
+  if (val === undefined || val === null || val === '') return '';
+  const numString = String(val).replace(/\D/g, ''); // strip non-digits
+  if (!numString) return '';
+  return Number(numString).toLocaleString('id-ID'); // formats with dot separators in Indonesian locale
+}
+
 export function NewDraftForm({ close }) {
   const { state, dispatch } = useStore();
   const toast = useToast();
   const [title, setTitle] = useState('Pengadaan Lab Komputer · Q3 2026');
   const [items, setItems] = useState([
-    { id: 'I-N1', kind: 'Inventaris', name: '', qty: 1, unit: 'unit', price: 0, link: '', replaces: '' },
+    { id: 'I-N1', kind: 'Inventaris', name: '', qty: '', unit: '', price: '', link: '', replaces: '' },
   ]);
   const [loading, setLoading] = useState(false);
 
   function update(i, patch) { setItems(arr => arr.map((x, j) => j === i ? { ...x, ...patch } : x)); }
-  function add() { setItems(arr => [...arr, { id: 'I-N' + (arr.length + 1), kind: 'Inventaris', name: '', qty: 1, unit: 'unit', price: 0, link: '', replaces: '' }]); }
+  function add() { setItems(arr => [...arr, { id: 'I-N' + (arr.length + 1), kind: 'Inventaris', name: '', qty: '', unit: '', price: '', link: '', replaces: '' }]); }
   function remove(i) { setItems(arr => arr.filter((_, j) => j !== i)); }
 
   const total = items.reduce((s, it) => s + (Number(it.qty) || 0) * (Number(it.price) || 0), 0);
 
   async function handleSave(shouldSubmit = false) {
-    const valid = items.filter(it => it.name && it.price > 0);
+    const valid = items.filter(it => it.name && Number(it.price) > 0);
     if (valid.length === 0) { toast('Tambahkan minimal 1 item dengan nama & harga', 'warn'); return; }
     
     setLoading(true);
@@ -30,9 +37,9 @@ export function NewDraftForm({ close }) {
           items: valid.map(it => ({
             kind: it.kind,
             name: it.name,
-            qty: Number(it.qty),
+            qty: Number(it.qty) || 1,
             unit: it.unit || 'unit',
-            price: Number(it.price),
+            price: Number(it.price) || 0,
             link: it.link || null,
             replaces: it.replaces || null
           }))
@@ -97,9 +104,19 @@ export function NewDraftForm({ close }) {
             </div>
             <input className="input mb-2" value={it.name} onChange={e => update(i, { name: e.target.value })} placeholder="Nama barang…" disabled={loading} />
             <div className="gap-1.5 grid mb-1.5" >
-              <input className="input mono" type="number" value={it.qty} onChange={e => update(i, { qty: e.target.value })} placeholder="qty" disabled={loading} />
-              <input className="input" value={it.unit} onChange={e => update(i, { unit: e.target.value })} placeholder="unit" disabled={loading} />
-              <input className="input mono" type="number" value={it.price} onChange={e => update(i, { price: e.target.value })} placeholder="harga satuan" disabled={loading} />
+              <input className="input mono" type="number" value={it.qty} onChange={e => update(i, { qty: e.target.value })} placeholder="Jumlah" disabled={loading} />
+              <input className="input" value={it.unit} onChange={e => update(i, { unit: e.target.value })} placeholder="Satuan (unit/pcs)" disabled={loading} />
+              <input 
+                className="input mono" 
+                type="text" 
+                value={formatThousand(it.price)} 
+                onChange={e => {
+                  const cleanVal = e.target.value.replace(/\D/g, '');
+                  update(i, { price: cleanVal });
+                }} 
+                placeholder="Harga Satuan (Rp)" 
+                disabled={loading} 
+              />
             </div>
             <input className="input mb-2" value={it.link} onChange={e => update(i, { link: e.target.value })} placeholder="Link pembelian (opsional)" disabled={loading} />
             {it.kind === 'Inventaris' && (
