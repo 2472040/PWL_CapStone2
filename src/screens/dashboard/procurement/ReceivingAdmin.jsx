@@ -61,7 +61,7 @@ export function AdminReceiveGrid({ draft, totals, onToggle }) {
       <div className="gap-[14px]" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))'}}>
         {eligible.map(it => {
           const isRec = it.received;
-          const newCode = 'LK-' + (it.kind === 'Inventaris' ? 'NEW' : 'BHP') + '-' + it.id.replace(/-/g,'');
+          const newCode = 'LK-' + (it.kind === 'Inventaris' ? 'NEW' : 'BHP') + '-' + String(it.id).replace(/-/g,'');
           return (
             <div key={it.id} data-reveal className="p-5 rounded-[18px]" style={{background: isRec ? 'rgba(163,230,53,0.1)' : '', border: '1px solid ' + (isRec ? 'rgba(163,230,53,0.3)' : 'var(--color-line)'), transition: 'all 0.25s'}}>
               <div className="flex items-start justify-between mb-3.5" >
