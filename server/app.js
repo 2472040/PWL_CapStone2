@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const helmet = require('helmet');
 require('dotenv').config();
 
 const app = express();
@@ -8,6 +9,12 @@ const app = express();
 // =============================================
 // Middleware
 // =============================================
+// Security Hardening with Helmet
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false
+}));
+
 // Strict CORS configuration supporting HTTP credentials (cookies)
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:5173',

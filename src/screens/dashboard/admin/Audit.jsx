@@ -8,6 +8,9 @@ export function Audit() {
   const toast = useToast();
   const [logs, setLogs] = useState([]);
   const [filter, setFilter] = useState('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [actionType, setActionType] = useState('all');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -91,50 +94,148 @@ export function Audit() {
   const formattedLogs = useMemo(() => {
     return logs.map((a, i) => {
       const uRole = a.User?.role || '';
+      const rawDate = a.created_at ? new Date(a.created_at) : (a.createdAt ? new Date(a.createdAt) : null);
       return {
         id: a.id || i,
-        ts: a.created_at ? new Date(a.created_at).toLocaleString('id-ID') : '-',
+        ts: rawDate ? rawDate.toLocaleString('id-ID') : '-',
+        rawDate,
         user: a.User?.name || 'Sistem',
         role: uRole,
-        action: a.action,
-        target: a.target,
+        action: a.action || '',
+        target: a.target || '',
         details: a.details || '',
         ip: a.ip || '-'
       };
     });
   }, [logs]);
 
-  const baseFiltered = useMemo(() => {
-    if (filter === 'all') return formattedLogs;
-    return formattedLogs.filter(a => a.role.toLowerCase().includes(filter));
-  }, [formattedLogs, filter]);
-
   const filtered = useMemo(() => {
-    if (!query) return baseFiltered;
-    const q = query.toLowerCase();
-    return baseFiltered.filter(a =>
-      a.user.toLowerCase().includes(q) ||
-      a.action.toLowerCase().includes(q) ||
-      a.target.toLowerCase().includes(q) ||
-      a.role.toLowerCase().includes(q) ||
-      (a.details || '').toLowerCase().includes(q)
-    );
-  }, [baseFiltered, query]);
+    return formattedLogs.filter(a => {
+      // 1. Role Filter
+      if (filter !== 'all') {
+        const mappedFilter = filter === 'staf' ? 'staflab' : filter === 'sys' ? 'sysadmin' : filter;
+        if (!a.role.toLowerCase().includes(mappedFilter.toLowerCase())) {
+          return false;
+        }
+      }
+
+      // 2. Action Type Filter
+      if (actionType !== 'all') {
+        const act = a.action.toLowerCase();
+        if (actionType === 'auth') {
+          if (!act.startsWith('auth.')) return false;
+        } else if (actionType === 'draft') {
+          if (!act.startsWith('draft.') && !act.startsWith('receiving.') && !act.startsWith('procurement.')) return false;
+        } else if (actionType === 'maintenance') {
+          if (!act.startsWith('maintenance.') && !act.startsWith('bhp.')) return false;
+        } else if (actionType === 'admin') {
+          if (!act.startsWith('user.') && !act.startsWith('room.') && !act.startsWith('inventory.') && !act.startsWith('label.')) return false;
+        } else if (actionType === 'backup') {
+          if (!act.startsWith('backup.')) return false;
+        }
+      }
+
+      // 3. Date Range Filter
+      if (startDate && a.rawDate) {
+        const start = new Date(startDate);
+        start.setHours(0,0,0,0);
+        if (a.rawDate < start) return false;
+      }
+      if (endDate && a.rawDate) {
+        const end = new Date(endDate);
+        end.setHours(23,59,59,999);
+        if (a.rawDate > end) return false;
+      }
+
+      // 4. Global Search Query
+      if (query) {
+        const q = query.toLowerCase();
+        return (
+          a.user.toLowerCase().includes(q) ||
+          a.action.toLowerCase().includes(q) ||
+          a.target.toLowerCase().includes(q) ||
+          a.role.toLowerCase().includes(q) ||
+          a.details.toLowerCase().includes(q)
+        );
+      }
+
+      return true;
+    });
+  }, [formattedLogs, filter, actionType, startDate, endDate, query]);
 
   return (
     <div className="page" style={{'--role-accent': role.accent}}>
       <div className="page-head" data-reveal>
         <div>
           <h1 className="page-title">Audit log</h1>
-          <p className="page-sub">Semua aksi tercatat. Bisa di-filter per role atau di-export ke CSV.</p>
+          <p className="page-sub">Semua aksi tercatat. Bisa di-filter per tanggal, tipe aksi, role, atau di-export ke CSV.</p>
         </div>
         <button className="btn" onClick={exportAuditToCSV}><Icon name="download" size={13} /> Export CSV</button>
       </div>
 
-      <div data-reveal className="flex flex-wrap gap-1.5 mb-3.5" >
-        {['all', 'kalab', 'kaprodi', 'admin', 'staf', 'sys'].map(f => (
-          <button key={f} onClick={() => setFilter(f)} className={`btn sm ${filter === f ? 'primary' : ''}`} style={{textTransform: 'capitalize'}}>{f === 'all' ? 'Semua' : f}</button>
-        ))}
+      <div data-reveal className="flex flex-wrap items-center gap-3.5 mb-4 p-3.5 border border-line rounded-xl" style={{
+        background: 'rgba(255, 255, 255, 0.02)',
+        backdropFilter: 'blur(10px)',
+      }}>
+        {/* Role Filters (Original buttons) */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-ink-3 fw-5 mr-1">Role:</span>
+          {['all', 'kalab', 'kaprodi', 'admin', 'staf', 'sys'].map(f => (
+            <button key={f} onClick={() => setFilter(f)} className={`btn sm ${filter === f ? 'primary' : ''}`} style={{textTransform: 'capitalize'}}>
+              {f === 'all' ? 'Semua' : f === 'staf' ? 'Staf Lab' : f === 'sys' ? 'Sysadmin' : f}
+            </button>
+          ))}
+        </div>
+
+        {/* Action Type Filter */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-ink-3 fw-5">Aksi:</span>
+          <select value={actionType} onChange={e => setActionType(e.target.value)} className="btn sm border border-line" style={{
+            background: 'var(--surface)',
+            color: 'var(--ink)',
+            borderRadius: '8px',
+            padding: '4px 8px',
+            fontSize: '12px',
+          }}>
+            <option value="all">Semua Aksi</option>
+            <option value="auth">Autentikasi (auth.*)</option>
+            <option value="draft">Pengadaan (draft.*, receiving.*)</option>
+            <option value="maintenance">Maintenance (maintenance.*, bhp.*)</option>
+            <option value="admin">Administrasi (user.*, room.*, inv.*)</option>
+            <option value="backup">Pencadangan (backup.*)</option>
+          </select>
+        </div>
+
+        {/* Date Filter */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-ink-3 fw-5">Tanggal:</span>
+          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="btn sm border border-line" style={{
+            background: 'var(--surface)',
+            color: 'var(--ink)',
+            borderRadius: '8px',
+            padding: '4px 8px',
+            fontSize: '12px',
+          }} placeholder="Mulai" />
+          <span className="text-xs text-ink-3">—</span>
+          <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="btn sm border border-line" style={{
+            background: 'var(--surface)',
+            color: 'var(--ink)',
+            borderRadius: '8px',
+            padding: '4px 8px',
+            fontSize: '12px',
+          }} placeholder="Selesai" />
+
+          {(startDate || endDate || actionType !== 'all' || filter !== 'all') && (
+            <button className="btn sm text-xs border border-line" onClick={() => {
+              setStartDate('');
+              setEndDate('');
+              setActionType('all');
+              setFilter('all');
+            }} style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--rose)', borderColor: 'rgba(239, 68, 68, 0.2)' }}>
+              Reset Filter
+            </button>
+          )}
+        </div>
       </div>
 
       {query && filtered.length === 0 && (
