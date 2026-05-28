@@ -73,6 +73,11 @@ const createMaintenance = async (req, res) => {
       io.emit('data_changed', { type: 'maintenance' });
       io.emit('data_changed', { type: 'bhp' });
       io.emit('data_changed', { type: 'inventory' });
+      io.emit('notification', {
+        message: `Log pemeliharaan baru dibuat untuk aset ${inventory.code} (${inventory.name}) dengan kondisi akhir: ${condition_after}.`,
+        roles: ['kalab', 'admin'],
+        kind: 'info'
+      });
     }
 
     const result = await MaintenanceLog.findByPk(log.id, {
@@ -345,6 +350,11 @@ const updateMaintenance = async (req, res) => {
     if (io) {
       io.emit('data_changed', { type: 'maintenance' });
       io.emit('data_changed', { type: 'inventory' });
+      io.emit('notification', {
+        message: `Log pemeliharaan ${log.code} untuk aset ${log.Inventory?.name || 'Aset'} telah diperbarui oleh Staf Lab.`,
+        roles: ['kalab', 'admin'],
+        kind: 'info'
+      });
     }
 
     const result = await MaintenanceLog.findByPk(log.id, {

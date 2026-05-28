@@ -301,6 +301,16 @@ export function AuthInitializer({ pendingRole }) {
       pollData();
     });
 
+    socket.on('notification', (payload) => {
+      console.log('⚡ WebSocket Notification:', payload);
+      const role = currentRole || pendingRole || (() => { try { return localStorage.getItem('loka-role'); } catch (e) { return null; } })();
+      if (role && payload.roles.includes(role)) {
+        if (window.showToast) {
+          window.showToast(payload.message, payload.kind || 'info');
+        }
+      }
+    });
+
     // Handle online event in case network drops and reconnects
     window.addEventListener('online', pollData);
 

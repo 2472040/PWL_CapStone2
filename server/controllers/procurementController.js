@@ -87,7 +87,14 @@ const submitDraft = async (req, res) => {
 
     await logAudit(req.user.id, 'draft.submit', draft.code, req.ip);
     const io = req.app.get('io');
-    if (io) io.emit('data_changed', { type: 'draft' });
+    if (io) {
+      io.emit('data_changed', { type: 'draft' });
+      io.emit('notification', {
+        message: `Draf pengadaan baru ${draft.code} - "${draft.title}" telah diajukan oleh Kepala Lab.`,
+        roles: ['kaprodi'],
+        kind: 'info'
+      });
+    }
     res.json({ data: draft });
   } catch (err) {
     console.error(err);
@@ -160,7 +167,14 @@ const approveDraftItems = async (req, res) => {
 
     await logAudit(req.user.id, 'draft.review', `${draft.code} · ${decisions.length} item`, req.ip);
     const io = req.app.get('io');
-    if (io) io.emit('data_changed', { type: 'draft' });
+    if (io) {
+      io.emit('data_changed', { type: 'draft' });
+      io.emit('notification', {
+        message: `Review item draf ${draft.code} telah diperbarui oleh Kaprodi.`,
+        roles: ['kalab'],
+        kind: 'info'
+      });
+    }
     res.json({ message: 'Review berhasil disimpan.' });
   } catch (err) {
     console.error(err);
@@ -183,7 +197,14 @@ const finalizeDraft = async (req, res) => {
 
     await logAudit(req.user.id, 'draft.finalize', draft.code, req.ip);
     const io = req.app.get('io');
-    if (io) io.emit('data_changed', { type: 'draft' });
+    if (io) {
+      io.emit('data_changed', { type: 'draft' });
+      io.emit('notification', {
+        message: `Draf pengadaan ${draft.code} telah disetujui & difinalisasi oleh Kaprodi. Siap diterima oleh Admin!`,
+        roles: ['kalab', 'admin'],
+        kind: 'ok'
+      });
+    }
     res.json({ data: draft });
   } catch (err) {
     console.error(err);
