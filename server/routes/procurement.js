@@ -1,5 +1,7 @@
 const router = require('express').Router();
 const { authenticate, authorize } = require('../middleware/auth');
+const { validate } = require('../middleware/validation');
+const { createDraftSchema, draftItemSchema } = require('../schemas/procurement');
 const {
   getDrafts, createDraft, updateDraft, submitDraft, addDraftItem, deleteDraftItem,
   getDraftsForReview, approveDraftItems, finalizeDraft, getDraftHistory,
@@ -10,10 +12,10 @@ router.use(authenticate);
 
 // Kalab — pengadaan
 router.get('/drafts', authorize('kalab', 'kaprodi', 'admin'), getDrafts);
-router.post('/drafts', authorize('kalab'), createDraft);
+router.post('/drafts', authorize('kalab'), validate(createDraftSchema), createDraft);
 router.put('/drafts/:id', authorize('kalab'), updateDraft);
 router.post('/drafts/:id/submit', authorize('kalab'), submitDraft);
-router.post('/drafts/:id/items', authorize('kalab'), addDraftItem);
+router.post('/drafts/:id/items', authorize('kalab'), validate(draftItemSchema), addDraftItem);
 router.delete('/items/:itemId', authorize('kalab'), deleteDraftItem);
 
 // Kaprodi — review

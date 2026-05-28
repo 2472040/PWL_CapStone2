@@ -35,7 +35,8 @@
     "sequelize": "^6.37.8",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
-    "unicornstudio-react": "^2.1.9"
+    "unicornstudio-react": "^2.1.9",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.0",

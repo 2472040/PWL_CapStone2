@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useStore, useToast, D, Icon } from '../../../components/app-shell.jsx';
 import { apiFetch } from '../../../services/api.js';
+import { createDraftSchema } from '../../../schemas/procurementSchema.js';
 
 function formatThousand(val) {
   if (val === undefined || val === null || val === '') return '';
@@ -25,8 +26,36 @@ export function NewDraftForm({ close }) {
   const total = items.reduce((s, it) => s + (Number(it.qty) || 0) * (Number(it.price) || 0), 0);
 
   async function handleSave(shouldSubmit = false) {
-    const valid = items.filter(it => it.name && Number(it.price) > 0);
-    if (valid.length === 0) { toast('Tambahkan minimal 1 item dengan nama & harga', 'warn'); return; }
+    // Filter out completely blank items (user-friendly cleanup)
+    const nonBlankItems = items.filter(it => 
+      it.name.trim() !== '' || 
+      it.qty !== '' || 
+      it.unit.trim() !== '' || 
+      it.price !== '' || 
+      (it.link && it.link.trim() !== '') || 
+      (it.replaces && it.replaces.trim() !== '')
+    );
+
+    const payload = {
+      title,
+      items: nonBlankItems.map(it => ({
+        kind: it.kind,
+        name: it.name,
+        qty: it.qty === '' ? undefined : Number(it.qty),
+        unit: it.unit,
+        price: it.price === '' ? undefined : Number(it.price),
+        link: it.link || null,
+        replaces: it.replaces || null
+      }))
+    };
+
+    // Client-side Zod validation
+    const validationResult = createDraftSchema.safeParse(payload);
+    if (!validationResult.success) {
+      const firstError = validationResult.error.errors[0]?.message || 'Input data tidak valid.';
+      toast(firstError, 'warn');
+      return;
+    }
     
     setLoading(true);
     try {
@@ -34,15 +63,7 @@ export function NewDraftForm({ close }) {
         method: 'POST',
         body: JSON.stringify({
           title,
-          items: valid.map(it => ({
-            kind: it.kind,
-            name: it.name,
-            qty: Number(it.qty) || 1,
-            unit: it.unit || 'unit',
-            price: Number(it.price) || 0,
-            link: it.link || null,
-            replaces: it.replaces || null
-          }))
+          items: payload.items
         })
       });
       

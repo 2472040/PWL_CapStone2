@@ -127,4 +127,24 @@ describe('Procurement Workflow Integration Test', () => {
 
     expect(resFinalizeBad.status).toBe(403);
   });
+
+  it('should reject draft creation with invalid data (Zod Validation)', async () => {
+    const invalidPayload = {
+      title: 'Short', // Kurang dari 5 karakter
+      items: [
+        { kind: 'InvalidKind', name: 'Ab', qty: -5, unit: '', price: 0 } // invalid kind, short name, negative qty, empty unit, zero price
+      ]
+    };
+
+    const res = await request(app)
+      .post('/api/procurement/drafts')
+      .set('Authorization', `Bearer ${kalabToken}`)
+      .set('Cookie', 'csrfToken=test_csrf')
+      .set('x-csrf-token', 'test_csrf')
+      .send(invalidPayload);
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBeDefined();
+    expect(res.body.details).toBeDefined();
+  });
 });
