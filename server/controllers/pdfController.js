@@ -1,4 +1,4 @@
-const PdfPrinter = require('pdfmake');
+const PdfPrinter = require('pdfmake/js/Printer').default;
 const { Draft, DraftItem, DraftApproval, User } = require('../models');
 
 const fonts = {
@@ -146,7 +146,7 @@ const generateBastPdf = async (req, res) => {
       }
     };
 
-    const pdfDoc = printer.createPdfKitDocument(docDefinition);
+    const pdfDoc = await printer.createPdfKitDocument(docDefinition);
     
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=BAST-${draft.code}.pdf`);

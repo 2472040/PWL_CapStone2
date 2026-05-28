@@ -198,6 +198,7 @@ export function NewUserForm({ payload, close }) {
   const [name, setName] = useState(payload?.name || '');
   const [email, setEmail] = useState(payload?.email || '');
   const [role, setRole] = useState(payload?.role || 'staflab');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function save() {
@@ -213,8 +214,9 @@ export function NewUserForm({ payload, close }) {
         role
       };
       
-      // Password is only set on creation
-      if (!isEdit) {
+      if (password) {
+        body.password = password;
+      } else if (!isEdit) {
         body.password = 'password123';
       }
 
@@ -257,6 +259,10 @@ export function NewUserForm({ payload, close }) {
           <select className="select" value={role} onChange={e => setRole(e.target.value)} disabled={loading}>
             {D.roles.map(r => <option key={r.id} value={r.id}>{r.title}</option>)}
           </select>
+        </div>
+        <div className="field">
+          <div className="field-lbl">{isEdit ? 'Ubah Password (kosongkan jika tidak ingin diubah)' : 'Password'}</div>
+          <input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={isEdit ? "Masukkan password baru jika ingin diubah" : "password123"} disabled={loading} />
         </div>
         <div className="card compact text-xs text-3 mt-4" >
           <Icon name="info" size={11} /> {isEdit ? 'Perubahan role akan segera mencabut sesi aktif pengguna tersebut.' : 'Pengguna baru dapat langsung login menggunakan password default.'}

@@ -15,8 +15,8 @@ router.post('/users', authorize('sysadmin'), createUser);
 router.put('/users/:id', authorize('sysadmin'), updateUser);
 router.delete('/users/:id', authorize('sysadmin'), deleteUser);
 
-// Rooms — sysadmin only
-router.get('/rooms', authorize('sysadmin'), getRooms);
+// Rooms — sysadmin can modify, other roles can view
+router.get('/rooms', authorize('sysadmin', 'admin', 'staflab', 'kalab'), getRooms);
 router.post('/rooms', authorize('sysadmin'), createRoom);
 router.put('/rooms/:id', authorize('sysadmin'), updateRoom);
 router.delete('/rooms/:id', authorize('sysadmin'), deleteRoom);

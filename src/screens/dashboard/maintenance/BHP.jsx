@@ -8,6 +8,11 @@ export function BHP() {
   const toast = useToast();
   const role = D.roles.find(r => r.id === state.role);
 
+  const [reductionItem, setReductionItem] = useState(null);
+  const [reductionQty, setReductionQty] = useState('');
+  const [reductionReason, setReductionReason] = useState('');
+  const [reducing, setReducing] = useState(false);
+
   useEffect(() => {
     async function loadBhpData() {
       try {
@@ -56,22 +61,42 @@ export function BHP() {
     }
   }
 
-  async function decrement(id) {
-    const b = state.bhp.find(x => x.id === id);
-    const newStock = Math.max(0, b.stock - 1);
+  async function submitReduction() {
+    if (!reductionQty || isNaN(parseFloat(reductionQty)) || parseFloat(reductionQty) <= 0) {
+      toast('Jumlah pengurangan tidak valid!', 'warn');
+      return;
+    }
+    if (parseFloat(reductionQty) > reductionItem.stock) {
+      toast(`Jumlah melebihi stok yang ada (${reductionItem.stock} ${reductionItem.unit})!`, 'warn');
+      return;
+    }
+    if (!reductionReason.trim()) {
+      toast('Keterangan keperluan wajib diisi!', 'warn');
+      return;
+    }
+
+    setReducing(true);
     try {
-      const res = await apiFetch(`/bhp/${b.dbId}`, {
+      const qty = parseFloat(reductionQty);
+      const newStock = Math.max(0, reductionItem.stock - qty);
+      
+      const res = await apiFetch(`/bhp/${reductionItem.dbId}`, {
         method: 'PUT',
         body: JSON.stringify({
-          stock: newStock
+          stock: newStock,
+          reason: reductionReason.trim()
         })
       });
+      
       if (res.data) {
-        dispatch({ type: 'BHP_DELTA', id, delta: -1 });
-        toast(`−1 ${b.unit}`, 'info');
+        dispatch({ type: 'BHP_DELTA', id: reductionItem.id, delta: -qty });
+        toast(`−${qty} ${reductionItem.unit} (${reductionItem.name}) berhasil dikurangi`, 'ok');
+        setReductionItem(null);
       }
     } catch (err) {
       toast('Gagal mengurangi stok: ' + err.message, 'warn');
+    } finally {
+      setReducing(false);
     }
   }
 
@@ -127,12 +152,81 @@ export function BHP() {
               <div className="flex gap-1" >
                 <button className="act-btn text-violet hover:bg-violet/10" style={{ color: '#a855f7' }} onClick={() => dispatch({ type: 'OPEN_MODAL', modal: { kind: 'aiPredictive', payload: { bhpId: b.dbId, bhpName: b.name } } })} title="AI Predictive Analysis"><Icon name="bolt" size={12} strokeWidth={2.4} /></button>
                 <button className="act-btn" onClick={() => restock(b.id)} title="Restock" aria-label={`Restock ${b.name}`}><Icon name="plus" size={12} strokeWidth={2.4} /></button>
-                <button className="act-btn" onClick={() => decrement(b.id)} title="−1" aria-label={`Kurangi 1 ${b.unit} ${b.name}`}><Icon name="minus" size={12} strokeWidth={2.4} /></button>
+                <button className="act-btn" onClick={() => { setReductionItem(b); setReductionQty('1'); setReductionReason(''); }} title="Kurangi Stok" aria-label={`Kurangi stok ${b.name}`}><Icon name="minus" size={12} strokeWidth={2.4} /></button>
               </div>
             </div>
           );
         })}
       </div>
+
+      {reductionItem && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.6)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          animation: 'fade-in 0.2s ease-out'
+        }}>
+          <div className="card" style={{
+            width: '90%',
+            maxWidth: '420px',
+            background: 'var(--surface)',
+            border: '1px solid var(--line-2)',
+            boxShadow: 'var(--shadow-lg)',
+            borderRadius: '16px',
+            padding: '24px',
+            animation: 'scale-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)'
+          }}>
+            <div className="h-12 w-12 mb-4 flex items-center justify-center" style={{borderRadius: '50%', background: 'rgba(239,68,68,0.15)', color: '#ef4444'}}>
+              <Icon name="minus" size={20} strokeWidth={2.4} />
+            </div>
+            <h3 className="text-lg font-bold tracking-tight mb-1" style={{color: 'var(--color-ink)'}}>Pengurangan Stok BHP</h3>
+            <p className="text-xs text-ink-3 mb-5 leading-relaxed">Silakan tentukan jumlah pengurangan untuk <b>{reductionItem.name}</b> dan berikan keterangan lengkap penggunaannya.</p>
+            
+            <div className="field mb-4">
+              <label className="field-lbl">Jumlah Pengurangan ({reductionItem.unit}) <span className="req">*</span></label>
+              <input 
+                className="input w-full" 
+                type="number" 
+                step="any" 
+                min="0.1" 
+                max={reductionItem.stock}
+                value={reductionQty} 
+                onChange={e => setReductionQty(e.target.value)} 
+                placeholder={`Maksimal ${reductionItem.stock} ${reductionItem.unit}`} 
+                disabled={reducing}
+                autoFocus 
+              />
+            </div>
+            
+            <div className="field mb-6">
+              <label className="field-lbl">Keterangan / Keperluan Penggunaan <span className="req">*</span></label>
+              <textarea 
+                className="textarea w-full" 
+                value={reductionReason} 
+                onChange={e => setReductionReason(e.target.value)} 
+                placeholder="Contoh: Digunakan untuk bahan praktikum Jaringan Komputer Kelas B" 
+                disabled={reducing}
+                rows={3}
+              />
+            </div>
+            
+            <div className="flex gap-2 justify-end pt-4" style={{borderTop: '1px solid var(--line)'}}>
+              <button className="btn" onClick={() => setReductionItem(null)} disabled={reducing}>Batal</button>
+              <button className="btn danger" onClick={submitReduction} disabled={reducing}>
+                {reducing ? 'Mengurangi...' : 'Kurangi Stok'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

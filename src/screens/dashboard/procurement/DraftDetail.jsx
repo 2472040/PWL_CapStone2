@@ -251,8 +251,6 @@ export function KalabKaprodiItems({ draft, mode, locked, setApproval, totals, on
                       <Icon name="check" size={13} strokeWidth={2.4} />
                     </button>
                   </>
-                ) : mode === 'kalab' && !locked ? (
-                  <button className="act-btn danger" onClick={() => onRemoveItem(it.id)} title="Hapus item draf"><Icon name="trash" size={12} /></button>
                 ) : (
                   <button className="act-btn" title="Detail"><Icon name="eye" size={12} /></button>
                 )}

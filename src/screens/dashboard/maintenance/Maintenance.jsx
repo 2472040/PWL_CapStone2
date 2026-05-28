@@ -14,7 +14,9 @@ export function Maintenance() {
         if (res.data) {
           const formatted = res.data.map(l => ({
             id: l.code || l.id,
+            dbId: l.id,
             date: new Date(l.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+            rawDate: l.date,
             asset: l.Inventory?.code,
             name: l.Inventory?.name,
             action: l.action,
@@ -102,6 +104,7 @@ export function Maintenance() {
               <th>Teknisi</th>
               <th>Kondisi</th>
               <th>BHP</th>
+              <th>Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -117,6 +120,11 @@ export function Maintenance() {
                   {(!l.bhp || l.bhp.length === 0) ? <span className="text-3">—</span> : l.bhp.map((b, i) => (
                     <div key={i}>{b.id}: −{b.qty}{b.unit}</div>
                   ))}
+                </td>
+                <td>
+                  <button className="act-btn" onClick={() => dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'maintenance', payload: l } })} title="Ubah Log" aria-label={`Ubah Log ${l.id}`}>
+                    <Icon name="edit" size={12} />
+                  </button>
                 </td>
               </tr>
             ))}

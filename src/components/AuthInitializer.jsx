@@ -58,8 +58,8 @@ export function AuthInitializer({ pendingRole }) {
         const role = currentRole || pendingRole || (() => { try { return localStorage.getItem('loka-role'); } catch (e) { return null; } })();
         if (!role) return;
 
-        // 1. Fetch Rooms (Sysadmin only on backend, or general fallback)
-        if (role === 'sysadmin') {
+        // 1. Fetch Rooms (Sysadmin, Staf Lab, Admin, and Kalab)
+        if (role === 'sysadmin' || role === 'staflab' || role === 'admin' || role === 'kalab') {
           try {
             const resRooms = await apiFetch('/rooms');
             if (resRooms.data) {
@@ -200,6 +200,7 @@ export function AuthInitializer({ pendingRole }) {
               name: i.name,
               cat: i.category,
               room: i.Room?.name || 'Gudang',
+              roomId: i.room_id || (i.Room ? i.Room.id : null),
               cond: i.condition || 'Baik',
               last: i.last_checked ? new Date(i.last_checked).toLocaleDateString('id-ID') : 'Baru saja',
               acquired: i.acquired_date ? i.acquired_date.substring(0, 7) : '2025-01',

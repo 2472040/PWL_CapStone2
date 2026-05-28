@@ -19,7 +19,9 @@ Tujuan Projek
 - [x] 3. Kriptografi Backup (AES-256-GCM)
   - [x] Ubah enkripsi di `server/controllers/backupController.js` menggunakan `aes-256-gcm` dan *Authentication Tag*
   - [x] Turunkan kunci backup dari `process.env.BACKUP_ENCRYPTION_SECRET` (bukan JWT_SECRET)
-  - [x] Uji dekripsi & restore di `backupController.js` dengan memverifikasi *Auth Tag* sebelum parsing data
+  - [x] Delete CSV Bulk Import UI & Drawer Registry
+  - [x] Remove "Import CSV" button in `Inventory.jsx`
+  - [x] Remove `bulkImport` registry & import in `main.jsx`
 
 4. Staf Administrasi
 - Melihat draf pengadaan barang yang telah disetujui oleh ketua program studi.

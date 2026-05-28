@@ -108,7 +108,9 @@ const updateBhp = async (req, res) => {
     const bhp = await Bhp.findByPk(req.params.id);
     if (!bhp) return res.status(404).json({ error: 'BHP tidak ditemukan.' });
 
-    const { stock, min_stock, last_in, name, unit, category } = req.body;
+    const { stock, min_stock, last_in, name, unit, category, reason } = req.body;
+    const oldStock = parseFloat(bhp.stock) || 0;
+
     if (stock !== undefined) bhp.stock = stock;
     if (min_stock !== undefined) bhp.min_stock = min_stock;
     if (last_in) bhp.last_in = last_in;
@@ -117,7 +119,19 @@ const updateBhp = async (req, res) => {
     if (category) bhp.category = category;
 
     await bhp.save();
-    await logAudit(req.user.id, 'bhp.update', `${bhp.code} (stok: ${bhp.stock})`, req.ip);
+
+    const diff = oldStock - bhp.stock;
+    let detailStr = `Stok: ${oldStock} ➔ ${bhp.stock}`;
+    if (diff > 0) {
+      detailStr += ` (Pengurangan: -${diff} ${bhp.unit || 'unit'})`;
+      if (reason) {
+        detailStr += `, Keperluan: ${reason}`;
+      }
+    } else if (diff < 0) {
+      detailStr += ` (Penambahan: +${Math.abs(diff)} ${bhp.unit || 'unit'})`;
+    }
+
+    await logAudit(req.user.id, 'bhp.update', `${bhp.code} (${bhp.name})`, req.ip, detailStr);
 
     const io = req.app.get('io');
     if (io) io.emit('data_changed', { type: 'bhp' });
@@ -287,4 +301,62 @@ const getBhpPrediction = async (req, res) => {
   }
 };
 
-module.exports = { getMaintenanceLogs, createMaintenance, getBhp, updateBhp, createBhp, getBhpPrediction };
+const updateMaintenance = async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    const log = await MaintenanceLog.findByPk(req.params.id, {
+      include: [{ model: Inventory, attributes: ['id', 'code', 'name'] }]
+    });
+    if (!log) return res.status(404).json({ error: 'Log maintenance tidak ditemukan.' });
+
+    const { action, condition_after, date } = req.body;
+    const diffs = [];
+
+    if (action && action !== log.action) {
+      diffs.push(`Tindakan: ${log.action} ➔ ${action}`);
+      log.action = action;
+    }
+    if (condition_after && condition_after !== log.condition_after) {
+      diffs.push(`Kondisi setelahnya: ${log.condition_after} ➔ ${condition_after}`);
+      log.condition_after = condition_after;
+      
+      const inventory = await Inventory.findByPk(log.inventory_id, { transaction: t });
+      if (inventory) {
+        inventory.condition = condition_after;
+        inventory.last_checked = new Date();
+        await inventory.save({ transaction: t });
+      }
+    }
+    if (date && date !== log.date) {
+      diffs.push(`Tanggal: ${log.date} ➔ ${date}`);
+      log.date = date;
+    }
+
+    await log.save({ transaction: t });
+    await t.commit();
+
+    const details = diffs.length > 0 ? diffs.join(', ') : 'Tidak ada perubahan field';
+    await logAudit(req.user.id, 'maintenance.update', log.code, req.ip, details);
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('data_changed', { type: 'maintenance' });
+      io.emit('data_changed', { type: 'inventory' });
+    }
+
+    const result = await MaintenanceLog.findByPk(log.id, {
+      include: [
+        { model: Inventory, attributes: ['id', 'code', 'name'] },
+        { model: MaintenanceBhp, as: 'bhpUsed', include: [{ model: Bhp }] }
+      ]
+    });
+
+    res.json({ data: result });
+  } catch (err) {
+    await t.rollback();
+    console.error('[Update Maintenance Error]', err);
+    res.status(500).json({ error: 'Gagal memperbarui log maintenance.' });
+  }
+};
+
+module.exports = { getMaintenanceLogs, createMaintenance, getBhp, updateBhp, createBhp, getBhpPrediction, updateMaintenance };
