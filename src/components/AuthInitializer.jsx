@@ -227,6 +227,8 @@ export function AuthInitializer({ pendingRole }) {
 
     socket.on('connect', () => {
       console.log('⚡ Connected to LokaLab WebSocket Real-time Sync');
+      // Sync immediately on connect or reconnect (e.g. after sleep wakeup)
+      pollData();
     });
 
     socket.on('data_changed', (payload) => {
@@ -234,8 +236,16 @@ export function AuthInitializer({ pendingRole }) {
       pollData();
     });
 
+    // Handle online event in case network drops and reconnects
+    window.addEventListener('online', pollData);
+
+    // Safety net: background polling at a very relaxed rate (e.g. 30 seconds)
+    const safetyInterval = setInterval(pollData, 30000);
+
     return () => {
       socket.disconnect();
+      window.removeEventListener('online', pollData);
+      clearInterval(safetyInterval);
     };
   }, [currentRole, pendingRole, state.screen, dispatch]);
 
