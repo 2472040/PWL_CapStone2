@@ -323,7 +323,9 @@ export function Maintenance() {
                                 title="Log Detail & BHP" 
                                 onClick={() => {
                                   setActiveModal(null);
-                                  dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'maintenance', payload: { asset: i.code, cond: 'Baik' } } });
+                                  setTimeout(() => {
+                                    dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'maintenance', payload: { asset: i.code, cond: 'Baik' } } });
+                                  }, 200);
                                 }}
                               >
                                 <Icon name="edit" size={12} /> Log Detail
@@ -382,7 +384,9 @@ export function Maintenance() {
                                 title="Log Detail & BHP" 
                                 onClick={() => {
                                   setActiveModal(null);
-                                  dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'maintenance', payload: { asset: i.code } } });
+                                  setTimeout(() => {
+                                    dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'maintenance', payload: { asset: i.code } } });
+                                  }, 200);
                                 }}
                               >
                                 <Icon name="edit" size={12} /> Log Detail
