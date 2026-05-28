@@ -158,7 +158,7 @@ export function TiltEngine() {
 }
 
 // =========================================================
-// Global Glass Hover & Shine Engine
+// Global Card Hover Engine — subtle float & accent glow
 // =========================================================
 export function CardHoverEngine() {
   const { state } = useStore();
@@ -169,11 +169,8 @@ export function CardHoverEngine() {
     const onEnter = (e) => {
       const card = e.target.closest('.card, .stat-tile, .draft-card, .inv-card');
       if (!card) return;
-
-      // Skip tilt cards to avoid conflict with TiltEngine
       if (card.classList.contains('tilt-card')) return;
 
-      // Get dynamic accent color from document
       const roleAccent = document.documentElement.style.getPropertyValue('--role-accent') || '#a78bfa';
 
       window.gsap.to(card, {
@@ -185,31 +182,6 @@ export function CardHoverEngine() {
         ease: 'power2.out',
         overwrite: 'auto'
       });
-
-      let shine = card.querySelector('.glass-shine');
-      if (!shine) {
-        shine = document.createElement('div');
-        shine.className = 'glass-shine';
-        Object.assign(shine.style, {
-          position: 'absolute',
-          top: '0',
-          left: '-150%',
-          width: '100%',
-          height: '100%',
-          background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.08) 50%, transparent 100%)',
-          transform: 'skewX(-25deg)',
-          pointerEvents: 'none',
-          zIndex: '2',
-        });
-        card.style.position = 'relative';
-        card.style.overflow = 'hidden';
-        card.appendChild(shine);
-      }
-
-      window.gsap.fromTo(shine,
-        { left: '-150%' },
-        { left: '150%', duration: 1.0, ease: 'power2.inOut', overwrite: 'auto' }
-      );
     };
 
     const onLeave = (e) => {
