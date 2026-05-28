@@ -97,14 +97,14 @@ function BentoCard({ f }) {
       card.style.setProperty('--mouse-y', `${y}px`);
 
       // 3D Tilt effect
-      const rotateX = (y - rect.height / 2) / -20;
-      const rotateY = (x - rect.width / 2) / 20;
-      card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+      const rotateX = (y - rect.height / 2) / -50;
+      const rotateY = (x - rect.width / 2) / 50;
+      card.style.transform = `perspective(1800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.005, 1.005, 1.005)`;
       card.style.zIndex = 10;
     };
 
     const handleMouseLeave = () => {
-      card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale3d(1, 1, 1)';
+      card.style.transform = 'perspective(1800px) rotateX(0) rotateY(0) scale3d(1, 1, 1)';
       card.style.zIndex = 1;
     };
 

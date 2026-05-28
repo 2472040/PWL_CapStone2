@@ -752,12 +752,12 @@ function TiltEngine() {
       const rect = card.getBoundingClientRect();
       const x = (e.clientX - rect.left) / rect.width;
       const y = (e.clientY - rect.top) / rect.height;
-      const rotateX = (y - 0.5) * -12; // deg
-      const rotateY = (x - 0.5) * 12;
-      card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.01, 1.01, 1.01)`;
+      const rotateX = (y - 0.5) * -5; // deg — subtle tilt
+      const rotateY = (x - 0.5) * 5;
+      card.style.transform = `perspective(1800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.005, 1.005, 1.005)`;
       const shine = card.querySelector('.tilt-shine');
       if (shine) {
-        shine.style.background = `linear-gradient(${135 + rotateY * 3}deg, rgba(255,255,255,${0.08 + Math.abs(x - 0.5) * 0.06}) 0%, transparent 60%)`;
+        shine.style.background = `linear-gradient(${135 + rotateY * 2}deg, rgba(255,255,255,${0.04 + Math.abs(x - 0.5) * 0.03}) 0%, transparent 60%)`;
       }
     };
 

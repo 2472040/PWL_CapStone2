@@ -70,11 +70,11 @@ export default function HeroSection({ onEnterApp }) {
       const x = e.clientX - rect.left - rect.width / 2;
       const y = e.clientY - rect.top - rect.height / 2;
       gsap.to(el, {
-        rotationY: x * 0.03,
-        rotationX: -y * 0.03,
+        rotationY: x * 0.015,
+        rotationX: -y * 0.015,
         duration: 0.8,
         ease: 'power2.out',
-        transformPerspective: 1000
+        transformPerspective: 1800
       });
     };
     const handleLeave = () => {
