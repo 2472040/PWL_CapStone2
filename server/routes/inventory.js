@@ -2,7 +2,7 @@ const router = require('express').Router();
 const { authenticate, authorize } = require('../middleware/auth');
 const {
   getInventory, getInventoryDetail, createInventory, updateInventory,
-  updateLabel, getLabels,
+  updateLabel, getLabels, importInventory,
 } = require('../controllers/inventoryController');
 
 router.use(authenticate);
@@ -11,8 +11,9 @@ router.use(authenticate);
 router.get('/', getInventory);
 router.get('/:id', getInventoryDetail);
 
-// Admin & sysadmin can create/update inventory
+// Admin & sysadmin can create/update/import inventory
 router.post('/', authorize('sysadmin', 'admin'), createInventory);
+router.post('/import', authorize('sysadmin', 'admin'), importInventory);
 router.put('/:id', authorize('sysadmin', 'admin', 'staflab'), updateInventory);
 
 // Admin: label management

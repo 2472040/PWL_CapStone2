@@ -109,6 +109,60 @@ const getDashboardStats = async (req, res) => {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
+    // 4. Monthly Financial Analytics (Requested vs Approved vs Savings)
+    const last6Months = [];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      last6Months.push({
+        monthKey: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+        name: monthNames[d.getMonth()],
+        requested: 0,
+        approved: 0,
+        saved: 0
+      });
+    }
+
+    const allDraftsForChart = await Draft.findAll({
+      include: [{
+        model: DraftItem,
+        as: 'items',
+        include: [{ model: DraftApproval, as: 'approval' }]
+      }],
+      order: [['created_at', 'ASC']]
+    });
+
+    allDraftsForChart.forEach(d => {
+      const date = new Date(d.finalized_at || d.submitted_at || d.created_at);
+      const mKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const bucket = last6Months.find(m => m.monthKey === mKey);
+      
+      if (bucket) {
+        d.items.forEach(it => {
+          const subtotal = (parseFloat(it.qty) || 0) * (parseFloat(it.price) || 0);
+          bucket.requested += subtotal;
+          
+          if (!it.approval || it.approval.status === 'approved') {
+            bucket.approved += subtotal;
+          }
+        });
+      }
+    });
+
+    // Calculate savings
+    last6Months.forEach(b => {
+      b.saved = Math.max(0, b.requested - b.approved);
+    });
+
+    stats.financialAnalytics = last6Months.map(b => ({
+      month: b.name,
+      requested: b.requested,
+      approved: b.approved,
+      saved: b.saved
+    }));
+
     // Role-specific stats
     if (role === 'sysadmin') {
       stats.totalUsers = await User.count();

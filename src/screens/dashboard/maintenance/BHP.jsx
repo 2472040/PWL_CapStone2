@@ -100,7 +100,7 @@ export function BHP() {
       )}
 
       <div className="bhp-list" data-reveal>
-        <div className="" style={{display: 'grid', gridTemplateColumns: '90px 1fr 100px 1fr 100px 80px', gap: 14, padding: '12px 18px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--color-line)', fontSize: 10.5, fontWeight: 600, color: 'var(--ink-3)', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace'}}>
+        <div className="" style={{display: 'grid', gridTemplateColumns: '90px 1fr 100px 1fr 100px 110px', gap: 14, padding: '12px 18px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--color-line)', fontSize: 10.5, fontWeight: 600, color: 'var(--ink-3)', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace'}}>
           <div>ID</div>
           <div>NAMA / KATEGORI</div>
           <div>STOK</div>
@@ -125,6 +125,7 @@ export function BHP() {
               </div>
               <div className="text-3 mono text-xs">{b.lastIn}</div>
               <div className="flex gap-1" >
+                <button className="act-btn text-violet hover:bg-violet/10" style={{ color: '#a855f7' }} onClick={() => dispatch({ type: 'OPEN_MODAL', modal: { kind: 'aiPredictive', payload: { bhpId: b.dbId, bhpName: b.name } } })} title="AI Predictive Analysis"><Icon name="bolt" size={12} strokeWidth={2.4} /></button>
                 <button className="act-btn" onClick={() => restock(b.id)} title="Restock" aria-label={`Restock ${b.name}`}><Icon name="plus" size={12} strokeWidth={2.4} /></button>
                 <button className="act-btn" onClick={() => decrement(b.id)} title="−1" aria-label={`Kurangi 1 ${b.unit} ${b.name}`}><Icon name="minus" size={12} strokeWidth={2.4} /></button>
               </div>

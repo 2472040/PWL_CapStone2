@@ -45,6 +45,10 @@ async function start() {
       await tokenBlacklist.cleanup();
     }, 6 * 60 * 60 * 1000);
 
+    // Initialize Automated Scheduled Backups (Daily Cron)
+    const { initializeScheduler } = require('./utils/scheduler');
+    initializeScheduler();
+
     // Start server
     const server = http.createServer(app);
     const io = new Server(server, {

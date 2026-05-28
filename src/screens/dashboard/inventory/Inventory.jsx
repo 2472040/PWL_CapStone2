@@ -56,6 +56,11 @@ export function Inventory() {
           <p className="page-sub">{filtered.length} dari {state.inventory.length} aset. Klik kartu untuk membuka detail dan riwayat maintenance.</p>
         </div>
         <div className="flex gap-2" >
+          {(state.role === 'admin' || state.role === 'sysadmin') && (
+            <button className="btn" onClick={() => dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'bulkImport' } })} style={{ borderColor: 'rgba(168,85,247,0.35)', color: 'var(--color-violet)' }}>
+              <Icon name="upload" size={13} /> Import CSV
+            </button>
+          )}
           {state.role === 'admin' && <button className="btn" onClick={() => window.showToast && window.showToast('Generate bulk label QR…', 'info', 'qr')}><Icon name="qr" size={13} /> Bulk label</button>}
           {state.role === 'admin' && <button className="btn primary" onClick={() => window.showToast && window.showToast('Form tambah aset akan segera hadir', 'warn', 'info')}><Icon name="plus" size={13} strokeWidth={2.4} /> Tambah aset</button>}
         </div>

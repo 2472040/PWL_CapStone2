@@ -35,6 +35,8 @@ import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { Router } from './components/Router.jsx';
 import { AuthInitializer } from './components/AuthInitializer.jsx';
 import { LoginScreen } from './screens/auth/LoginScreen.jsx';
+import { BulkImportModal } from './components/BulkImportModal.jsx';
+import { AiPredictiveModal } from './components/AiPredictiveModal.jsx';
 
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -65,12 +67,15 @@ Object.assign(DrawerContent, {
   newDraft: NewDraftForm,
   qrScanner: QRScanner,
   newBhp: NewBhpForm, // Register the new Manual Restock Drawer
+  bulkImport: BulkImportModal,
 });
 
 Object.assign(ModalContent, {
   logout: LogoutModal,
   changePassword: ChangePasswordModal,
+  aiPredictive: AiPredictiveModal,
 });
+
 
 function Shell({ onLogout }) {
   const { state, dispatch } = useStore();

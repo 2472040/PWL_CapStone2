@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useStore, StatTile, D, Icon } from '../../components/app-shell.jsx';
 import { apiFetch } from '../../services/api.js';
+import { FinancialChart } from '../../components/FinancialChart.jsx';
 
 export function Dashboard() {
   const { state, dispatch } = useStore();
@@ -149,6 +150,12 @@ export function Dashboard() {
           <StatTile key={i} label={t.l} value={t.v} fmt={t.f} icon={t.i} delta={t.d} accent={i === 0 ? role.accent : undefined} />
         ))}
       </div>
+
+      {(state.role === 'kaprodi' || state.role === 'kalab') && (
+        <div className="mb-3.5" data-reveal>
+          <FinancialChart data={dashboardData?.financialAnalytics} />
+        </div>
+      )}
 
       <div className="gap-3.5 grid" >
         <div className="card glow" style={{'--role-accent': role.accent}} data-reveal>

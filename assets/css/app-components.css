@@ -333,7 +333,7 @@ html[data-theme="light"] .role-popover { background: rgba(255,255,255,0.95); }
   border: 1px solid var(--color-line); background: var(--color-surface);
 }
 .bhp-row {
-  display: grid; grid-template-columns: 90px 1fr 100px 1fr 100px 80px;
+  display: grid; grid-template-columns: 90px 1fr 100px 1fr 100px 110px;
   gap: 14px; padding: 14px 18px; align-items: center;
   border-bottom: 1px solid var(--color-line);
   transition: background 0.2s;

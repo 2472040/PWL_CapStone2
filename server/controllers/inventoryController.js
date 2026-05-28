@@ -1,6 +1,7 @@
 const { Inventory, Room, Label, MaintenanceLog, User } = require('../models');
 const { Op } = require('sequelize');
 const { logAudit } = require('../middleware/audit');
+const sequelize = require('../config/database');
 
 const getInventory = async (req, res) => {
   try {
@@ -147,4 +148,60 @@ const getLabels = async (req, res) => {
   }
 };
 
-module.exports = { getInventory, getInventoryDetail, createInventory, updateInventory, updateLabel, getLabels };
+const importInventory = async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    const { items } = req.body;
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'Data inventaris tidak valid atau kosong.' });
+    }
+
+    const importedItems = [];
+    for (const item of items) {
+      const { code, name, category, room_id, condition, acquired_date, value, serial, specs } = item;
+      if (!code || !name || !category) {
+        throw new Error(`Item "${name || 'tanpa nama'}" memiliki data yang tidak lengkap (Code, Name, Category wajib diisi).`);
+      }
+
+      // Check if code already exists
+      const existing = await Inventory.findOne({ where: { code } }, { transaction: t });
+      if (existing) {
+        throw new Error(`Kode barang "${code}" sudah terdaftar di sistem.`);
+      }
+
+      // If room_id is specified, verify room exists
+      if (room_id) {
+        const room = await Room.findByPk(room_id, { transaction: t });
+        if (!room) {
+          throw new Error(`Ruangan dengan ID ${room_id} tidak ditemukan.`);
+        }
+      }
+
+      const created = await Inventory.create({
+        code, name, category, room_id: room_id || null, condition: condition || 'Baik',
+        acquired_date: acquired_date || null, value: value || 0, serial: serial || null,
+        specs: specs || null, last_checked: new Date()
+      }, { transaction: t });
+
+      importedItems.push(created);
+    }
+
+    await t.commit();
+
+    // Log audit
+    await logAudit(req.user.id, 'inventory.import', `${importedItems.length} items`, req.ip);
+
+    // WS Broadcast
+    const io = req.app.get('io');
+    if (io) io.emit('data_changed', { type: 'inventory' });
+
+    res.status(201).json({ message: `Berhasil mengimpor ${importedItems.length} barang inventaris.`, count: importedItems.length });
+  } catch (err) {
+    await t.rollback();
+    console.error('[Bulk Import Error]', err);
+    res.status(400).json({ error: err.message || 'Gagal mengimpor inventaris secara massal.' });
+  }
+};
+
+module.exports = { getInventory, getInventoryDetail, createInventory, updateInventory, updateLabel, getLabels, importInventory };
+
