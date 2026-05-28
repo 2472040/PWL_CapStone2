@@ -20,6 +20,7 @@ import {
   SoundIntegration, 
   CursorEnabler, 
   TiltEngine, 
+  CardHoverEngine,
   D 
 } from './components/app-shell.jsx';
 import { CustomCursor } from './components/app-cursor.jsx';
@@ -159,6 +160,7 @@ function Shell({ onLogout }) {
       <ScrollProgress />
       <SoundIntegration />
       <TiltEngine />
+      <CardHoverEngine />
       <MobileSidebarToggle />
       <Sidebar />
       <main className="main">

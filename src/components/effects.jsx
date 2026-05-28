@@ -156,3 +156,86 @@ export function TiltEngine() {
   }, []);
   return null;
 }
+
+// =========================================================
+// Global Glass Hover & Shine Engine
+// =========================================================
+export function CardHoverEngine() {
+  const { state } = useStore();
+  
+  useEffect(() => {
+    if (!window.gsap) return;
+
+    const onEnter = (e) => {
+      const card = e.target.closest('.card, .stat-tile, .draft-card, .inv-card');
+      if (!card) return;
+
+      // Skip tilt cards to avoid conflict with TiltEngine
+      if (card.classList.contains('tilt-card')) return;
+
+      // Get dynamic accent color from document
+      const roleAccent = document.documentElement.style.getPropertyValue('--role-accent') || '#a78bfa';
+
+      window.gsap.to(card, {
+        y: -4,
+        scale: 1.01,
+        borderColor: `${roleAccent}44`,
+        boxShadow: `0 16px 36px -12px rgba(0,0,0,0.6), 0 0 24px -6px ${roleAccent}18`,
+        duration: 0.35,
+        ease: 'power2.out',
+        overwrite: 'auto'
+      });
+
+      let shine = card.querySelector('.glass-shine');
+      if (!shine) {
+        shine = document.createElement('div');
+        shine.className = 'glass-shine';
+        Object.assign(shine.style, {
+          position: 'absolute',
+          top: '0',
+          left: '-150%',
+          width: '100%',
+          height: '100%',
+          background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.08) 50%, transparent 100%)',
+          transform: 'skewX(-25deg)',
+          pointerEvents: 'none',
+          zIndex: '2',
+        });
+        card.style.position = 'relative';
+        card.style.overflow = 'hidden';
+        card.appendChild(shine);
+      }
+
+      window.gsap.fromTo(shine,
+        { left: '-150%' },
+        { left: '150%', duration: 1.0, ease: 'power2.inOut', overwrite: 'auto' }
+      );
+    };
+
+    const onLeave = (e) => {
+      const card = e.target.closest('.card, .stat-tile, .draft-card, .inv-card');
+      if (!card) return;
+      if (card.classList.contains('tilt-card')) return;
+
+      window.gsap.to(card, {
+        y: 0,
+        scale: 1,
+        borderColor: '',
+        boxShadow: '',
+        duration: 0.3,
+        ease: 'power2.out',
+        overwrite: 'auto'
+      });
+    };
+
+    document.addEventListener('mouseover', onEnter, true);
+    document.addEventListener('mouseout', onLeave, true);
+    return () => {
+      document.removeEventListener('mouseover', onEnter, true);
+      document.removeEventListener('mouseout', onLeave, true);
+    };
+  }, [state.role]);
+
+  return null;
+}
+

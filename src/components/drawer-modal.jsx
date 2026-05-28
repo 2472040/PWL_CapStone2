@@ -71,7 +71,7 @@ export function Drawer() {
     if (!drawer || !window.gsap) return;
     window.gsap.killTweensOf([ref.current, backdropRef.current]);
     window.gsap.fromTo(backdropRef.current, { opacity: 0 }, { opacity: 1, duration: 0.25, ease: 'power3.out' });
-    window.gsap.fromTo(ref.current, { x: 80, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: 'power3.out' });
+    window.gsap.fromTo(ref.current, { x: 120, opacity: 0 }, { x: 0, opacity: 1, duration: 0.55, ease: 'back.out(1.1)' });
   }, [drawer]);
 
   if (!activeDrawer) return null;
@@ -154,7 +154,7 @@ export function Modal() {
     if (!modal || !window.gsap) return;
     window.gsap.killTweensOf([ref.current, backdropRef.current]);
     window.gsap.fromTo(backdropRef.current, { opacity: 0 }, { opacity: 1, duration: 0.25, ease: 'power3.out' });
-    window.gsap.fromTo(ref.current, { y: 20, scale: 0.95, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.35, ease: 'power3.out' });
+    window.gsap.fromTo(ref.current, { y: 30, scale: 0.96, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.45, ease: 'back.out(1.25)' });
   }, [modal]);
 
   if (!activeModal) return null;

@@ -9,50 +9,7 @@ export function Dashboard() {
   const [dashboardData, setDashboardData] = useState(null);
   const containerRef = useRef(null);
 
-  // GSAP high-fidelity card & stat-tile hover interaction
-  useEffect(() => {
-    if (!window.gsap || !containerRef.current) return;
-    
-    const cards = containerRef.current.querySelectorAll('.card, .stat-tile');
-    
-    const cleanups = Array.from(cards).map(card => {
-      const handleMouseEnter = () => {
-        window.gsap.to(card, {
-          y: -4,
-          scale: 1.01,
-          borderColor: role.accent + '44',
-          boxShadow: `0 16px 36px -12px rgba(0,0,0,0.6), 0 0 24px -6px ${role.accent}18`,
-          duration: 0.3,
-          ease: 'power2.out',
-          overwrite: 'auto'
-        });
-      };
-      
-      const handleMouseLeave = () => {
-        window.gsap.to(card, {
-          y: 0,
-          scale: 1,
-          borderColor: '',
-          boxShadow: '',
-          duration: 0.3,
-          ease: 'power2.out',
-          overwrite: 'auto'
-        });
-      };
-      
-      card.addEventListener('mouseenter', handleMouseEnter);
-      card.addEventListener('mouseleave', handleMouseLeave);
-      
-      return () => {
-        card.removeEventListener('mouseenter', handleMouseEnter);
-        card.removeEventListener('mouseleave', handleMouseLeave);
-      };
-    });
 
-    return () => {
-      cleanups.forEach(cleanup => cleanup());
-    };
-  }, [state.role, role.accent]);
 
   useEffect(() => {
     async function loadStats() {

@@ -59,18 +59,32 @@ export function PageHost({ children, role, screen }) {
   useEffect(() => {
     if (!window.gsap || !ref.current) return;
     const ctx = window.gsap.context(() => {
-      window.gsap.fromTo(ref.current, { y: 14 }, { y: 0, duration: 0.4, ease: 'power3.out', clearProps: 'transform' });
-      const reveals = ref.current.querySelectorAll('[data-reveal]');
+      // 1. Slide and blur-fade page container on screen change (fluid page slide-in)
+      window.gsap.fromTo(ref.current, 
+        { x: 20, opacity: 0, filter: 'blur(12px)' }, 
+        { x: 0, opacity: 1, filter: 'blur(0px)', duration: 0.45, ease: 'power3.out', clearProps: 'transform,filter,opacity' }
+      );
+      
+      // 2. Select standard layouts & data-reveal elements and staggered entry slide-up
+      const reveals = ref.current.querySelectorAll('.page-title, .page-sub, .stats > *, .table-wrap, .items-table, .item-row, [data-reveal]');
       if (reveals.length) {
-        window.gsap.fromTo(reveals, { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, stagger: 0.05, ease: 'power3.out', delay: 0.05, clearProps: 'transform,opacity', immediateRender: false });
+        window.gsap.fromTo(reveals, 
+          { y: 12, opacity: 0, filter: 'blur(4px)' }, 
+          { y: 0, opacity: 1, filter: 'blur(0px)', duration: 0.5, stagger: 0.03, ease: 'power3.out', delay: 0.05, clearProps: 'all', immediateRender: false }
+        );
       }
+      
+      // 3. Staggered count-ups for [data-counter] tiles
       const counters = ref.current.querySelectorAll('[data-counter]');
-      counters.forEach(c => {
+      counters.forEach((c, index) => {
         const target = parseFloat(c.dataset.counter);
         if (Number.isNaN(target)) return;
         const obj = { v: 0 };
         window.gsap.to(obj, {
-          v: target, duration: 1.0, ease: 'power3.out',
+          v: target, 
+          duration: 1.2, 
+          delay: index * 0.06 + 0.1, 
+          ease: 'power3.out',
           onUpdate: () => {
             const fmt = c.dataset.fmt;
             if (fmt === 'rp') c.textContent = window.fmtRpShort(Math.round(obj.v));
