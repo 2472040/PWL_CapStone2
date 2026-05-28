@@ -298,6 +298,7 @@ export function AuthInitializer({ pendingRole }) {
 
     socket.on('data_changed', (payload) => {
       console.log('⚡ WebSocket Sync Event:', payload);
+      if (window.clearApiCache) window.clearApiCache();
       pollData();
     });
 

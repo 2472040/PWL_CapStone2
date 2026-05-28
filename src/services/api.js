@@ -3,6 +3,19 @@ const API_BASE = "/api";
 // In-memory JWT storage (fallback when cookie doesn't work through Vite proxy)
 let _memoryToken = null;
 
+// Dynamic In-memory API Cache layer (TanStack Query-like lightweight interceptor)
+const _apiCache = new Map();
+const CACHE_TTL = 15000; // 15 seconds TTL
+
+export const clearApiCache = () => {
+  _apiCache.clear();
+  console.log('⚡ [API Cache] Cache successfully invalidated.');
+};
+
+if (typeof window !== 'undefined') {
+  window.clearApiCache = clearApiCache;
+}
+
 // check if user is logged in using a non-sensitive flag
 export const getToken = () => {
   return localStorage.getItem("loka_logged_in");
@@ -44,6 +57,24 @@ export const authHeaders = () => {
 
 // wrapper fetch with credentials: 'include' support
 export async function apiFetch(endpoint, options = {}) {
+  const method = (options.method || 'GET').toUpperCase();
+
+  // Clear cache on write operations (POST, PUT, DELETE)
+  if (method !== 'GET') {
+    clearApiCache();
+  }
+
+  // Handle dynamic caching for GET requests
+  const cacheKey = `${endpoint}?${JSON.stringify(options.body || '')}`;
+  if (method === 'GET') {
+    const cached = _apiCache.get(cacheKey);
+    const now = Date.now();
+    if (cached && (now - cached.timestamp < CACHE_TTL)) {
+      console.log(`⚡ [API Cache] Cache hit for ${endpoint}`);
+      return cached.data;
+    }
+  }
+
   try {
     const response = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
@@ -80,6 +111,14 @@ export async function apiFetch(endpoint, options = {}) {
         else window.location.reload();
       }
       throw new Error(result.error || result.message || "API Error");
+    }
+
+    // Cache successful GET results
+    if (method === 'GET' && response.ok) {
+      _apiCache.set(cacheKey, {
+        data: result,
+        timestamp: Date.now()
+      });
     }
 
     return result;
