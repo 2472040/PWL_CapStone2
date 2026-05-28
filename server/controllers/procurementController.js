@@ -44,6 +44,8 @@ const createDraft = async (req, res) => {
     }
 
     await logAudit(req.user.id, 'draft.create', code, req.ip);
+    const io = req.app.get('io');
+    if (io) io.emit('data_changed', { type: 'draft' });
     const result = await Draft.findByPk(draft.id, { include: [{ model: DraftItem, as: 'items' }] });
     res.status(201).json({ data: result });
   } catch (err) {
@@ -63,6 +65,8 @@ const updateDraft = async (req, res) => {
     await draft.save();
 
     await logAudit(req.user.id, 'draft.update', draft.code, req.ip);
+    const io = req.app.get('io');
+    if (io) io.emit('data_changed', { type: 'draft' });
     res.json({ data: draft });
   } catch (err) {
     console.error(err);
@@ -82,6 +86,8 @@ const submitDraft = async (req, res) => {
     await draft.save();
 
     await logAudit(req.user.id, 'draft.submit', draft.code, req.ip);
+    const io = req.app.get('io');
+    if (io) io.emit('data_changed', { type: 'draft' });
     res.json({ data: draft });
   } catch (err) {
     console.error(err);
@@ -102,6 +108,8 @@ const addDraftItem = async (req, res) => {
 
     const item = await DraftItem.create({ draft_id: draft.id, kind, name, qty, unit, price, link, replaces });
     await logAudit(req.user.id, 'draft.addItem', `${draft.code} · ${name}`, req.ip);
+    const io = req.app.get('io');
+    if (io) io.emit('data_changed', { type: 'draft' });
     res.status(201).json({ data: item });
   } catch (err) {
     console.error(err);
@@ -151,6 +159,8 @@ const approveDraftItems = async (req, res) => {
     }
 
     await logAudit(req.user.id, 'draft.review', `${draft.code} · ${decisions.length} item`, req.ip);
+    const io = req.app.get('io');
+    if (io) io.emit('data_changed', { type: 'draft' });
     res.json({ message: 'Review berhasil disimpan.' });
   } catch (err) {
     console.error(err);
@@ -172,6 +182,8 @@ const finalizeDraft = async (req, res) => {
     await draft.save();
 
     await logAudit(req.user.id, 'draft.finalize', draft.code, req.ip);
+    const io = req.app.get('io');
+    if (io) io.emit('data_changed', { type: 'draft' });
     res.json({ data: draft });
   } catch (err) {
     console.error(err);
@@ -242,6 +254,8 @@ const receiveItem = async (req, res) => {
     });
 
     await logAudit(req.user.id, 'receiving.confirm', `${draftItem.name} · ${qty_received || draftItem.qty} unit`, req.ip);
+    const io = req.app.get('io');
+    if (io) io.emit('data_changed', { type: 'draft' });
     res.status(201).json({ data: receiving });
   } catch (err) {
     console.error(err);
@@ -266,6 +280,8 @@ const deleteDraftItem = async (req, res) => {
     await item.destroy();
     
     await logAudit(req.user.id, 'procurement.remove_item', `${itemName} dari ${draftCode}`, req.ip);
+    const io = req.app.get('io');
+    if (io) io.emit('data_changed', { type: 'draft' });
     res.json({ message: 'Item draf berhasil dihapus.' });
   } catch (err) {
     console.error(err);
@@ -273,8 +289,29 @@ const deleteDraftItem = async (req, res) => {
   }
 };
 
+const completeDraft = async (req, res) => {
+  try {
+    const draft = await Draft.findByPk(req.params.id);
+    if (!draft) return res.status(404).json({ error: 'Draf tidak ditemukan.' });
+    if (draft.status !== 'finalized') return res.status(400).json({ error: 'Draf belum difinalisasi atau sudah diselesaikan.' });
+
+    draft.status = 'completed';
+    await draft.save();
+
+    await logAudit(req.user.id, 'draft.complete', draft.code, req.ip);
+
+    const io = req.app.get('io');
+    if (io) io.emit('data_changed', { type: 'draft' });
+
+    res.json({ data: draft });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Gagal menyelesaikan draf.' });
+  }
+};
+
 module.exports = {
   getDrafts, createDraft, updateDraft, submitDraft, addDraftItem, deleteDraftItem,
   getDraftsForReview, approveDraftItems, finalizeDraft, getDraftHistory,
-  getReceiving, receiveItem,
+  getReceiving, receiveItem, completeDraft
 };

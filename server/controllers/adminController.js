@@ -40,6 +40,8 @@ const createUser = async (req, res) => {
     });
 
     await logAudit(req.user.id, 'user.create', `${user.name} (${user.role})`, req.ip);
+    const io = req.app.get('io');
+    if (io) io.emit('data_changed', { type: 'user' });
 
     const { password: _, ...userData } = user.toJSON();
     res.status(201).json({ data: userData });
@@ -56,10 +58,29 @@ const updateUser = async (req, res) => {
 
     const { name, email, role, status, initials, password } = req.body;
     let credentialsChanged = false;
+    const diffs = [];
 
-    if (role && role !== user.role) credentialsChanged = true;
-    if (status && status !== user.status) credentialsChanged = true;
-    if (password) credentialsChanged = true;
+    if (role && role !== user.role) {
+      diffs.push(`Role: ${user.role} ➔ ${role}`);
+      credentialsChanged = true;
+    }
+    if (status && status !== user.status) {
+      diffs.push(`Status: ${user.status} ➔ ${status}`);
+      credentialsChanged = true;
+    }
+    if (password) {
+      diffs.push(`Password: [Telah diperbarui]`);
+      credentialsChanged = true;
+    }
+    if (name && name !== user.name) {
+      diffs.push(`Nama: ${user.name} ➔ ${name}`);
+    }
+    if (email && email !== user.email) {
+      diffs.push(`Email: ${user.email} ➔ ${email}`);
+    }
+    if (initials && initials !== user.initials) {
+      diffs.push(`Inisial: ${user.initials} ➔ ${initials}`);
+    }
 
     if (name) user.name = name;
     if (email) user.email = email;
@@ -73,7 +94,14 @@ const updateUser = async (req, res) => {
     }
 
     await user.save();
-    await logAudit(req.user.id, 'user.update', user.name, req.ip);
+    
+    // Log detailed audit diffs
+    const details = diffs.length > 0 ? diffs.join(', ') : 'Tidak ada perubahan field';
+    await logAudit(req.user.id, 'user.update', user.name, req.ip, details);
+
+    // Emit WebSocket update
+    const io = req.app.get('io');
+    if (io) io.emit('data_changed', { type: 'user' });
 
     const { password: _, ...userData } = user.toJSON();
     res.json({ data: userData });
@@ -95,6 +123,9 @@ const deleteUser = async (req, res) => {
     await user.save();
 
     await logAudit(req.user.id, 'user.deactivate', userName, req.ip);
+    const io = req.app.get('io');
+    if (io) io.emit('data_changed', { type: 'user' });
+
     res.json({ message: `Pengguna "${userName}" dinonaktifkan.` });
   } catch (err) {
     console.error(err);
@@ -136,6 +167,8 @@ const createRoom = async (req, res) => {
 
     const room = await Room.create({ code, name, floor, capacity: capacity || 0, pic_user_id });
     await logAudit(req.user.id, 'room.create', room.code, req.ip);
+    const io = req.app.get('io');
+    if (io) io.emit('data_changed', { type: 'room' });
     res.status(201).json({ data: room });
   } catch (err) {
     console.error(err);
@@ -149,14 +182,37 @@ const updateRoom = async (req, res) => {
     if (!room) return res.status(404).json({ error: 'Ruangan tidak ditemukan.' });
 
     const { code, name, floor, capacity, pic_user_id } = req.body;
-    if (code) room.code = code;
-    if (name) room.name = name;
-    if (floor !== undefined) room.floor = floor;
-    if (capacity !== undefined) room.capacity = capacity;
-    if (pic_user_id !== undefined) room.pic_user_id = pic_user_id;
+    const diffs = [];
+
+    if (code && code !== room.code) {
+      diffs.push(`Kode: ${room.code} ➔ ${code}`);
+      room.code = code;
+    }
+    if (name && name !== room.name) {
+      diffs.push(`Nama: ${room.name} ➔ ${name}`);
+      room.name = name;
+    }
+    if (floor !== undefined && floor !== room.floor) {
+      diffs.push(`Lantai: ${room.floor} ➔ ${floor}`);
+      room.floor = floor;
+    }
+    if (capacity !== undefined && capacity !== room.capacity) {
+      diffs.push(`Kapasitas: ${room.capacity} ➔ ${capacity}`);
+      room.capacity = capacity;
+    }
+    if (pic_user_id !== undefined && pic_user_id !== room.pic_user_id) {
+      diffs.push(`PIC ID: ${room.pic_user_id} ➔ ${pic_user_id}`);
+      room.pic_user_id = pic_user_id;
+    }
 
     await room.save();
-    await logAudit(req.user.id, 'room.update', room.code, req.ip);
+    
+    const details = diffs.length > 0 ? diffs.join(', ') : 'Tidak ada perubahan field';
+    await logAudit(req.user.id, 'room.update', room.code, req.ip, details);
+
+    const io = req.app.get('io');
+    if (io) io.emit('data_changed', { type: 'room' });
+
     res.json({ data: room });
   } catch (err) {
     console.error(err);
@@ -171,6 +227,8 @@ const deleteRoom = async (req, res) => {
 
     await logAudit(req.user.id, 'room.delete', room.code, req.ip);
     await room.destroy();
+    const io = req.app.get('io');
+    if (io) io.emit('data_changed', { type: 'room' });
     res.json({ message: `Ruangan "${room.code}" dihapus.` });
   } catch (err) {
     console.error(err);

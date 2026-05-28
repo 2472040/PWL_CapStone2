@@ -142,6 +142,7 @@ export function DraftDetail({ draft, onBack, mode }) {
       return;
     }
     try {
+      await apiFetch(`/procurement/drafts/${d.id}/complete`, { method: 'POST' });
       dispatch({ type: 'COMPLETE_DRAFT', code: d.code });
       toast('Penerimaan diselesaikan', 'ok');
       onBack();
@@ -163,6 +164,11 @@ export function DraftDetail({ draft, onBack, mode }) {
           <p className="page-sub">{d.by} · {d.role} · diajukan {d.submitted}</p>
         </div>
         <div className="flex gap-2 items-center" >
+          {d.status === 'completed' && (
+            <a href={`/api/procurement/drafts/${d.id}/pdf`} target="_blank" rel="noopener noreferrer" className="btn" style={{ background: 'var(--glass)', color: 'var(--green)', borderColor: 'rgba(163,230,53,0.3)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <Icon name="download" size={13} /> Cetak BAST (PDF)
+            </a>
+          )}
           {mode === 'kalab' && d.status === 'draft' && <>
             <span className="chip locked">Draft</span>
             <button className="btn primary" onClick={submitDraft}><Icon name="arrow" size={12} /> Ajukan ke Kaprodi</button>

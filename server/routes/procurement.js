@@ -3,7 +3,7 @@ const { authenticate, authorize } = require('../middleware/auth');
 const {
   getDrafts, createDraft, updateDraft, submitDraft, addDraftItem, deleteDraftItem,
   getDraftsForReview, approveDraftItems, finalizeDraft, getDraftHistory,
-  getReceiving, receiveItem,
+  getReceiving, receiveItem, completeDraft
 } = require('../controllers/procurementController');
 
 router.use(authenticate);
@@ -25,5 +25,6 @@ router.get('/history', authorize('kaprodi'), getDraftHistory);
 // Admin — receiving
 router.get('/receiving', authorize('admin'), getReceiving);
 router.post('/receiving', authorize('admin'), receiveItem);
+router.post('/drafts/:id/complete', authorize('admin'), completeDraft);
 
 module.exports = router;

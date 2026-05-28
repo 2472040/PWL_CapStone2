@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: lokalab_db
+    restart: always
+    environment:
+      MYSQL_DATABASE: lokalab_db
+      MYSQL_USER: lokalab_user
+      MYSQL_PASSWORD: lokalab_password
+      MYSQL_ROOT_PASSWORD: root_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_password"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    container_name: lokalab_app
+    restart: always
+    ports:
+      - "3000:3000"
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - CORS_ORIGIN=http://localhost:5173
+      - JWT_SECRET=lokalab-super-secure-jwt-secret-key-2026
+      - BACKUP_ENCRYPTION_SECRET=lokalab-super-secure-backup-secret-key-2026
+      - AUDIT_LOG_SECRET=lokalab-super-secure-audit-secret-key-2026
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=lokalab_db
+      - DB_USER=lokalab_user
+      - DB_PASS=lokalab_password
+      - VITE_API_URL=http://localhost:3000
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+volumes:
+  db_data:

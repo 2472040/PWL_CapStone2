@@ -1,5 +1,6 @@
 const { Inventory, Room, Label, MaintenanceLog, User } = require('../models');
 const { Op } = require('sequelize');
+const { logAudit } = require('../middleware/audit');
 
 const getInventory = async (req, res) => {
   try {
@@ -60,6 +61,12 @@ const createInventory = async (req, res) => {
       code, name, category, room_id, condition: condition || 'Baik',
       acquired_date, value: value || 0, serial, specs, last_checked: new Date(),
     });
+    
+    await logAudit(req.user.id, 'inventory.create', item.code, req.ip);
+
+    const io = req.app.get('io');
+    if (io) io.emit('data_changed', { type: 'inventory' });
+
     res.status(201).json({ data: item });
   } catch (err) {
     console.error(err);
@@ -71,10 +78,26 @@ const updateInventory = async (req, res) => {
   try {
     const item = await Inventory.findByPk(req.params.id);
     if (!item) return res.status(404).json({ error: 'Item tidak ditemukan.' });
+    
     const fields = ['name', 'category', 'room_id', 'condition', 'acquired_date', 'value', 'serial', 'specs'];
-    fields.forEach(f => { if (req.body[f] !== undefined) item[f] = req.body[f]; });
+    const diffs = [];
+
+    fields.forEach(f => {
+      if (req.body[f] !== undefined && req.body[f] !== item[f]) {
+        diffs.push(`${f}: ${item[f]} ➔ ${req.body[f]}`);
+        item[f] = req.body[f];
+      }
+    });
+
     item.last_checked = new Date();
     await item.save();
+
+    const details = diffs.length > 0 ? diffs.join(', ') : 'Tidak ada perubahan field';
+    await logAudit(req.user.id, 'inventory.update', item.code, req.ip, details);
+
+    const io = req.app.get('io');
+    if (io) io.emit('data_changed', { type: 'inventory' });
+
     res.json({ data: item });
   } catch (err) {
     console.error(err);
@@ -88,6 +111,7 @@ const updateLabel = async (req, res) => {
     const item = await Inventory.findByPk(req.params.id);
     if (!item) return res.status(404).json({ error: 'Item tidak ditemukan.' });
     let label = await Label.findOne({ where: { inventory_id: item.id } });
+    let isNew = false;
     if (label) {
       if (label_number) label.label_number = label_number;
       if (qr_data) label.qr_data = qr_data;
@@ -95,7 +119,14 @@ const updateLabel = async (req, res) => {
       await label.save();
     } else {
       label = await Label.create({ inventory_id: item.id, label_number, qr_data, photo_url });
+      isNew = true;
     }
+
+    await logAudit(req.user.id, isNew ? 'label.create' : 'label.update', item.code, req.ip, `Label: ${label_number || '-'}`);
+
+    const io = req.app.get('io');
+    if (io) io.emit('data_changed', { type: 'inventory' });
+
     res.json({ data: label });
   } catch (err) {
     console.error(err);

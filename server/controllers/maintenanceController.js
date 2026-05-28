@@ -68,6 +68,13 @@ const createMaintenance = async (req, res) => {
     await t.commit();
     await logAudit(req.user.id, 'maintenance.create', `${inventory.code} — ${action}`, req.ip);
 
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('data_changed', { type: 'maintenance' });
+      io.emit('data_changed', { type: 'bhp' });
+      io.emit('data_changed', { type: 'inventory' });
+    }
+
     const result = await MaintenanceLog.findByPk(log.id, {
       include: [
         { model: Inventory, attributes: ['id', 'code', 'name'] },
@@ -111,6 +118,9 @@ const updateBhp = async (req, res) => {
 
     await bhp.save();
     await logAudit(req.user.id, 'bhp.update', `${bhp.code} (stok: ${bhp.stock})`, req.ip);
+
+    const io = req.app.get('io');
+    if (io) io.emit('data_changed', { type: 'bhp' });
     res.json({ data: bhp });
   } catch (err) {
     console.error(err);
@@ -127,6 +137,9 @@ const createBhp = async (req, res) => {
 
     const bhp = await Bhp.create({ code, name, unit, stock: stock || 0, min_stock: min_stock || 0, last_in, category });
     await logAudit(req.user.id, 'bhp.create', bhp.code, req.ip);
+
+    const io = req.app.get('io');
+    if (io) io.emit('data_changed', { type: 'bhp' });
     res.status(201).json({ data: bhp });
   } catch (err) {
     console.error(err);

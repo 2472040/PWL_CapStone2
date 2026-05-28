@@ -1,4 +1,6 @@
 const app = require('./app');
+const http = require('http');
+const { Server } = require('socket.io');
 const { sequelize } = require('./models');
 require('dotenv').config();
 
@@ -44,7 +46,24 @@ async function start() {
     }, 6 * 60 * 60 * 1000);
 
     // Start server
-    app.listen(PORT, () => {
+    const server = http.createServer(app);
+    const io = new Server(server, {
+      cors: {
+        origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+        credentials: true
+      }
+    });
+
+    app.set('io', io);
+
+    io.on('connection', (socket) => {
+      console.log(`🔌 Client terhubung ke WebSocket: ${socket.id}`);
+      socket.on('disconnect', () => {
+        console.log(`🔌 Client terputus dari WebSocket: ${socket.id}`);
+      });
+    });
+
+    server.listen(PORT, () => {
       console.log(`\n🚀 LokaLab API Server berjalan di http://localhost:${PORT}`);
       console.log(`📋 API Docs: http://localhost:${PORT}/api/health`);
       console.log(`🔐 Login Page: http://localhost:${PORT}/login\n`);

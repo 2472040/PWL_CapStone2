@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useStore, D } from './app-shell.jsx';
 import { apiFetch, getToken } from '../services/api.js';
+import { io } from 'socket.io-client';
 
 export function AuthInitializer({ pendingRole }) {
   const { state, dispatch } = useStore();
@@ -218,8 +219,24 @@ export function AuthInitializer({ pendingRole }) {
     };
 
     pollData();
-    const interval = setInterval(pollData, 4000); // sync every 4 seconds
-    return () => clearInterval(interval);
+
+    // Connect to LokaLab WebSocket for event-driven real-time data synchronization
+    const socket = io(window.location.origin === 'http://localhost:5173' ? 'http://localhost:3000' : window.location.origin, {
+      withCredentials: true
+    });
+
+    socket.on('connect', () => {
+      console.log('⚡ Connected to LokaLab WebSocket Real-time Sync');
+    });
+
+    socket.on('data_changed', (payload) => {
+      console.log('⚡ WebSocket Sync Event:', payload);
+      pollData();
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, [currentRole, pendingRole, state.screen, dispatch]);
 
   return null;
