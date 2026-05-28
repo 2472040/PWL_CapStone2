@@ -15,6 +15,7 @@ import ActivitySection from './ActivitySection.jsx';
 import BentoFeatures from './BentoFeatures.jsx';
 import StatsCounter from './StatsCounter.jsx';
 import Testimonials from './Testimonials.jsx';
+import PricingSection from './PricingSection.jsx';
 import PremiumFooter from './PremiumFooter.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -236,6 +237,7 @@ export default function AuroraSite({ onEnterApp }) {
         <StatsCounter />
         <ActivitySection />
         <Testimonials />
+        <PricingSection />
         <CTA />
         <PremiumFooter />
       </div>
@@ -244,18 +246,25 @@ export default function AuroraSite({ onEnterApp }) {
 }
 
 function Nav({ showSignIn, onSignIn }) {
+  const scrollToSection = (id) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <nav className="au-nav">
-      <div className="au-brand">
+      <div className="au-brand" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} style={{ cursor: 'pointer' }}>
         <img src="/assets/loka_lab.png" alt="Loka Lab" className="au-brand-dot" />
         <span>Loka</span>
         <span style={{ color: 'var(--ink-3)', fontWeight: 400, fontSize: 12, marginLeft: 4 }}>· Lab Suite</span>
       </div>
       <div className="au-nav-links">
-        <a>Produk</a>
-        <a>Alur Pengadaan</a>
-        <a>Inventaris</a>
-        <a>Harga</a>
+        <a onClick={() => scrollToSection('bento-features')} style={{ cursor: 'pointer' }}>Produk</a>
+        <a onClick={() => scrollToSection('flow-section')} style={{ cursor: 'pointer' }}>Alur Pengadaan</a>
+        <a onClick={() => scrollToSection('inv-section')} style={{ cursor: 'pointer' }}>Inventaris</a>
+        <a onClick={() => scrollToSection('pricing')} style={{ cursor: 'pointer' }}>Harga</a>
       </div>
       <div style={{ minWidth: 80, display: 'flex', justifyContent: 'flex-end', overflow: 'hidden' }}>
         <AnimatePresence>

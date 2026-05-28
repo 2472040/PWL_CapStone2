@@ -27,11 +27,13 @@ function initStore() {
     drawer: null,
     modal: null,
     mobileSidebarOpen: false,
+    pendingReviewCount: 0,
   };
 }
 
 function reducer(s, a) {
   switch (a.type) {
+    case 'SET_PENDING_REVIEW_COUNT': return { ...s, pendingReviewCount: a.count };
     case 'SET_ROLE':   return { ...s, role: a.role, screen: 'dashboard', mobileSidebarOpen: false };
     case 'SET_USER':   return { ...s, currentUser: a.user };
     case 'SET_SCREEN': return { ...s, screen: a.screen, mobileSidebarOpen: false };

@@ -41,7 +41,7 @@ export default function FlowSection({ step, setStep, approvals, setApproval, app
   }, [step]);
 
   return (
-    <section className="au-section">
+    <section className="au-section" id="flow-section">
       <AuRise>
         <div className="au-section-tag"><ScrambleText text="— Demo interaktif" /></div>
         <h2 className="au-section-h2">Satu draf <em>mengalir</em> dari satu meja ke meja berikutnya.</h2>

@@ -89,7 +89,7 @@ export default function HeroSection({ onEnterApp }) {
   }, []);
 
   return (
-    <section className="au-hero">
+    <section className="au-hero" id="hero">
       <DynamicGridBackground />
 
       <TextReveal delay={0.2} />

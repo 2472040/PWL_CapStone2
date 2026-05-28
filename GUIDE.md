@@ -1,5 +1,5 @@
 # LokaLab — Panduan Setup & Testing
-  
+
 LokaLab Suite adalah aplikasi sistem inventaris & pengadaan laboratorium tingkat SaaS dengan integrasi WebSockets real-time, cetak BAST (Berita Acara Serah Terima) dalam format PDF resmi, audit log diffing ("Sebelum ➔ Sesudah"), serta dukungan penuh Dockerization.
 
 ## 🚀 OPSI 1: Setup Mudah & Instan (Menggunakan Docker - Direkomendasikan)
@@ -15,6 +15,10 @@ Dengan Docker, Anda **tidak perlu menginstal XAMPP, Node.js, atau membuat databa
    ```bash
    docker-compose up --build -d
    ```
+   kalo udah ada dan pernah di build gunakan command
+   ```
+    docker-compose up -d
+  ```
 3. Docker secara otomatis akan mengunduh database MySQL, membangun container backend & frontend, menyinkronkan tabel, dan mengaktifkan web.
 4. Buka browser dan buka **`http://localhost:5173`**!
 5. Untuk mematikan server dengan aman setelah selesai digunakan, jalankan:

@@ -70,22 +70,37 @@ export function Sidebar() {
 
       <div className="sb-sec" data-sb-anim>Menu</div>
       <div className="sb-list" role="menubar">
-        {items.map(it => (
-          <div
-            key={it.id}
-            data-sb-anim
-            className={`sb-item ${state.screen === it.id ? 'active' : ''}`}
-            onClick={() => dispatch({ type: 'SET_SCREEN', screen: it.id })}
-            role="menuitem"
-            tabIndex={0}
-            aria-current={state.screen === it.id ? 'page' : undefined}
-            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') dispatch({ type: 'SET_SCREEN', screen: it.id }); }}
-          >
-            <Icon name={it.icon} size={16} strokeWidth={1.6} />
-            <span className="lbl">{it.label}</span>
-            {it.badge && <span className={`badge ${typeof it.badge === 'number' ? 'num' : 'new'}`}>{it.badge}</span>}
-          </div>
-        ))}
+        {items.map(it => {
+          let badgeValue = it.badge;
+          if (state.role === 'admin' && it.id === 'receiving') {
+            badgeValue = state.drafts.filter(d => d.status === 'finalized').length || null;
+          } else if (state.role === 'kaprodi' && it.id === 'review') {
+            badgeValue = state.pendingReviewCount || null;
+          } else if (state.role === 'staflab' && it.id === 'bhp') {
+            badgeValue = state.bhp.filter(b => b.stock <= b.min).length || null;
+          } else if (state.role === 'kalab' && it.id === 'pengadaan') {
+            badgeValue = state.drafts.filter(d => d.status === 'draft').length || null;
+          }
+
+          return (
+            <div
+              key={it.id}
+              data-sb-anim
+              className={`sb-item ${state.screen === it.id ? 'active' : ''}`}
+              onClick={() => dispatch({ type: 'SET_SCREEN', screen: it.id })}
+              role="menuitem"
+              tabIndex={0}
+              aria-current={state.screen === it.id ? 'page' : undefined}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') dispatch({ type: 'SET_SCREEN', screen: it.id }); }}
+            >
+              <Icon name={it.icon} size={16} strokeWidth={1.6} />
+              <span className="lbl">{it.label}</span>
+              {badgeValue ? (
+                <span className={`badge ${typeof badgeValue === 'number' ? 'num' : 'new'}`}>{badgeValue}</span>
+              ) : null}
+            </div>
+          );
+        })}
       </div>
 
       <div className="sb-foot" data-sb-anim>

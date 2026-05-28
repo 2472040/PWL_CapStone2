@@ -125,27 +125,91 @@ export function AuthInitializer({ pendingRole }) {
         // 4. Fetch Procurement Reviews or History (Kaprodi only)
         if (role === 'kaprodi') {
           try {
+            // Always fetch review drafts to get the latest badge count
+            const resReview = await apiFetch('/procurement/review');
+            let reviewCount = 0;
+            if (resReview.data) {
+              reviewCount = resReview.data.filter(d => d.status === 'submitted').length;
+              dispatch({ type: 'SET_PENDING_REVIEW_COUNT', count: reviewCount });
+            }
+
             const isHistory = state.screen === 'history';
-            const endpoint = isHistory ? '/procurement/history' : '/procurement/review';
-            const resData = await apiFetch(endpoint);
-            if (resData.data) {
-              const formatted = resData.data.map(d => ({
-                ...d,
-                by: d.creator?.name || d.by,
-                role: d.creator?.role || d.role,
-                items: d.items?.map(it => ({
-                  ...it,
-                  approval: it.approval?.status === 'approved' ? 'ok' : it.approval?.status === 'rejected' ? 'no' : null
-                })) || []
-              }));
-              dispatch({ type: 'SET_DRAFTS', drafts: formatted });
+            if (isHistory) {
+              const resHistory = await apiFetch('/procurement/history');
+              if (resHistory.data) {
+                const formatted = resHistory.data.map(d => ({
+                  ...d,
+                  by: d.creator?.name || d.by,
+                  role: d.creator?.role || d.role,
+                  items: d.items?.map(it => ({
+                    ...it,
+                    approval: it.approval?.status === 'approved' ? 'ok' : it.approval?.status === 'rejected' ? 'no' : null
+                  })) || []
+                }));
+                dispatch({ type: 'SET_DRAFTS', drafts: formatted });
+              }
+            } else {
+              if (resReview.data) {
+                const formatted = resReview.data.map(d => ({
+                  ...d,
+                  by: d.creator?.name || d.by,
+                  role: d.creator?.role || d.role,
+                  items: d.items?.map(it => ({
+                    ...it,
+                    approval: it.approval?.status === 'approved' ? 'ok' : it.approval?.status === 'rejected' ? 'no' : null
+                  })) || []
+                }));
+                dispatch({ type: 'SET_DRAFTS', drafts: formatted });
+              }
             }
           } catch (e) {
             console.error('Gagal mengambil data pengadaan Kaprodi:', e.message);
           }
         }
 
-        // 5. Fetch Maintenance Logs & BHP (Staf Lab only)
+        // 5. Fetch Procurement Receiving & BHP (Admin only)
+        if (role === 'admin') {
+          try {
+            const resReceiving = await apiFetch('/procurement/receiving');
+            if (resReceiving.data) {
+              const formatted = resReceiving.data.map(d => ({
+                ...d,
+                by: d.creator?.name || d.by,
+                role: d.creator?.role || d.role,
+                items: d.items?.map(it => ({
+                  ...it,
+                  approval: it.approval?.status === 'approved' ? 'ok' : it.approval?.status === 'rejected' ? 'no' : null,
+                  received: it.receivings && it.receivings.length > 0,
+                  receivedDate: it.receivings && it.receivings.length > 0 ? new Date(it.receivings[0].received_date).toLocaleDateString('id-ID') : null
+                })) || []
+              }));
+              dispatch({ type: 'SET_DRAFTS', drafts: formatted });
+            }
+          } catch (e) {
+            console.error('Gagal mengambil data penerimaan:', e.message);
+          }
+
+          try {
+            const resBhp = await apiFetch('/bhp');
+            if (resBhp.data) {
+              const formatted = resBhp.data.map(b => ({
+                id: b.code || b.id.toString(),
+                dbId: b.id,
+                name: b.name,
+                unit: b.unit,
+                stock: parseFloat(b.stock) || 0,
+                min: parseFloat(b.min_stock) || 0,
+                lastIn: b.last_in || '-',
+                cat: b.category || 'General'
+              }));
+              dispatch({ type: 'SET_BHP', bhp: formatted });
+            }
+          } catch (e) {
+            console.error('Gagal mengambil data BHP:', e.message);
+          }
+        }
+
+        // 6. Fetch Maintenance Logs & BHP (Staf Lab only)
         if (role === 'staflab') {
           try {
             const resLogs = await apiFetch('/maintenance');
