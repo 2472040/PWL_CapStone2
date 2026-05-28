@@ -61,11 +61,24 @@ export function Dashboard() {
       else if (act.action === 'room.update') actionText = 'memperbarui data ruangan';
       else if (act.action === 'room.delete') actionText = 'menghapus ruangan';
       else if (act.action === 'maintenance.create') actionText = 'mencatat log pemeliharaan aset';
+      else if (act.action === 'maintenance.update') actionText = 'memperbarui log pemeliharaan aset';
       else if (act.action === 'bhp.create') actionText = 'menambahkan stok BHP baru';
       else if (act.action === 'bhp.update') actionText = 'memperbarui kuantitas stok BHP';
       else if (act.action === 'draft.create') actionText = 'membuat draf pengadaan baru';
+      else if (act.action === 'draft.update') actionText = 'memperbarui draf pengadaan';
       else if (act.action === 'draft.submit') actionText = 'mengajukan draf pengadaan';
+      else if (act.action === 'draft.addItem') actionText = 'menambahkan item ke draf pengadaan';
+      else if (act.action === 'draft.review') actionText = 'melakukan review draf pengadaan';
       else if (act.action === 'draft.finalize') actionText = 'memfinalisasi draf pengadaan';
+      else if (act.action === 'receiving.confirm') actionText = 'mengonfirmasi penerimaan barang';
+      else if (act.action === 'procurement.remove_item') actionText = 'menghapus barang dari pengadaan';
+      else if (act.action === 'draft.complete') actionText = 'menyelesaikan penerimaan pengadaan';
+      else if (act.action === 'inventory.create') actionText = 'menambahkan aset inventaris baru';
+      else if (act.action === 'inventory.update') actionText = 'memperbarui detail aset inventaris';
+      else if (act.action === 'inventory.import') actionText = 'mengimpor data aset inventaris';
+      else if (act.action === 'label.create' || act.action === 'label.update') actionText = 'mencetak label QR aset';
+      else if (act.action === 'backup.export') actionText = 'mengekspor backup database';
+      else if (act.action === 'backup.restore') actionText = 'merestore backup database';
 
       // Format time
       const date = new Date(act.created_at || act.ts);
