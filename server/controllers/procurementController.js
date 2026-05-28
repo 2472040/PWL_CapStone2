@@ -1,4 +1,4 @@
-const { Draft, DraftItem, DraftApproval, Receiving, User } = require('../models');
+const { Draft, DraftItem, DraftApproval, Receiving, User, sequelize } = require('../models');
 const { logAudit } = require('../middleware/audit');
 const { Op } = require('sequelize');
 
@@ -28,20 +28,25 @@ const getDrafts = async (req, res) => {
 };
 
 const createDraft = async (req, res) => {
+  const t = await sequelize.transaction();
   try {
     const { title, items } = req.body;
-    if (!title) return res.status(400).json({ error: 'Judul draf wajib diisi.' });
 
     const year = new Date().getFullYear();
-    const count = await Draft.count() + 1;
+    const count = await Draft.count({ transaction: t }) + 1;
     const code = `PRC-${year}-LK${String(count).padStart(2, '0')}`;
 
-    const draft = await Draft.create({ code, title, created_by: req.user.id, status: 'draft' });
+    const draft = await Draft.create(
+      { code, title, created_by: req.user.id, status: 'draft' },
+      { transaction: t }
+    );
 
     if (items && items.length > 0) {
       const draftItems = items.map(item => ({ ...item, draft_id: draft.id }));
-      await DraftItem.bulkCreate(draftItems);
+      await DraftItem.bulkCreate(draftItems, { transaction: t });
     }
+
+    await t.commit();
 
     await logAudit(req.user.id, 'draft.create', code, req.ip);
     const io = req.app.get('io');
@@ -49,6 +54,7 @@ const createDraft = async (req, res) => {
     const result = await Draft.findByPk(draft.id, { include: [{ model: DraftItem, as: 'items' }] });
     res.status(201).json({ data: result });
   } catch (err) {
+    await t.rollback();
     console.error(err);
     res.status(500).json({ error: 'Gagal membuat draf pengadaan.' });
   }
@@ -146,13 +152,21 @@ const getDraftsForReview = async (req, res) => {
 };
 
 const approveDraftItems = async (req, res) => {
+  const t = await sequelize.transaction();
   try {
-    const draft = await Draft.findByPk(req.params.id);
-    if (!draft) return res.status(404).json({ error: 'Draf tidak ditemukan.' });
-    if (draft.status !== 'submitted') return res.status(400).json({ error: 'Draf belum disubmit atau sudah difinalisasi.' });
+    const draft = await Draft.findByPk(req.params.id, { transaction: t });
+    if (!draft) {
+      await t.rollback();
+      return res.status(404).json({ error: 'Draf tidak ditemukan.' });
+    }
+    if (draft.status !== 'submitted') {
+      await t.rollback();
+      return res.status(400).json({ error: 'Draf belum disubmit atau sudah difinalisasi.' });
+    }
 
     const { decisions } = req.body; // [{ item_id, status: 'approved'|'rejected', notes }]
     if (!decisions || !Array.isArray(decisions)) {
+      await t.rollback();
       return res.status(400).json({ error: 'Data decisions wajib diisi.' });
     }
 
@@ -162,8 +176,10 @@ const approveDraftItems = async (req, res) => {
         approved_by: req.user.id,
         status: d.status,
         notes: d.notes || null,
-      });
+      }, { transaction: t });
     }
+
+    await t.commit();
 
     await logAudit(req.user.id, 'draft.review', `${draft.code} · ${decisions.length} item`, req.ip);
     const io = req.app.get('io');
@@ -177,6 +193,7 @@ const approveDraftItems = async (req, res) => {
     }
     res.json({ message: 'Review berhasil disimpan.' });
   } catch (err) {
+    await t.rollback();
     console.error(err);
     res.status(500).json({ error: 'Gagal menyimpan review.' });
   }

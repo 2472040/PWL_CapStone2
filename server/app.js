@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const helmet = require('helmet');
+const { requestLogger, logger } = require('./utils/logger');
 require('dotenv').config();
 
 const app = express();
@@ -14,6 +15,8 @@ app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false
 }));
+
+app.use(requestLogger);
 
 // Strict CORS configuration supporting HTTP credentials (cookies)
 app.use(cors({
@@ -104,7 +107,7 @@ app.use((req, res) => {
 
 // Error handler
 app.use((err, req, res, next) => {
-  console.error('[Server Error]', err);
+  logger.error('[Server Error]', err);
   res.status(500).json({ error: 'Terjadi kesalahan internal server.' });
 });
 
