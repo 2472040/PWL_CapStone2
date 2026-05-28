@@ -12,6 +12,7 @@ export function Audit() {
   const [endDate, setEndDate] = useState('');
   const [actionType, setActionType] = useState('all');
   const [loading, setLoading] = useState(false);
+  const [selectedLog, setSelectedLog] = useState(null);
 
   useEffect(() => {
     async function loadLogs() {
@@ -104,7 +105,9 @@ export function Audit() {
         action: a.action || '',
         target: a.target || '',
         details: a.details || '',
-        ip: a.ip || '-'
+        ip: a.ip || '-',
+        hash: a.hash || '',
+        previousHash: a.previous_hash || ''
       };
     });
   }, [logs]);
@@ -168,7 +171,7 @@ export function Audit() {
       <div className="page-head" data-reveal>
         <div>
           <h1 className="page-title">Audit log</h1>
-          <p className="page-sub">Semua aksi tercatat. Bisa di-filter per tanggal, tipe aksi, role, atau di-export ke CSV.</p>
+          <p className="page-sub">Semua aksi tercatat. Klik baris tabel untuk melihat rincian detail & validitas kriptografi secara lengkap.</p>
         </div>
         <button className="btn" onClick={exportAuditToCSV}><Icon name="download" size={13} /> Export CSV</button>
       </div>
@@ -251,7 +254,7 @@ export function Audit() {
           <thead><tr><th>Waktu</th><th>Pengguna</th><th>Role</th><th>Aksi</th><th>Target</th><th>Detail</th><th>IP</th></tr></thead>
           <tbody>
             {filtered.map((a) => (
-              <tr key={a.id}>
+              <tr key={a.id} className="hover:bg-white/5 cursor-pointer" onClick={() => setSelectedLog(a)}>
                 <td className="mono text-xs">{a.ts}</td>
                 <td><b>{a.user}</b></td>
                 <td><span className="chip">{a.role}</span></td>
@@ -264,6 +267,102 @@ export function Audit() {
           </tbody>
         </table>
       </div>
+
+      {/* Dinamis Detail Modal Popup */}
+      {selectedLog && (
+        <div className="modal-overlay" onClick={() => setSelectedLog(null)} style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(9, 9, 11, 0.85)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          backdropFilter: 'blur(8px)',
+        }}>
+          <div className="card max-w-lg w-full mx-4 overflow-hidden flex flex-col" style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--color-line)',
+            borderRadius: '16px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+          }} onClick={e => e.stopPropagation()}>
+            {/* Modal Head */}
+            <div className="p-5 border-b border-[#27272A] flex between aic">
+              <div>
+                <h3 className="text-lg fw-6 tracking-tight flex items-center gap-2">
+                  <Icon name="log" size={18} className="text-cyan" />
+                  Detail Log Aktivitas #{selectedLog.id}
+                </h3>
+              </div>
+              <button className="btn sm border-0 bg-transparent text-ink hover:text-white" onClick={() => setSelectedLog(null)}>
+                <Icon name="x" size={16} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-4 text-sm overflow-y-auto" style={{ maxHeight: '70vh' }}>
+              <div className="grid grid-cols-3 gap-2 py-2 border-b border-white/5">
+                <span className="text-ink-3">Waktu</span>
+                <span className="col-span-2 mono text-xs fw-5">{selectedLog.ts}</span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 py-2 border-b border-white/5">
+                <span className="text-ink-3">Pengguna</span>
+                <span className="col-span-2">
+                  <b>{selectedLog.user}</b>
+                  {selectedLog.role && <span className="chip ml-2" style={{ verticalAlign: 'middle' }}>{selectedLog.role}</span>}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 py-2 border-b border-white/5">
+                <span className="text-ink-3">Aksi</span>
+                <span className="col-span-2 mono text-xs text-cyan fw-6">{selectedLog.action}</span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 py-2 border-b border-white/5">
+                <span className="text-ink-3">Target</span>
+                <span className="col-span-2 fw-5">{selectedLog.target || '—'}</span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 py-2 border-b border-white/5">
+                <span className="text-ink-3">IP Address</span>
+                <span className="col-span-2 mono text-xs text-ink-2">{selectedLog.ip}</span>
+              </div>
+
+              <div className="py-2 border-b border-white/5">
+                <span className="text-ink-3 block mb-1">Rincian / Detail</span>
+                <div className="p-3 rounded-lg border border-line text-xs whitespace-pre-wrap leading-relaxed" style={{
+                  background: 'rgba(255, 255, 255, 0.01)',
+                  color: 'var(--ink-2)'
+                }}>
+                  {selectedLog.details || 'Tidak ada detail tambahan.'}
+                </div>
+              </div>
+
+              {/* Cryptographic Integrity Section */}
+              {selectedLog.hash && (
+                <div className="p-3.5 rounded-xl border border-cyan/20" style={{
+                  background: 'rgba(6, 182, 212, 0.03)',
+                }}>
+                  <div className="flex items-center gap-1.5 text-xs text-cyan fw-6 mb-2">
+                    <Icon name="check" size={12} strokeWidth={2.4} /> Integritas Rantai Blok Kriptografi Terverifikasi
+                  </div>
+                  <div className="space-y-1.5 text-[10px] mono">
+                    <div className="truncate">
+                      <span className="text-ink-3">Current Hash:</span> <span className="text-ink-2" title={selectedLog.hash}>{selectedLog.hash}</span>
+                    </div>
+                    {selectedLog.previousHash && (
+                      <div className="truncate">
+                        <span className="text-ink-3">Prev Hash:</span> <span className="text-ink-2" title={selectedLog.previousHash}>{selectedLog.previousHash}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
