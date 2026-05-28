@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useStore, useToast, D, Icon } from '../../../components/app-shell.jsx';
+import { useStore, useToast, D, Icon, themeTransition } from '../../../components/app-shell.jsx';
 import { apiFetch } from '../../../services/api.js';
 
 export function SettingsSection({ title, sub, children, reveal }) {
@@ -92,7 +92,7 @@ export function Settings() {
         <SettingsRow label="Tema warna" desc="Gelap untuk focus malam, terang untuk siang hari.">
           <div className="theme-cards">
             {themeOpts.map(t => (
-              <div key={t.id} onClick={() => { dispatch({ type: 'SET_THEME', theme: t.id }); toast(`Tema diubah ke ${t.lbl.toLowerCase()}`, 'ok'); }} className={`theme-card ${state.theme === t.id ? 'active' : ''}`}>
+              <div key={t.id} onClick={(e) => { themeTransition(dispatch, t.id, e); toast(`Tema diubah ke ${t.lbl.toLowerCase()}`, 'ok'); }} className={`theme-card ${state.theme === t.id ? 'active' : ''}`}>
                 <div className="theme-preview" style={{background: t.preview[0]}}>
                   <div className="" style={{position: 'absolute', top: 8, left: 8, right: 8, height: 14, borderRadius: 4, background: t.preview[1]}} />
                   <div className="" style={{position: 'absolute', top: 30, left: 8, width: '60%', height: 6, borderRadius: 3, background: t.preview[2]}} />

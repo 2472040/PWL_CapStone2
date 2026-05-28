@@ -355,7 +355,7 @@ function Sidebar() {
           <button className={`sb-foot-btn ${state.screen === 'settings' ? 'active' : ''}`} title="Pengaturan" aria-label="Pengaturan" onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'settings' })}>
             <Icon name="settings" size={15} />
           </button>
-          <button className="sb-foot-btn" title={state.theme === 'dark' ? 'Mode terang' : 'Mode gelap'} aria-label={state.theme === 'dark' ? 'Mode terang' : 'Mode gelap'} onClick={() => dispatch({ type: 'SET_THEME', theme: state.theme === 'dark' ? 'light' : 'dark' })}>
+          <button className="sb-foot-btn" title={state.theme === 'dark' ? 'Mode terang' : 'Mode gelap'} aria-label={state.theme === 'dark' ? 'Mode terang' : 'Mode gelap'} onClick={(e) => themeTransition(dispatch, state.theme === 'dark' ? 'light' : 'dark', e)}>
             {state.theme === 'dark' ? (
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
             ) : (
@@ -780,6 +780,85 @@ function TiltEngine() {
   return null;
 }
 
+// =========================================================
+// Theme Transition — circular clip-path reveal animation
+// =========================================================
+let _themeTransitioning = false;
+function themeTransition(dispatch, newTheme, e) {
+  // Prevent overlapping transitions
+  if (_themeTransitioning) {
+    dispatch({ type: 'SET_THEME', theme: newTheme });
+    return;
+  }
+
+  // Reduced motion preference — skip animation
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    dispatch({ type: 'SET_THEME', theme: newTheme });
+    return;
+  }
+
+  // Get click origin coordinates
+  const btn = e?.currentTarget || e?.target;
+  let originX, originY;
+  if (btn) {
+    const rect = btn.getBoundingClientRect();
+    originX = rect.left + rect.width / 2;
+    originY = rect.top + rect.height / 2;
+  } else {
+    originX = window.innerWidth / 2;
+    originY = window.innerHeight / 2;
+  }
+
+  // Calculate radius needed to cover the entire viewport
+  const maxRadius = Math.ceil(Math.hypot(
+    Math.max(originX, window.innerWidth - originX),
+    Math.max(originY, window.innerHeight - originY)
+  )) + 20;
+
+  // Create overlay with the TARGET theme's background color
+  const overlay = document.createElement('div');
+  const bgColor = newTheme === 'dark' ? '#08070d' : '#f5f0e6';
+  Object.assign(overlay.style, {
+    position: 'fixed',
+    inset: '0',
+    zIndex: '99999',
+    pointerEvents: 'none',
+    background: bgColor,
+    clipPath: `circle(0px at ${originX}px ${originY}px)`,
+    willChange: 'clip-path',
+  });
+  document.body.appendChild(overlay);
+  _themeTransitioning = true;
+
+  // Animate with GSAP
+  if (window.gsap) {
+    window.gsap.to(overlay, {
+      clipPath: `circle(${maxRadius}px at ${originX}px ${originY}px)`,
+      duration: 0.55,
+      ease: 'power2.inOut',
+      onUpdate: function () {
+        if (this.progress() >= 0.35 && !overlay._applied) {
+          overlay._applied = true;
+          dispatch({ type: 'SET_THEME', theme: newTheme });
+        }
+      },
+      onComplete: () => {
+        if (!overlay._applied) dispatch({ type: 'SET_THEME', theme: newTheme });
+        overlay.remove();
+        _themeTransitioning = false;
+      },
+    });
+  } else {
+    // Fallback: CSS transition
+    overlay.style.transition = 'clip-path 0.55s cubic-bezier(0.4,0,0.2,1)';
+    requestAnimationFrame(() => {
+      overlay.style.clipPath = `circle(${maxRadius}px at ${originX}px ${originY}px)`;
+    });
+    setTimeout(() => dispatch({ type: 'SET_THEME', theme: newTheme }), 200);
+    setTimeout(() => { overlay.remove(); _themeTransitioning = false; }, 600);
+  }
+}
+
 export {
   ToastProvider, useToast,
   StoreProvider, useStore,
@@ -788,6 +867,7 @@ export {
   useKeyboardShortcuts, useRevealFallback, MouseTracker,
   ScrollProgress, SoundIntegration, CursorEnabler, TiltEngine,
   D, Icon, QR, downloadQR,
+  themeTransition,
 };
 export const DrawerContent = {};
 export const ModalContent = {};
