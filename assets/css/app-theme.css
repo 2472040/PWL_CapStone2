@@ -349,3 +349,37 @@ html[data-theme="light"] .drawer {
 .mb-2 { margin-bottom: 8px; } .mb-4 { margin-bottom: 16px; } .mb-6 { margin-bottom: 24px; }
 .text-2 { color: var(--color-ink-2); } .text-3 { color: var(--color-ink-3); }
 .text-sm { font-size: 13px; } .text-xs { font-size: 12px; } .text-lg { font-size: 18px; } .fw-5 { font-weight: 500; } .fw-6 { font-weight: 600; }
+
+/* ========================================================
+   Circular Reveal View Transition (SaaS-grade smooth theme reveal)
+   ======================================================== */
+::view-transition-image-pair(root) {
+  isolation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+  display: block;
+}
+
+/* Old theme screenshots are placed underneath */
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+/* New theme screenshots expand on top */
+::view-transition-new(root) {
+  z-index: 99999;
+  animation: 550ms cubic-bezier(0.4, 0, 0.2, 1) both clip-reveal;
+}
+
+@keyframes clip-reveal {
+  from {
+    clip-path: circle(0px at var(--theme-x, 50%) var(--theme-y, 50%));
+  }
+  to {
+    clip-path: circle(var(--theme-r, 100vh) at var(--theme-x, 50%) var(--theme-y, 50%));
+  }
+}
