@@ -17,7 +17,16 @@ const csrfProtection = (req, res, next) => {
   const method = req.method.toUpperCase();
   const safeMethods = ['GET', 'HEAD', 'OPTIONS'];
 
-  if (safeMethods.includes(method)) {
+  const cleanPath = req.path.replace(/\/$/, '');
+  const cleanOriginalUrl = req.originalUrl.split('?')[0].replace(/\/$/, '');
+
+  if (
+    safeMethods.includes(method) || 
+    cleanPath === '/api/auth/login' || 
+    cleanPath === '/auth/login' ||
+    cleanOriginalUrl === '/api/auth/login' ||
+    cleanOriginalUrl === '/auth/login'
+  ) {
     return next();
   }
 

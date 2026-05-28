@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useReducer } from 'react';
-import { LOKA as D } from '../data/app-data.jsx';
 
 const StoreCtx = createContext(null);
 
@@ -19,15 +18,12 @@ function initStore() {
     accent,
     density,
     currentUser: null,
-    drafts: D.drafts.map(d => ({
-      ...d,
-      items: d.items.map(it => ({ ...it, approval: d.status === 'finalized' || d.status === 'completed' ? 'ok' : null, received: d.status === 'completed' })),
-    })),
-    inventory: [...D.inventory],
-    bhp: [...D.bhp],
-    users: [...D.users],
-    rooms: [...D.rooms],
-    maintLog: [...D.maintLog],
+    drafts: [],
+    inventory: [],
+    bhp: [],
+    users: [],
+    rooms: [],
+    maintLog: [],
     drawer: null,
     modal: null,
     mobileSidebarOpen: false,

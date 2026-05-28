@@ -9,22 +9,30 @@ import { CursorEnabler } from '../../components/app-shell.jsx';
 import { D, AuRise } from './LandingUtils.jsx';
 import HeroSection from './HeroSection.jsx';
 import AdvancedMarquee from './AdvancedMarquee.jsx';
-import RolesSection from './RolesSection.jsx';
 import FlowSection from './FlowSection.jsx';
 import InventorySection from './InventorySection.jsx';
 import ActivitySection from './ActivitySection.jsx';
 import BentoFeatures from './BentoFeatures.jsx';
 import StatsCounter from './StatsCounter.jsx';
 import Testimonials from './Testimonials.jsx';
-import PricingSection from './PricingSection.jsx';
 import PremiumFooter from './PremiumFooter.jsx';
+import { motion, AnimatePresence } from 'framer-motion';
 
 gsap.registerPlugin(ScrollTrigger);
 
 export default function AuroraSite({ onEnterApp }) {
   const rootRef = useRef(null);
+  const [showNavSignIn, setShowNavSignIn] = useState(false);
   // Flow state: 0=Kalab draft, 1=Kaprodi review, 2=Admin receive
   const [step, setStep] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowNavSignIn(window.scrollY > 280);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
   const [approvals, setApprovals] = useState(() => {
     const o = {}; D.draft.items.forEach(it => o[it.id] = null); return o;
   });
@@ -108,19 +116,7 @@ export default function AuroraSite({ onEnterApp }) {
         gsap.fromTo(el, { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, delay: 0.15, scrollTrigger: { trigger: el, start: 'top 85%' } });
       });
 
-      // Role cards stagger
-      gsap.fromTo('.au-role', 
-        { y: 50, opacity: 0, scale: 0.95 }, 
-        { y: 0, opacity: 1, scale: 1, stagger: 0.1, duration: 0.7, ease: 'back.out(1.4)', scrollTrigger: { trigger: '.au-roles', start: 'top 80%' } }
-      );
 
-      // Role card glow hover (JS fallback/enhancement)
-      root.querySelectorAll('.au-role').forEach(card => {
-        const glow = card.querySelector('.au-role-glow');
-        if (!glow) return;
-        card.addEventListener('mouseenter', () => gsap.to(glow, { opacity: 0.55, duration: 0.4 }));
-        card.addEventListener('mouseleave', () => gsap.to(glow, { opacity: 0, duration: 0.4 }));
-      });
 
       // Flow stage card
       gsap.fromTo('.au-flow-stage', 
@@ -225,10 +221,9 @@ export default function AuroraSite({ onEnterApp }) {
       <div className="au-grain" />
 
       <div className="au-layer">
-        <Nav />
+        <Nav showSignIn={showNavSignIn} onSignIn={onEnterApp} />
         <HeroSection onEnterApp={onEnterApp} />
         <AdvancedMarquee />
-        <RolesSection />
         <FlowSection
           step={step} setStep={setStep}
           approvals={approvals} setApproval={setApproval}
@@ -241,7 +236,6 @@ export default function AuroraSite({ onEnterApp }) {
         <StatsCounter />
         <ActivitySection />
         <Testimonials />
-        <PricingSection />
         <CTA />
         <PremiumFooter />
       </div>
@@ -249,7 +243,7 @@ export default function AuroraSite({ onEnterApp }) {
   );
 }
 
-function Nav() {
+function Nav({ showSignIn, onSignIn }) {
   return (
     <nav className="au-nav">
       <div className="au-brand">
@@ -259,12 +253,26 @@ function Nav() {
       </div>
       <div className="au-nav-links">
         <a>Produk</a>
-        <a>Untuk Siapa</a>
         <a>Alur Pengadaan</a>
         <a>Inventaris</a>
         <a>Harga</a>
       </div>
-      <div style={{ width: 80 }} />
+      <div style={{ minWidth: 80, display: 'flex', justifyContent: 'flex-end', overflow: 'hidden' }}>
+        <AnimatePresence>
+          {showSignIn && (
+            <motion.button
+              className="au-nav-cta"
+              onClick={onSignIn}
+              initial={{ opacity: 0, scale: 0.8, x: 20 }}
+              animate={{ opacity: 1, scale: 1, x: 0 }}
+              exit={{ opacity: 0, scale: 0.8, x: 20 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 25 }}
+            >
+              Sign In
+            </motion.button>
+          )}
+        </AnimatePresence>
+      </div>
     </nav>
   );
 }

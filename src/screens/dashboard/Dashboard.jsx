@@ -47,7 +47,7 @@ export function Dashboard() {
 
   const activities = useMemo(() => {
     if (!dashboardData || !dashboardData.recentActivity || dashboardData.recentActivity.length === 0) {
-      return D.activity; // fallback to high-fidelity mock activities if audit log is empty
+      return [];
     }
     return dashboardData.recentActivity.map(act => {
       let actionText = act.action;
@@ -99,7 +99,7 @@ export function Dashboard() {
       { l: 'Total pengguna', v: state.users.length, i: 'users', f: 'int' },
       { l: 'Ruangan aktif', v: state.rooms.length, i: 'room', f: 'int' },
       { l: 'Total aset', v: stats.totalAssets, i: 'box', f: 'int' },
-      { l: 'Login hari ini', v: dashboardData?.activeUsers || 7, i: 'log', f: 'int', d: { dir: 'up', text: '+3 dari kemarin' } },
+      { l: 'Login hari ini', v: dashboardData?.activeUsers || 0, i: 'log', f: 'int', d: { dir: 'up', text: '+3 dari kemarin' } },
     ],
     kalab: [
       { l: 'Aset tanggung jawab', v: stats.totalAssets, i: 'box', f: 'int' },
@@ -160,15 +160,23 @@ export function Dashboard() {
             <button className="btn sm"><Icon name="refresh" size={12} /> Live</button>
           </div>
           <div>
-            {activities.slice(0, 6).map((a, i) => (
-              <div key={i} className="act-row" style={{'--role-accent': role.accent}}>
-                <div className="act-avatar">{a.who[0]}</div>
-                <div className="act-text">
-                  <b>{a.who}</b><span className="role-pill">{a.role}</span> {a.act} <span className="tgt">{a.target}</span>
-                </div>
-                <div className="act-when">{a.when}</div>
+            {activities.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center" style={{ opacity: 0.7 }}>
+                <Icon name="log" size={32} style={{ marginBottom: '12px', opacity: 0.5, color: 'var(--role-accent)' }} />
+                <p className="text-sm font-medium">Belum ada aktivitas terbaru</p>
+                <p className="text-xs text-ink-3 mt-1">Aktivitas sistem dan pengguna akan tercatat otomatis di sini.</p>
               </div>
-            ))}
+            ) : (
+              activities.slice(0, 6).map((a, i) => (
+                <div key={i} className="act-row" style={{'--role-accent': role.accent}}>
+                  <div className="act-avatar">{a.who[0]}</div>
+                  <div className="act-text">
+                    <b>{a.who}</b><span className="role-pill">{a.role}</span> {a.act} <span className="tgt">{a.target}</span>
+                  </div>
+                  <div className="act-when">{a.when}</div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
