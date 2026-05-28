@@ -20,10 +20,21 @@ export const removeToken = () => {
   localStorage.removeItem("loka_logged_in");
 };
 
+// helper to extract a cookie value on frontend
+const getCookie = (name) => {
+  try {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+  } catch (e) {}
+  return '';
+};
+
 // header helper — includes Bearer token from memory if available
 export const authHeaders = () => {
   return {
     "Content-Type": "application/json",
+    "X-CSRF-Token": getCookie("csrfToken") || "",
     "X-Requested-With": "XMLHttpRequest", // Protect against CSRF attacks
     ...(_memoryToken && {
       Authorization: `Bearer ${_memoryToken}`,

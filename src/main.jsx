@@ -180,15 +180,31 @@ function Shell({ onLogout }) {
     if (!window.Lenis) return;
     const main = document.querySelector('.main');
     if (!main) return;
+    
+    // Reset scroll position to top on page navigation
+    main.scrollTop = 0;
+    
     const lenis = new window.Lenis({
-      wrapper: main, content: main,
+      wrapper: main,
       lerp: 0.08, smoothWheel: true, wheelMultiplier: 1.2,
     });
+    
     function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
     requestAnimationFrame(raf);
+    
     if (window.gsap && window.ScrollTrigger) lenis.on('scroll', window.ScrollTrigger.update);
-    return () => lenis.destroy();
-  }, []);
+    
+    // Dynamically resize Lenis as page contents render/change size
+    const resizeObserver = new ResizeObserver(() => {
+      lenis.resize();
+    });
+    resizeObserver.observe(main);
+    
+    return () => {
+      lenis.destroy();
+      resizeObserver.disconnect();
+    };
+  }, [state.screen, state.role]);
 
   return (
     <div className="app" data-screen-label={D.roles.find(r => r.id === state.role).short + ' · ' + (state.screen === 'settings' ? 'Pengaturan' : (D.nav[state.role].find(n => n.id === state.screen)?.label || 'Dashboard'))}>
@@ -328,12 +344,14 @@ function AuthInitializer({ pendingRole }) {
           }
         }
 
-        // 4. Fetch Procurement Reviews (Kaprodi only)
+        // 4. Fetch Procurement Reviews or History (Kaprodi only)
         if (role === 'kaprodi') {
           try {
-            const resReview = await apiFetch('/procurement/review');
-            if (resReview.data) {
-              const formatted = resReview.data.map(d => ({
+            const isHistory = state.screen === 'history';
+            const endpoint = isHistory ? '/procurement/history' : '/procurement/review';
+            const resData = await apiFetch(endpoint);
+            if (resData.data) {
+              const formatted = resData.data.map(d => ({
                 ...d,
                 by: d.creator?.name || d.by,
                 role: d.creator?.role || d.role,
@@ -345,7 +363,7 @@ function AuthInitializer({ pendingRole }) {
               dispatch({ type: 'SET_DRAFTS', drafts: formatted });
             }
           } catch (e) {
-            console.error('Gagal mengambil data ulasan pengadaan:', e.message);
+            console.error('Gagal mengambil data pengadaan Kaprodi:', e.message);
           }
         }
 
@@ -425,7 +443,7 @@ function AuthInitializer({ pendingRole }) {
     pollData();
     const interval = setInterval(pollData, 4000); // sync every 4 seconds
     return () => clearInterval(interval);
-  }, [currentRole, pendingRole, dispatch]);
+  }, [currentRole, pendingRole, state.screen, dispatch]);
 
   return null;
 }

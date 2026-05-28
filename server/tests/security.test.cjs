@@ -232,11 +232,13 @@ async function runTests() {
     // Build the chain (calculate hashes)
     logEntries.forEach((entry, idx) => {
       const timeSecs = (1716000000 + idx).toString(); // sequential timestamps
-      const dataToHash = `${previousHash}|${timeSecs}|${entry.user_id}|${entry.action}|${entry.target}|${entry.ip}`;
+      const details = entry.details || '';
+      const dataToHash = `${previousHash}|${timeSecs}|${entry.user_id}|${entry.action}|${entry.target}|${entry.ip}|${details}`;
       const hash = crypto.createHmac('sha256', secret).update(dataToHash).digest('hex');
       
       mockLogs.push({
         ...entry,
+        details,
         timeSecs,
         previous_hash: previousHash,
         hash
@@ -249,7 +251,7 @@ async function runTests() {
       let prevHash = '0000000000000000000000000000000000000000000000000000000000000000';
       for (let i = 0; i < logs.length; i++) {
         const log = logs[i];
-        const dataToHash = `${prevHash}|${log.timeSecs}|${log.user_id}|${log.action}|${log.target}|${log.ip}`;
+        const dataToHash = `${prevHash}|${log.timeSecs}|${log.user_id}|${log.action}|${log.target}|${log.ip}|${log.details || ''}`;
         const computed = crypto.createHmac('sha256', secret).update(dataToHash).digest('hex');
         
         if (log.previous_hash !== prevHash) return { valid: false, reason: 'linkage mismatch' };

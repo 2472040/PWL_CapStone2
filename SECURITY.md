@@ -95,7 +95,7 @@ LokaLab menerapkan pendekatan keamanan **defense-in-depth** (pertahanan berlapis
 │  └─────────────────────────────────────────────────────────────┘ │
 │                                                                  │
 │  ┌─────────────────────────────────────────────────────────────┐ │
-│  │                    DATABASE (SQLite)                         │ │
+│  │                    DATABASE (MySQL)                          │ │
 │  │                                                             │ │
 │  │  users:                    audit_logs:                      │ │
 │  │  ├── password (bcrypt)     ├── hash (HMAC-SHA256)           │ │
@@ -258,7 +258,7 @@ const authenticate = async (req, res, next) => {
   const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
   // LANGKAH 3: Cek JTI blacklist (apakah token ini sudah di-logout?)
-  if (decoded.jti && jtiBlacklist.has(decoded.jti)) {
+  if (decoded.jti && await tokenBlacklist.has(decoded.jti)) {
     return res.status(401).json({ message: 'Sesi telah berakhir.' });
   }
 
@@ -383,14 +383,20 @@ token_version: {
 
 ```javascript
 const logout = async (req, res) => {
-  // 1. Blacklist JTI token saat ini (revoke token spesifik ini)
+  // 1. Blacklist JTI token saat ini (revoke token spesifik ini dengan parameter kedaluwarsa)
   if (token) {
     const decoded = jwt.decode(token);
-    if (decoded?.jti) blacklistJti(decoded.jti);
+    if (decoded?.jti) {
+      await tokenBlacklist.add(decoded.jti, decoded.exp);
+    }
   }
 
   // 2. Increment token_version (invalidate SEMUA token user ini)
-  await req.user.increment('token_version');
+  const user = await User.findByPk(userId);
+  if (user) {
+    user.token_version = (user.token_version || 0) + 1;
+    await user.save();
+  }
 
   // 3. Clear HttpOnly cookie dari browser
   res.clearCookie('token', {
@@ -400,7 +406,7 @@ const logout = async (req, res) => {
   });
 
   // 4. Catat di audit log
-  await logAudit(req.user.id, 'LOGOUT', `User ${req.user.username} logout`);
+  await logAudit(userId, 'auth.logout', req.user.email, req.ip);
 };
 ```
 
@@ -412,7 +418,7 @@ User klik Logout
       ▼
 ┌─────────────────────────────────┐
 │ 1. Blacklist JTI token ini      │ ← Revoke token spesifik
-│    jtiBlacklist.add(jti)        │
+│    tokenBlacklist.add(jti, exp) │
 └──────────────┬──────────────────┘
                ▼
 ┌─────────────────────────────────┐
@@ -429,6 +435,23 @@ User klik Logout
 │ 4. Audit log: LOGOUT dicatat    │ ← Jejak aktivitas
 └─────────────────────────────────┘
 ```
+
+#### Mekanisme Pembersihan Otomatis (Blacklist Token Cleanup)
+Untuk mencegah tabel `revoked_tokens` di database MySQL membengkak tanpa batas seiring waktu, LokaLab mengimplementasikan **pembersihan otomatis berkala**:
+- **Eksekusi Startup**: Sistem secara otomatis memicu pembersihan setiap kali server Express.js dimulai (`server.js`).
+- **Interval Berkala**: Timer background Express menjalankan rutin pembersihan setiap **6 jam sekali** untuk menghapus token usang yang masa kedaluwarsanya (`expires_at`) sudah lewat.
+- **Implementasi**:
+  ```javascript
+  // Operasi penghapusan record expired secara berkala
+  cleanup: async () => {
+    const { Op } = require('sequelize');
+    await RevokedToken.destroy({
+      where: {
+        expires_at: { [Op.lt]: new Date() }
+      }
+    });
+  }
+  ```
 
 ---
 
@@ -585,9 +608,13 @@ Setiap entri audit log dihubungkan secara kriptografi dengan entri sebelumnya me
 ```javascript
 const GENESIS_HASH = '0000000000000000000000000000000000000000000000000000000000000000';
 
-const logAudit = async (userId, action, target, ip) => {
+const logAudit = async (userId, action, target, ip, details = '') => {
   try {
-    const secret = process.env.AUDIT_LOG_SECRET || 'lokalab-default-audit-secret-key-2026';
+    const secret = process.env.AUDIT_LOG_SECRET;
+    if (!secret && process.env.NODE_ENV === 'production') {
+      throw new Error('AUDIT_LOG_SECRET wajib diatur di lingkungan produksi.');
+    }
+    const activeSecret = secret || 'lokalab-default-audit-secret-key-2026';
     
     // 1. Ambil hash dari log terakhir (link ke rantai)
     const lastLog = await AuditLog.findOne({
@@ -601,16 +628,17 @@ const logAudit = async (userId, action, target, ip) => {
     const now = new Date();
     const timeSecs = Math.floor(now.getTime() / 1000).toString();
 
-    // 3. Hitung HMAC-SHA256 dari data log + hash sebelumnya
-    const dataToHash = `${previousHash}|${timeSecs}|${userId || ''}|${action}|${target || ''}|${ip || ''}`;
-    const hash = crypto.createHmac('sha256', secret).update(dataToHash).digest('hex');
+    // 3. Hitung HMAC-SHA256 dari data log + hash sebelumnya (termasuk details data non-sensitif)
+    const dataToHash = `${previousHash}|${timeSecs}|${userId || ''}|${action}|${target || ''}|${ip || ''}|${details || ''}`;
+    const hash = crypto.createHmac('sha256', activeSecret).update(dataToHash).digest('hex');
 
-    // 4. Simpan log dengan hash dan link ke log sebelumnya
+    // 4. Simpan log dengan hash, details, dan link ke log sebelumnya
     await AuditLog.create({
       user_id: userId,
       action,
       target,
       ip: ip || null,
+      details: details || null,
       hash,
       previous_hash: previousHash,
       created_at: now,
@@ -643,7 +671,11 @@ const logAudit = async (userId, action, target, ip) => {
 const verifyAuditChain = async (req, res) => {
   try {
     const logs = await AuditLog.findAll({ order: [['id', 'ASC']] });
-    const secret = process.env.AUDIT_LOG_SECRET || 'lokalab-default-audit-secret-key-2026';
+    const secret = process.env.AUDIT_LOG_SECRET;
+    if (!secret && process.env.NODE_ENV === 'production') {
+      throw new Error('AUDIT_LOG_SECRET wajib diatur di lingkungan produksi.');
+    }
+    const activeSecret = secret || 'lokalab-default-audit-secret-key-2026';
     let previousHash = '0000000000000000000000000000000000000000000000000000000000000000';
     const issues = [];
 
@@ -652,9 +684,9 @@ const verifyAuditChain = async (req, res) => {
       // Convert DATETIME to unix seconds string to avoid TZ / millisecond formatting issues
       const timeSecs = Math.floor(new Date(log.created_at || log.createdAt).getTime() / 1000).toString();
 
-      // Compute expected HMAC hash
-      const dataToHash = `${previousHash}|${timeSecs}|${log.user_id || ''}|${log.action}|${log.target || ''}|${log.ip || ''}`;
-      const computedHash = crypto.createHmac('sha256', secret).update(dataToHash).digest('hex');
+      // Compute expected HMAC hash including details field
+      const dataToHash = `${previousHash}|${timeSecs}|${log.user_id || ''}|${log.action}|${log.target || ''}|${log.ip || ''}|${log.details || ''}`;
+      const computedHash = crypto.createHmac('sha256', activeSecret).update(dataToHash).digest('hex');
 
       // 1. Verify previous_hash link
       if (log.previous_hash && log.previous_hash !== previousHash) {
@@ -715,7 +747,7 @@ const verifyAuditChain = async (req, res) => {
 
 ---
 
-## 8. Security Headers & CORS
+## 8. Security Headers, CORS & Proteksi CSRF
 
 ### Security Headers
 
@@ -723,14 +755,21 @@ const verifyAuditChain = async (req, res) => {
 
 ```javascript
 app.use((req, res, next) => {
+  const isProd = process.env.NODE_ENV === 'production';
+  // Pembedaan lingkungan: Produksi melarang keras evaluasi dinamis (unsafe-eval)
+  const scriptSrc = isProd ? "'self'" : "'self' 'unsafe-inline' 'unsafe-eval'";
+  const connectSrc = isProd 
+    ? "'self'" 
+    : "'self' ws://localhost:5173 http://localhost:3000 http://localhost:5173 ws://localhost:*";
+
   res.setHeader('Content-Security-Policy',
-    "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-    "font-src 'self' https://fonts.gstatic.com; " +
-    "img-src 'self' data: blob:; " +
-    "connect-src 'self'; " +
-    "frame-ancestors 'none';"
+    `default-src 'self'; ` +
+    `script-src ${scriptSrc}; ` +
+    `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; ` +
+    `font-src 'self' data: https://fonts.gstatic.com; ` +
+    `img-src 'self' data: blob:; ` +
+    `connect-src ${connectSrc}; ` +
+    `frame-ancestors 'none';`
   );
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -742,7 +781,7 @@ app.use((req, res, next) => {
 
 | Header | Nilai | Ancaman yang Dicegah |
 |---|---|---|
-| **Content-Security-Policy** | Strict whitelist | XSS (Cross-Site Scripting) — membatasi sumber script, style, dan koneksi |
+| **Content-Security-Policy** | Whitelist ketat dinamis | XSS (Cross-Site Scripting) — membatasi sumber script, style, dan koneksi |
 | **X-Frame-Options** | `DENY` | Clickjacking — halaman tidak bisa di-embed dalam `<iframe>` |
 | **X-Content-Type-Options** | `nosniff` | MIME Sniffing — browser tidak menebak tipe konten |
 | **Referrer-Policy** | `strict-origin-when-cross-origin` | Information Leakage — membatasi data referrer ke origin saja |
@@ -750,15 +789,15 @@ app.use((req, res, next) => {
 
 ### Detail CSP (Content Security Policy)
 
-| Directive | Nilai | Penjelasan |
-|---|---|---|
-| `default-src` | `'self'` | Hanya izinkan resource dari origin yang sama |
-| `script-src` | `'self' 'unsafe-inline' 'unsafe-eval'` | Script hanya dari origin sendiri (inline untuk React) |
-| `style-src` | `'self' 'unsafe-inline' fonts.googleapis.com` | Style dari origin + Google Fonts |
-| `font-src` | `'self' fonts.gstatic.com` | Font dari origin + Google Fonts CDN |
-| `img-src` | `'self' data: blob:` | Gambar dari origin + data URI + blob (untuk QR) |
-| `connect-src` | `'self'` | Fetch/XHR hanya ke origin yang sama |
-| `frame-ancestors` | `'none'` | Tidak boleh di-embed oleh siapapun |
+| Directive | Nilai (Development) | Nilai (Production) | Penjelasan |
+|---|---|---|---|
+| `default-src` | `'self'` | `'self'` | Hanya izinkan resource dari origin yang sama |
+| `script-src` | `'self' 'unsafe-inline' 'unsafe-eval'` | `'self'` | **Produksi melarang keras evaluasi dinamis** (unsafe-eval) untuk mitigasi XSS penuh. Dev mengizinkan untuk hot reload/source maps. |
+| `style-src` | `'self' 'unsafe-inline' fonts.googleapis.com` | `'self' 'unsafe-inline' fonts.googleapis.com` | Style dari origin + Google Fonts |
+| `font-src` | `'self' data: fonts.gstatic.com` | `'self' data: fonts.gstatic.com` | Font dari origin + data URIs + Google Fonts CDN |
+| `img-src` | `'self' data: blob:` | `'self' data: blob:` | Gambar dari origin + data URI + blob (untuk live QR scanner) |
+| `connect-src` | Origin lokal + WebSockets dev | `'self'` | Fetch/XHR hanya ke server API backend tepercaya |
+| `frame-ancestors`| `'none'` | `'none'` | Halaman tidak boleh di-embed oleh siapapun (proteksi clickjacking) |
 
 ### CORS Configuration
 
@@ -766,17 +805,51 @@ app.use((req, res, next) => {
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:5173',  // Strict origin
   credentials: true,                                            // Izinkan cookie
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 ```
 
 | Parameter | Nilai | Penjelasan |
 |---|---|---|
-| `origin` | Explicit URL (bukan `*`) | Hanya frontend yang diizinkan mengakses API |
-| `credentials` | `true` | Wajib untuk pengiriman HttpOnly Cookie cross-origin |
-| `methods` | Whitelist eksplisit | Hanya metode HTTP yang diperlukan |
-| `allowedHeaders` | `Content-Type, Authorization` | Membatasi header custom yang diterima |
+| `origin` | Explicit URL (bukan `*`) | Hanya frontend yang diizinkan mengakses API secara lintas-asal |
+| `credentials` | `true` | Wajib untuk mengizinkan browser mengirim HttpOnly Cookie sesi secara otomatis |
+
+---
+
+### Proteksi CSRF (Cross-Site Request Forgery)
+
+Karena token JWT disimpan dalam HttpOnly Cookie (yang dikirim otomatis oleh browser pada setiap request), sistem LokaLab menerapkan **Double Defense CSRF Protection** untuk mengamankan seluruh endpoint mutasi data penting (POST, PUT, DELETE, PATCH):
+
+#### 🛡️ Pertahanan 1: SameSite=Lax Cookie Attribute
+Atribut `SameSite=Lax` pada cookie sesi memastikan bahwa browser tidak akan menyertakan cookie pada request lintas situs (cross-site) yang dipicu oleh elemen pihak ketiga (seperti tautan eksternal, tag `<img>`, atau submisi form otomatis).
+
+#### 🛡️ Pertahanan 2: Header Kustom Wajib (Custom Header Verification)
+Untuk menutup celah serangan canggih, sistem menerapkan middleware proteksi CSRF kustom pada server API backend:
+- **File Middleware**: [csrf.js](file:///c:/Users/malik/Downloads/Lab%20Inventory/server/middleware/csrf.js)
+- **Cara Kerja**: Semua metode mutasi wajib menyertakan header kustom **`X-Requested-With`** atau **`X-CSRF-Token`**. 
+- **Keamanan**: Kebijakan browser Same-Origin Policy (SOP) melarang situs pihak ketiga untuk mengirim request dengan header kustom apa pun tanpa persetujuan CORS yang eksplisit.
+- **Implementasi Backend**:
+  ```javascript
+  const csrfProtection = (req, res, next) => {
+    const safeMethods = ['GET', 'HEAD', 'OPTIONS'];
+    if (safeMethods.includes(req.method.toUpperCase())) return next();
+
+    const hasHeader = req.headers['x-requested-with'] || req.headers['x-csrf-token'];
+    if (!hasHeader) {
+      return res.status(403).json({ error: 'CSRF Protection: Header keamanan wajib tidak ditemukan.' });
+    }
+    next();
+  };
+  ```
+- **Integrasi Frontend**:
+  Setiap kali memanggil API via [api.js](file:///c:/Users/malik/Downloads/Lab%20Inventory/src/services/api.js), sistem secara otomatis menyematkan header keamanan:
+  ```javascript
+  export const authHeaders = () => {
+    return {
+      "Content-Type": "application/json",
+      "X-Requested-With": "XMLHttpRequest" // Kebal dari eksploitasi CSRF
+    };
+  };
+  ```
 
 ---
 
@@ -889,13 +962,29 @@ AUDIT_LOG_SECRET=<kunci-untuk-hash-chain-audit-log>
 | `BACKUP_ENCRYPTION_SECRET` | Enkripsi/dekripsi file backup | Penyerang bisa membaca backup, tapi tidak bisa login atau mengubah audit log |
 | `AUDIT_LOG_SECRET` | HMAC hash chain audit log | Penyerang bisa memanipulasi log tanpa terdeteksi, tapi tidak bisa login atau membaca backup |
 
+### ⚠️ Validasi Ketat di Lingkungan Produksi (Zero-Fallback Policy)
+
+Untuk menjamin keamanan tingkat industri, LokaLab menerapkan **kebijakan nihil-fallback** di lingkungan produksi (`NODE_ENV=production`):
+- **Gagal Instan di Awal (Crash on Startup)**: Sistem memeriksa keberadaan ketiga kunci di atas pada file `server.js` saat startup. Jika salah satu kunci bernilai kosong atau tidak terdefinisi, server Express **sengaja dirancang untuk melempar error kritis dan langsung berhenti beroperasi (exit 1)**.
+- **Tanpa Fallback Kunci Standar (No Default Keys)**: Backend akan menolak menggunakan string rahasia bawaan (*default keys*) pada fungsi enkripsi backup maupun hash audit log ketika berjalan di lingkungan produksi.
+- **Implementasi**:
+  ```javascript
+  if (process.env.NODE_ENV === 'production') {
+    const criticalSecrets = ['JWT_SECRET', 'BACKUP_ENCRYPTION_SECRET', 'AUDIT_LOG_SECRET'];
+    const missing = criticalSecrets.filter(secret => !process.env[secret]);
+    if (missing.length > 0) {
+      throw new Error(`CRITICAL: Missing environment variables: ${missing.join(', ')}`);
+    }
+  }
+  ```
+
 ### Konfigurasi Tambahan
 
 | Variabel | Default | Penjelasan |
 |---|---|---|
 | `JWT_EXPIRY` | `30m` | Masa berlaku token JWT |
 | `CORS_ORIGIN` | `http://localhost:5173` | Origin yang diizinkan mengakses API |
-| `NODE_ENV` | `development` | Mengontrol flag `secure` pada cookie |
+| `NODE_ENV` | `development` | Mengontrol flag `secure` pada cookie dan validasi kunci ketat |
 
 ---
 
