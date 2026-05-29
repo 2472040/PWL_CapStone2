@@ -54,6 +54,7 @@
   width: calc(100% - 48px); max-width: 1100px;
   display: flex; align-items: center; justify-content: space-between;
   padding: 9px 13px 9px 18px; z-index: 50;
+  height: 52px;
   background: rgba(14, 13, 22, 0.45); 
   backdrop-filter: blur(40px) saturate(200%);
   -webkit-backdrop-filter: blur(40px) saturate(200%);

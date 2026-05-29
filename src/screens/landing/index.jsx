@@ -263,16 +263,17 @@ function Nav({ showSignIn, onSignIn }) {
         <a onClick={() => scrollToSection('flow-section')} style={{ cursor: 'pointer' }}>Alur Pengadaan</a>
         <a onClick={() => scrollToSection('inv-section')} style={{ cursor: 'pointer' }}>Inventaris</a>
       </div>
-      <div style={{ minWidth: 80, display: 'flex', justifyContent: 'flex-end', overflow: 'hidden' }}>
+      <div style={{ minWidth: 80, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', overflow: 'visible' }}>
         <AnimatePresence>
           {showSignIn && (
             <motion.button
               className="au-nav-cta"
               onClick={onSignIn}
-              initial={{ opacity: 0, scale: 0.8, x: 20 }}
+              initial={{ opacity: 0, scale: 0.85, x: 15 }}
               animate={{ opacity: 1, scale: 1, x: 0 }}
-              exit={{ opacity: 0, scale: 0.8, x: 20 }}
-              transition={{ type: 'spring', stiffness: 380, damping: 25 }}
+              exit={{ opacity: 0, scale: 0.85, x: 15 }}
+              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+              style={{ margin: 0 }}
             >
               Sign In
             </motion.button>
