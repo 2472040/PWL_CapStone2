@@ -15,7 +15,6 @@ import ActivitySection from './ActivitySection.jsx';
 import BentoFeatures from './BentoFeatures.jsx';
 import StatsCounter from './StatsCounter.jsx';
 import Testimonials from './Testimonials.jsx';
-import PricingSection from './PricingSection.jsx';
 import PremiumFooter from './PremiumFooter.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -237,7 +236,6 @@ export default function AuroraSite({ onEnterApp }) {
         <StatsCounter />
         <ActivitySection />
         <Testimonials />
-        <PricingSection />
         <CTA />
         <PremiumFooter />
       </div>
@@ -264,7 +262,6 @@ function Nav({ showSignIn, onSignIn }) {
         <a onClick={() => scrollToSection('bento-features')} style={{ cursor: 'pointer' }}>Produk</a>
         <a onClick={() => scrollToSection('flow-section')} style={{ cursor: 'pointer' }}>Alur Pengadaan</a>
         <a onClick={() => scrollToSection('inv-section')} style={{ cursor: 'pointer' }}>Inventaris</a>
-        <a onClick={() => scrollToSection('pricing')} style={{ cursor: 'pointer' }}>Harga</a>
       </div>
       <div style={{ minWidth: 80, display: 'flex', justifyContent: 'flex-end', overflow: 'hidden' }}>
         <AnimatePresence>

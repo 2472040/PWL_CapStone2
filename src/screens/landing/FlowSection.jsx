@@ -243,7 +243,7 @@ function AdminView({ approvals, received, setReceive }) {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+      <div className="au-admin-grid">
         {eligible.map(it => {
           const isRec = received[it.id];
           return (

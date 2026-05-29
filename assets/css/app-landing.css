@@ -970,3 +970,18 @@
   color: var(--ink);
 }
 
+/* Responsive Grid for Admin Flow Preview Card */
+.au-admin-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.au-admin-grid .au-inv-card {
+  grid-column: auto !important;
+}
+@media (max-width: 900px) {
+  .au-admin-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
