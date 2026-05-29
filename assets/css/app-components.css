@@ -402,7 +402,13 @@ html[data-theme="light"] .role-popover { background: rgba(255,255,255,0.95); }
 .card.compact { padding: 14px; }
 
 /* ── Tilt Card ── */
-.tilt-card { transition: transform 0.3s var(--ease-spring); will-change: transform; }
+.tilt-card { 
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1); 
+  will-change: transform; 
+}
+.tilt-card:hover {
+  transition: none !important;
+}
 .tilt-shine { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; }
 
 /* ── Settings ── */

@@ -3,7 +3,7 @@ import request from 'supertest';
 
 // Use CJS require to ensure we share the exact same module cache with the server
 const app = require('../app');
-const { Draft, DraftItem, DraftApproval } = require('../models');
+const { Draft, DraftItem, DraftApproval, sequelize } = require('../models');
 
 describe('Procurement Workflow Integration Test', () => {
   let kalabToken = null;
@@ -12,6 +12,9 @@ describe('Procurement Workflow Integration Test', () => {
   let createdDraftId = null;
 
   beforeAll(async () => {
+    // Sync database schema changes (like revision_notes column)
+    await sequelize.sync({ alter: true });
+
     // 1. Login as Kalab
     const resKalab = await request(app)
       .post('/api/auth/login')
@@ -146,5 +149,63 @@ describe('Procurement Workflow Integration Test', () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toBeDefined();
     expect(res.body.details).toBeDefined();
+  });
+
+  it('should successfully run a procurement revision workflow lifecycle', async () => {
+    // 1. Kalab creates a new draft
+    const draftPayload = {
+      title: 'Draf Pengadaan Uji Revisi Otomatis',
+      items: [
+        { kind: 'Inventaris', name: 'Alat Revisi Premium', qty: 1, unit: 'unit', price: 1000000 }
+      ]
+    };
+
+    const resCreate = await request(app)
+      .post('/api/procurement/drafts')
+      .set('Authorization', `Bearer ${kalabToken}`)
+      .set('Cookie', 'csrfToken=test_csrf')
+      .set('x-csrf-token', 'test_csrf')
+      .send(draftPayload);
+
+    expect(resCreate.status).toBe(201);
+    const draftId = resCreate.body.data.id;
+
+    // 2. Kalab submits the draft
+    const resSubmit = await request(app)
+      .post(`/api/procurement/drafts/${draftId}/submit`)
+      .set('Authorization', `Bearer ${kalabToken}`)
+      .set('Cookie', 'csrfToken=test_csrf')
+      .set('x-csrf-token', 'test_csrf')
+      .send();
+    expect(resSubmit.status).toBe(200);
+    expect(resSubmit.body.data.status).toBe('submitted');
+
+    // 3. Kaprodi requests revision with notes
+    const resRev = await request(app)
+      .post(`/api/procurement/drafts/${draftId}/revision`)
+      .set('Authorization', `Bearer ${kaprodiToken}`)
+      .set('Cookie', 'csrfToken=test_csrf')
+      .set('x-csrf-token', 'test_csrf')
+      .send({ notes: 'Perlu spesifikasi mikroskop lebih detil' });
+
+    expect(resRev.status).toBe(200);
+    expect(resRev.body.data.status).toBe('revision');
+    expect(resRev.body.data.revision_notes).toBe('Perlu spesifikasi mikroskop lebih detil');
+
+    // 4. Kalab re-submits the draft (validating that it clears revision notes)
+    const resReSubmit = await request(app)
+      .post(`/api/procurement/drafts/${draftId}/submit`)
+      .set('Authorization', `Bearer ${kalabToken}`)
+      .set('Cookie', 'csrfToken=test_csrf')
+      .set('x-csrf-token', 'test_csrf')
+      .send();
+
+    expect(resReSubmit.status).toBe(200);
+    expect(resReSubmit.body.data.status).toBe('submitted');
+    expect(resReSubmit.body.data.revision_notes).toBeNull();
+
+    // 5. Clean up
+    await DraftItem.destroy({ where: { draft_id: draftId } });
+    await Draft.destroy({ where: { id: draftId } });
   });
 });

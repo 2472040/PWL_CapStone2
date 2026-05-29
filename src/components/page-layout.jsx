@@ -59,22 +59,7 @@ export function PageHost({ children, role, screen }) {
   useEffect(() => {
     if (!window.gsap || !ref.current) return;
     const ctx = window.gsap.context(() => {
-      // 1. Slide and blur-fade page container on screen change (fluid page slide-in)
-      window.gsap.fromTo(ref.current, 
-        { x: 20, opacity: 0, filter: 'blur(12px)' }, 
-        { x: 0, opacity: 1, filter: 'blur(0px)', duration: 0.45, ease: 'power3.out', clearProps: 'transform,filter,opacity' }
-      );
-      
-      // 2. Select standard layouts & data-reveal elements and staggered entry slide-up
-      const reveals = ref.current.querySelectorAll('.page-title, .page-sub, .stats > *, .table-wrap, .items-table, .item-row, [data-reveal]');
-      if (reveals.length) {
-        window.gsap.fromTo(reveals, 
-          { y: 12, opacity: 0, filter: 'blur(4px)' }, 
-          { y: 0, opacity: 1, filter: 'blur(0px)', duration: 0.5, stagger: 0.03, ease: 'power3.out', delay: 0.05, clearProps: 'all', immediateRender: false }
-        );
-      }
-      
-      // 3. Staggered count-ups for [data-counter] tiles
+      // Staggered count-ups for [data-counter] tiles
       const counters = ref.current.querySelectorAll('[data-counter]');
       counters.forEach((c, index) => {
         const target = parseFloat(c.dataset.counter);
@@ -83,7 +68,7 @@ export function PageHost({ children, role, screen }) {
         window.gsap.to(obj, {
           v: target, 
           duration: 1.2, 
-          delay: index * 0.06 + 0.1, 
+          delay: index * 0.05 + 0.05, 
           ease: 'power3.out',
           onUpdate: () => {
             const fmt = c.dataset.fmt;
@@ -97,7 +82,7 @@ export function PageHost({ children, role, screen }) {
     return () => ctx.revert();
   }, [role, screen]);
 
-  return <div ref={ref} key={role + ':' + screen} className="page-enter in">{children}</div>;
+  return <div ref={ref} className="page-enter in">{children}</div>;
 }
 
 // =========================================================

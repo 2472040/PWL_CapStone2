@@ -54,8 +54,14 @@ const createDraft = async (req, res) => {
     const result = await Draft.findByPk(draft.id, { include: [{ model: DraftItem, as: 'items' }] });
     res.status(201).json({ data: result });
   } catch (err) {
-    await t.rollback();
-    console.error(err);
+    console.error('INITIAL ERROR IN CREATEDRAFT:', err);
+    try {
+      if (t && !t.finished) {
+        await t.rollback();
+      }
+    } catch (rollbackErr) {
+      console.error('FAILED TO ROLLBACK TRANSACTION:', rollbackErr.message);
+    }
     res.status(500).json({ error: 'Gagal membuat draf pengadaan.' });
   }
 };
@@ -64,7 +70,7 @@ const updateDraft = async (req, res) => {
   try {
     const draft = await Draft.findByPk(req.params.id);
     if (!draft) return res.status(404).json({ error: 'Draf tidak ditemukan.' });
-    if (draft.status !== 'draft') return res.status(400).json({ error: 'Draf sudah tidak dapat diubah.' });
+    if (draft.status !== 'draft' && draft.status !== 'revision') return res.status(400).json({ error: 'Draf sudah tidak dapat diubah.' });
     if (draft.created_by !== req.user.id) return res.status(403).json({ error: 'Anda tidak berhak mengubah draf ini.' });
 
     if (req.body.title) draft.title = req.body.title;
@@ -84,11 +90,12 @@ const submitDraft = async (req, res) => {
   try {
     const draft = await Draft.findByPk(req.params.id, { include: [{ model: DraftItem, as: 'items' }] });
     if (!draft) return res.status(404).json({ error: 'Draf tidak ditemukan.' });
-    if (draft.status !== 'draft') return res.status(400).json({ error: 'Draf sudah disubmit.' });
+    if (draft.status !== 'draft' && draft.status !== 'revision') return res.status(400).json({ error: 'Draf sudah disubmit.' });
     if (draft.items.length === 0) return res.status(400).json({ error: 'Draf harus memiliki minimal 1 item.' });
 
     draft.status = 'submitted';
     draft.submitted_at = new Date();
+    draft.revision_notes = null; // Clear revision notes upon re-submission
     await draft.save();
 
     await logAudit(req.user.id, 'draft.submit', draft.code, req.ip);
@@ -112,7 +119,7 @@ const addDraftItem = async (req, res) => {
   try {
     const draft = await Draft.findByPk(req.params.id);
     if (!draft) return res.status(404).json({ error: 'Draf tidak ditemukan.' });
-    if (draft.status !== 'draft') return res.status(400).json({ error: 'Draf sudah tidak dapat diubah.' });
+    if (draft.status !== 'draft' && draft.status !== 'revision' && draft.status !== 'submitted') return res.status(400).json({ error: 'Draf sudah tidak dapat diubah.' });
 
     const { kind, name, qty, unit, price, link, replaces } = req.body;
     if (!kind || !name || !qty || !unit || !price) {
@@ -308,8 +315,8 @@ const deleteDraftItem = async (req, res) => {
       include: [{ model: Draft, as: 'draft' }]
     });
     if (!item) return res.status(404).json({ error: 'Item draf tidak ditemukan.' });
-    if (item.draft.status !== 'draft') {
-      return res.status(400).json({ error: 'Tidak bisa menghapus item dari draf yang sudah diajukan.' });
+    if (item.draft.status !== 'draft' && item.draft.status !== 'revision' && item.draft.status !== 'submitted') {
+      return res.status(400).json({ error: 'Tidak bisa menghapus item dari draf yang sudah dikunci.' });
     }
     
     const draftCode = item.draft.code;
@@ -324,6 +331,43 @@ const deleteDraftItem = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Gagal menghapus item draf.' });
+  }
+};
+
+const updateDraftItem = async (req, res) => {
+  try {
+    const { itemId } = req.params;
+    const item = await DraftItem.findByPk(itemId, {
+      include: [{ model: Draft, as: 'draft' }]
+    });
+    if (!item) return res.status(404).json({ error: 'Item draf tidak ditemukan.' });
+    if (item.draft.status !== 'draft' && item.draft.status !== 'revision' && item.draft.status !== 'submitted') {
+      return res.status(400).json({ error: 'Tidak bisa mengubah item pada draf yang sudah dikunci.' });
+    }
+
+    const { kind, name, qty, unit, price, link, replaces } = req.body;
+    if (!kind || !name || !qty || !unit || !price) {
+      return res.status(400).json({ error: 'Semua field wajib diisi.' });
+    }
+
+    item.kind = kind;
+    item.name = name;
+    item.qty = qty;
+    item.unit = unit;
+    item.price = price;
+    item.link = link || null;
+    item.replaces = kind === 'Inventaris' ? (replaces || null) : null;
+
+    await item.save();
+
+    await logAudit(req.user.id, 'draft.updateItem', `${item.draft.code} · ${name}`, req.ip);
+    const io = req.app.get('io');
+    if (io) io.emit('data_changed', { type: 'draft' });
+
+    res.json({ data: item });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Gagal mengubah item draf.' });
   }
 };
 
@@ -348,8 +392,53 @@ const completeDraft = async (req, res) => {
   }
 };
 
+const requestRevision = async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    const draft = await Draft.findByPk(req.params.id, { transaction: t });
+    if (!draft) {
+      await t.rollback();
+      return res.status(404).json({ error: 'Draf tidak ditemukan.' });
+    }
+    if (draft.status !== 'submitted') {
+      await t.rollback();
+      return res.status(400).json({ error: 'Hanya draf yang berstatus "submitted" yang dapat direvisi.' });
+    }
+
+    const { notes } = req.body;
+    if (!notes || notes.trim() === '') {
+      await t.rollback();
+      return res.status(400).json({ error: 'Catatan revisi wajib diisi.' });
+    }
+
+    draft.status = 'revision';
+    draft.revision_notes = notes;
+    await draft.save({ transaction: t });
+
+    await t.commit();
+
+    await logAudit(req.user.id, 'draft.revision_requested', draft.code, req.ip, notes);
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('data_changed', { type: 'draft' });
+      io.emit('notification', {
+        message: `Draf pengadaan ${draft.code} membutuhkan revisi: "${notes}"`,
+        roles: ['kalab'],
+        kind: 'warn'
+      });
+    }
+
+    res.json({ data: draft });
+  } catch (err) {
+    await t.rollback();
+    console.error(err);
+    res.status(500).json({ error: 'Gagal memproses permintaan revisi draf.' });
+  }
+};
+
 module.exports = {
-  getDrafts, createDraft, updateDraft, submitDraft, addDraftItem, deleteDraftItem,
+  getDrafts, createDraft, updateDraft, submitDraft, addDraftItem, deleteDraftItem, updateDraftItem,
   getDraftsForReview, approveDraftItems, finalizeDraft, getDraftHistory,
-  getReceiving, receiveItem, completeDraft
+  getReceiving, receiveItem, completeDraft, requestRevision
 };

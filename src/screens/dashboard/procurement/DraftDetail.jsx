@@ -1,7 +1,14 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useStore, useToast, D, Icon } from '../../../components/app-shell.jsx';
 import { apiFetch } from '../../../services/api.js';
 import { AdminReceiveGrid } from './ReceivingAdmin.jsx';
+
+function formatThousand(val) {
+  if (val === undefined || val === null || val === '') return '';
+  const numString = String(val).replace(/\D/g, ''); // strip non-digits
+  if (!numString) return '';
+  return Number(numString).toLocaleString('id-ID'); // formats with dot separators in Indonesian locale
+}
 
 export function DraftDetail({ draft, onBack, mode }) {
   const { state, dispatch } = useStore();
@@ -9,6 +16,48 @@ export function DraftDetail({ draft, onBack, mode }) {
   const role = D.roles.find(r => r.id === mode);
   const locked = draft.status === 'finalized' || draft.status === 'completed';
   const d = draft;
+
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addingItem, setAddingItem] = useState(false);
+  const [newItem, setNewItem] = useState({
+    kind: 'Inventaris',
+    name: '',
+    qty: '',
+    unit: 'unit',
+    price: '',
+    link: '',
+    replaces: ''
+  });
+
+  const [editingItemId, setEditingItemId] = useState(null);
+  const [editFields, setEditFields] = useState({
+    kind: 'Inventaris',
+    name: '',
+    qty: '',
+    unit: '',
+    price: '',
+    link: '',
+    replaces: ''
+  });
+
+  const [deleteCandidateId, setDeleteCandidateId] = useState(null);
+
+  function startEdit(it) {
+    setEditingItemId(it.id);
+    setEditFields({
+      kind: it.kind,
+      name: it.name,
+      qty: String(it.qty),
+      unit: it.unit,
+      price: String(it.price),
+      link: it.link || '',
+      replaces: it.replaces || ''
+    });
+  }
+
+  function handleCancelEdit() {
+    setEditingItemId(null);
+  }
 
   const totals = useMemo(() => {
     let inv = 0, bhp = 0, all = 0, approved = 0, received = 0;
@@ -59,6 +108,26 @@ export function DraftDetail({ draft, onBack, mode }) {
     }
   }
 
+  async function requestRevision() {
+    const notes = prompt('Masukkan Catatan Revisi untuk Kepala Lab:');
+    if (notes === null) return; // cancelled
+    if (!notes.trim()) {
+      toast('Catatan revisi tidak boleh kosong', 'warn');
+      return;
+    }
+    try {
+      await apiFetch(`/procurement/drafts/${d.id}/revision`, {
+        method: 'POST',
+        body: JSON.stringify({ notes })
+      });
+      dispatch({ type: 'REQUEST_REVISION', code: d.code, notes });
+      toast('Permintaan revisi dikirim ke Kepala Lab', 'ok');
+      onBack();
+    } catch (err) {
+      toast(err.message, 'warn');
+    }
+  }
+
   async function markReceived(itemId) {
     const item = d.items.find(it => it.id === itemId);
     if (!item.received) {
@@ -100,13 +169,100 @@ export function DraftDetail({ draft, onBack, mode }) {
   }
 
   async function handleRemoveItem(itemId) {
-    if (!confirm('Apakah Anda yakin ingin menghapus item ini dari draf?')) return;
     try {
       await apiFetch(`/procurement/items/${itemId}`, { method: 'DELETE' });
       dispatch({ type: 'REMOVE_DRAFT_ITEM', code: d.code, itemId });
       toast('Item berhasil dihapus', 'ok');
     } catch (err) {
       toast('Gagal menghapus item: ' + err.message, 'warn');
+    }
+  }
+
+  async function handleSaveItem(itemId) {
+    if (!editFields.name.trim() || !editFields.qty || !editFields.unit.trim() || !editFields.price) {
+      toast('Mohon isi semua field wajib (*)', 'warn');
+      return;
+    }
+    try {
+      const priceNum = parseFloat(String(editFields.price).replace(/\D/g, '')) || 0;
+      const res = await apiFetch(`/procurement/items/${itemId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          kind: editFields.kind,
+          name: editFields.name.trim(),
+          qty: parseInt(editFields.qty),
+          unit: editFields.unit.trim(),
+          price: priceNum,
+          link: editFields.link.trim() || null,
+          replaces: editFields.kind === 'Inventaris' ? (editFields.replaces?.trim() || null) : null
+        })
+      });
+      if (res.data) {
+        dispatch({
+          type: 'UPDATE_DRAFT_ITEM',
+          code: d.code,
+          itemId,
+          item: {
+            ...res.data,
+            approval: null,
+            received: false
+          }
+        });
+        toast('Item berhasil diperbarui', 'ok');
+        setEditingItemId(null);
+      }
+    } catch (err) {
+      toast('Gagal memperbarui item: ' + err.message, 'warn');
+    }
+  }
+
+  async function handleAddItem(e) {
+    e.preventDefault();
+    if (!newItem.name.trim() || !newItem.qty || !newItem.unit.trim() || !newItem.price) {
+      toast('Mohon isi semua field wajib (*)', 'warn');
+      return;
+    }
+    setAddingItem(true);
+    try {
+      const priceNum = parseFloat(String(newItem.price).replace(/\D/g, '')) || 0;
+      const res = await apiFetch(`/procurement/drafts/${d.id}/items`, {
+        method: 'POST',
+        body: JSON.stringify({
+          kind: newItem.kind,
+          name: newItem.name.trim(),
+          qty: parseInt(newItem.qty),
+          unit: newItem.unit.trim(),
+          price: priceNum,
+          link: newItem.link.trim() || null,
+          replaces: newItem.kind === 'Inventaris' ? (newItem.replaces.trim() || null) : null
+        })
+      });
+      if (res.data) {
+        dispatch({
+          type: 'ADD_DRAFT_ITEM',
+          code: d.code,
+          item: {
+            ...res.data,
+            approval: null,
+            received: false
+          }
+        });
+        toast('Item berhasil ditambahkan ke draf', 'ok');
+        setNewItem({
+          kind: 'Inventaris',
+          name: '',
+          qty: '',
+          unit: 'unit',
+          price: '',
+          link: '',
+          replaces: ''
+        });
+        setShowAddForm(false);
+      }
+    } catch (err) {
+      toast('Gagal menambahkan item: ' + err.message, 'warn');
+    } finally {
+      setAddingItem(false);
     }
   }
 
@@ -157,6 +313,16 @@ export function DraftDetail({ draft, onBack, mode }) {
         <button className="btn sm" onClick={onBack}><Icon name="chevL" size={12} /> Kembali</button>
       </div>
 
+      {d.revision_notes && (
+        <div className="mb-5 p-4 rounded-lg border border-rose/30 bg-rose/10 text-rose text-sm flex gap-3 items-start" data-reveal>
+          <Icon name="alert" size={16} className="mt-0.5 shrink-0 animate-pulse" />
+          <div>
+            <div className="font-bold mb-1">Catatan Revisi dari Kaprodi:</div>
+            <p className="opacity-90 leading-relaxed">{d.revision_notes}</p>
+          </div>
+        </div>
+      )}
+
       <div className="page-head" data-reveal>
         <div>
           <div className="mono text-xs text-3 mb-2 tracking-[0.08em]" >{d.code}</div>
@@ -169,14 +335,24 @@ export function DraftDetail({ draft, onBack, mode }) {
               <Icon name="download" size={13} /> Cetak BAST (PDF)
             </a>
           )}
-          {mode === 'kalab' && d.status === 'draft' && <>
-            <span className="chip locked">Draft</span>
-            <button className="btn primary" onClick={submitDraft}><Icon name="arrow" size={12} /> Ajukan ke Kaprodi</button>
+          {mode === 'kalab' && (d.status === 'draft' || d.status === 'revision') && <>
+            <span className="chip locked">{d.status === 'revision' ? 'Butuh Revisi' : 'Draft'}</span>
+            <button className="btn primary" onClick={submitDraft}>
+              <Icon name="arrow" size={12} /> {d.status === 'revision' ? 'Ajukan Ulang ke Kaprodi' : 'Ajukan ke Kaprodi'}
+            </button>
           </>}
           {mode === 'kalab' && d.status === 'submitted' && <>
             <span className="chip warn"><span className="dot" /> Menunggu review Kaprodi</span>
+            <button className="btn font-semibold" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.1)' }} onClick={submitDraft}>
+              <Icon name="arrow" size={12} /> Ajukan Perubahan Ulang
+            </button>
           </>}
           {mode === 'kalab' && locked && <span className="chip locked">Locked · tidak bisa diubah</span>}
+          {mode === 'kaprodi' && d.status === 'submitted' && (
+            <button className="btn font-semibold text-rose border-rose/30 bg-rose/5 hover:bg-rose/10" onClick={requestRevision}>
+              <Icon name="x" size={12} /> Minta Revisi
+            </button>
+          )}
           {mode === 'kaprodi' && !locked && <>
             <span className="chip ok">{totals.ok} OK</span>
             <span className="chip danger">{totals.no} tolak</span>
@@ -201,7 +377,134 @@ export function DraftDetail({ draft, onBack, mode }) {
       {mode === 'admin' ? (
         <AdminReceiveGrid draft={d} totals={totals} onToggle={markReceived} />
       ) : (
-        <KalabKaprodiItems draft={d} mode={mode} locked={locked} setApproval={setApproval} totals={totals} onRemoveItem={handleRemoveItem} />
+        <>
+          <KalabKaprodiItems 
+            draft={d} 
+            mode={mode} 
+            locked={locked} 
+            setApproval={setApproval} 
+            totals={totals} 
+            onRemoveItem={setDeleteCandidateId}
+            editingItemId={editingItemId}
+            editFields={editFields}
+            setEditFields={setEditFields}
+            startEdit={startEdit}
+            onSaveItem={handleSaveItem}
+            onCancelEdit={handleCancelEdit}
+          />
+          
+          {mode === 'kalab' && (d.status === 'draft' || d.status === 'revision' || d.status === 'submitted') && (
+            <div className="mt-6" data-reveal>
+              {!showAddForm ? (
+                <button className="btn" onClick={() => setShowAddForm(true)} style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.1)' }}>
+                  <Icon name="plus" size={12} /> Tambah Item Baru
+                </button>
+              ) : (
+                <form onSubmit={handleAddItem} className="card compact p-5 mt-3 border-dashed" style={{ background: 'rgba(183,148,255,0.02)', borderColor: 'rgba(183,148,255,0.2)' }}>
+                  <div className="flex justify-between items-center mb-4">
+                    <h4 className="text-sm font-bold text-violet flex items-center gap-1.5">
+                      <Icon name="plus" size={14} /> Tambah Item Pengadaan Baru
+                    </h4>
+                    <button type="button" className="x-btn text-ink-3 hover:text-ink" onClick={() => setShowAddForm(false)}>
+                      <Icon name="x" size={12} />
+                    </button>
+                  </div>
+
+                  <div className="flex gap-2 mb-3">
+                    <button type="button" onClick={() => setNewItem(prev => ({ ...prev, kind: 'Inventaris' }))} className={`btn sm ${newItem.kind === 'Inventaris' ? 'primary' : ''}`}>Inventaris</button>
+                    <button type="button" onClick={() => setNewItem(prev => ({ ...prev, kind: 'BHP' }))} className={`btn sm ${newItem.kind === 'BHP' ? 'primary' : ''}`}>BHP</button>
+                  </div>
+
+                  <div className="field mb-3">
+                    <div className="field-lbl">Nama Barang <span className="req">*</span></div>
+                    <input className="input" value={newItem.name} onChange={e => setNewItem(prev => ({ ...prev, name: e.target.value }))} placeholder="Nama barang (contoh: Mikroskop Binokuler)" disabled={addingItem} />
+                  </div>
+
+                  <div className="gap-3 grid grid-cols-3 mb-3">
+                    <div className="field">
+                      <div className="field-lbl">Jumlah <span className="req">*</span></div>
+                      <input className="input mono" type="number" min="1" value={newItem.qty} onChange={e => setNewItem(prev => ({ ...prev, qty: e.target.value }))} placeholder="1" disabled={addingItem} />
+                    </div>
+                    <div className="field">
+                      <div className="field-lbl">Satuan <span className="req">*</span></div>
+                      <input className="input" value={newItem.unit} onChange={e => setNewItem(prev => ({ ...prev, unit: e.target.value }))} placeholder="unit/pcs" disabled={addingItem} />
+                    </div>
+                    <div className="field">
+                      <div className="field-lbl">Harga Satuan <span className="req">*</span></div>
+                      <input 
+                        className="input mono" 
+                        type="text" 
+                        value={formatThousand(newItem.price)} 
+                        onChange={e => {
+                          const cleanVal = e.target.value.replace(/\D/g, '');
+                          setNewItem(prev => ({ ...prev, price: cleanVal }));
+                        }} 
+                        placeholder="Rp 0" 
+                        disabled={addingItem} 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="field mb-3">
+                    <div className="field-lbl">Link Pembelian <span className="text-xs text-ink-3">(Opsional)</span></div>
+                    <input className="input" value={newItem.link} onChange={e => setNewItem(prev => ({ ...prev, link: e.target.value }))} placeholder="https://tokopedia.com/..." disabled={addingItem} />
+                  </div>
+
+                  {newItem.kind === 'Inventaris' && (
+                    <div className="field mb-4">
+                      <div className="field-lbl">Mengganti Aset <span className="text-xs text-ink-3">(Opsional jika untuk replace barang rusak)</span></div>
+                      <input className="input" value={newItem.replaces} onChange={e => setNewItem(prev => ({ ...prev, replaces: e.target.value }))} placeholder="Kode Aset (contoh: LAB-INV-MKS-001)" disabled={addingItem} />
+                    </div>
+                  )}
+
+                  <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-surface">
+                    <button type="button" className="btn sm" onClick={() => setShowAddForm(false)} disabled={addingItem}>Batal</button>
+                    <button type="submit" className="btn primary sm" disabled={addingItem}>
+                      {addingItem ? 'Menyimpan...' : 'Tambahkan Item'}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Custom Glassmorphic Confirm Deletion Modal Overlay */}
+      {deleteCandidateId && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in">
+          <div className="card max-w-[400px] w-full p-6 shadow-2xl border border-rose/30 bg-surface-2 flex flex-col gap-4 text-center animate-slide-up" style={{ '--role-accent': 'var(--color-rose)' }}>
+            <div className="mx-auto p-3 rounded-full bg-rose/10 text-rose w-max shrink-0 animate-bounce">
+              <Icon name="alert" size={24} />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-ink">Hapus Item Pengadaan?</h3>
+              <p className="text-xs text-ink-3 mt-1.5 leading-relaxed">
+                Apakah Anda yakin ingin menghapus item <b>{d.items.find(it => it.id === deleteCandidateId)?.name}</b>? Tindakan ini tidak dapat dibatalkan.
+              </p>
+            </div>
+            <div className="flex gap-2.5 mt-2 justify-center">
+              <button 
+                type="button" 
+                className="btn sm grow font-semibold" 
+                style={{ background: 'var(--glass)', borderColor: 'rgba(255,255,255,0.1)' }}
+                onClick={() => setDeleteCandidateId(null)}
+              >
+                Batal
+              </button>
+              <button 
+                type="button" 
+                className="btn primary sm grow font-semibold bg-rose border-rose hover:bg-rose-600 text-white" 
+                onClick={() => {
+                  handleRemoveItem(deleteCandidateId);
+                  setDeleteCandidateId(null);
+                }}
+              >
+                Ya, Hapus
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -211,7 +514,10 @@ function eligibleCount(items) {
   return items.filter(it => it.approval !== 'no').length;
 }
 
-export function KalabKaprodiItems({ draft, mode, locked, setApproval, totals, onRemoveItem }) {
+export function KalabKaprodiItems({ 
+  draft, mode, locked, setApproval, totals, onRemoveItem,
+  editingItemId, editFields, setEditFields, startEdit, onSaveItem, onCancelEdit
+}) {
   return (
     <>
       <div className="items-table with-actions" data-reveal>
@@ -224,6 +530,93 @@ export function KalabKaprodiItems({ draft, mode, locked, setApproval, totals, on
         </div>
         {draft.items.map(it => {
           const st = it.approval;
+          const isEditing = editingItemId === it.id;
+
+          if (isEditing) {
+            return (
+              <div key={it.id} className="item-row editing border border-violet/30 p-2.5 rounded my-1 flex gap-2 items-center" style={{ background: 'rgba(183,148,255,0.02)', gridTemplateColumns: '80px 1fr 140px 140px 100px', alignItems: 'center' }}>
+                <div className="flex flex-col gap-1 shrink-0">
+                  <select 
+                    className="input sm w-full" 
+                    value={editFields.kind} 
+                    onChange={e => setEditFields(prev => ({ ...prev, kind: e.target.value }))}
+                  >
+                    <option value="Inventaris">INV</option>
+                    <option value="BHP">BHP</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1.5 grow">
+                  <input 
+                    className="input sm font-bold w-full" 
+                    value={editFields.name} 
+                    onChange={e => setEditFields(prev => ({ ...prev, name: e.target.value }))} 
+                    placeholder="Nama barang..." 
+                  />
+                  <input 
+                    className="input sm text-[11px] mono w-full" 
+                    value={editFields.link || ''} 
+                    onChange={e => setEditFields(prev => ({ ...prev, link: e.target.value }))} 
+                    placeholder="Link pembelian" 
+                  />
+                  {editFields.kind === 'Inventaris' && (
+                    <input 
+                      className="input sm text-[11px] w-full" 
+                      value={editFields.replaces || ''} 
+                      onChange={e => setEditFields(prev => ({ ...prev, replaces: e.target.value }))} 
+                      placeholder="Mengganti aset" 
+                    />
+                  )}
+                </div>
+                <div className="flex gap-1 items-center shrink-0 w-28">
+                  <input 
+                    className="input sm mono w-12 text-center" 
+                    type="number" 
+                    min="1" 
+                    value={editFields.qty} 
+                    onChange={e => setEditFields(prev => ({ ...prev, qty: e.target.value }))} 
+                  />
+                  <input 
+                    className="input sm w-14" 
+                    value={editFields.unit} 
+                    onChange={e => setEditFields(prev => ({ ...prev, unit: e.target.value }))} 
+                    placeholder="satuan" 
+                  />
+                </div>
+                <div className="flex flex-col gap-1 text-right shrink-0 w-28">
+                  <input 
+                    className="input sm mono text-right w-full" 
+                    type="text" 
+                    value={formatThousand(editFields.price)} 
+                    onChange={e => {
+                      const cleanVal = e.target.value.replace(/\D/g, '');
+                      setEditFields(prev => ({ ...prev, price: cleanVal }));
+                    }} 
+                    placeholder="Harga (Rp)" 
+                  />
+                  <span className="text-[10px] text-violet font-semibold block mt-0.5">
+                    Sub: {window.fmtRp((parseInt(editFields.qty)||0) * (parseFloat(String(editFields.price).replace(/\D/g, ''))||0))}
+                  </span>
+                </div>
+                <div className="item-actions flex gap-1 justify-center shrink-0 w-24">
+                  <button 
+                    className="act-btn text-green hover:bg-green/10" 
+                    onClick={() => onSaveItem(it.id)} 
+                    title="Simpan"
+                  >
+                    <Icon name="check" size={13} strokeWidth={2.4} />
+                  </button>
+                  <button 
+                    className="act-btn text-rose hover:bg-rose/10" 
+                    onClick={onCancelEdit} 
+                    title="Batal"
+                  >
+                    <Icon name="x" size={13} strokeWidth={2.4} />
+                  </button>
+                </div>
+              </div>
+            );
+          }
+
           return (
             <div key={it.id} className={`item-row ${st === 'ok' ? 'approved' : ''} ${st === 'no' ? 'rejected' : ''}`}>
               <div className={`item-kind ${it.kind === 'Inventaris' ? 'inv' : 'bhp'}`}>{it.kind === 'Inventaris' ? 'INV' : 'BHP'}</div>
@@ -251,6 +644,15 @@ export function KalabKaprodiItems({ draft, mode, locked, setApproval, totals, on
                       <Icon name="check" size={13} strokeWidth={2.4} />
                     </button>
                   </>
+                ) : mode === 'kalab' && (draft.status === 'draft' || draft.status === 'revision' || draft.status === 'submitted') ? (
+                  <div className="flex gap-1.5">
+                    <button className="act-btn text-violet hover:bg-violet/10" onClick={() => startEdit(it)} title="Ubah Item">
+                      <Icon name="edit" size={12} />
+                    </button>
+                    <button className="act-btn text-rose hover:bg-rose/10" onClick={() => onRemoveItem(it.id)} title="Hapus Item">
+                      <Icon name="x" size={13} strokeWidth={2.4} />
+                    </button>
+                  </div>
                 ) : (
                   <button className="act-btn" title="Detail"><Icon name="eye" size={12} /></button>
                 )}

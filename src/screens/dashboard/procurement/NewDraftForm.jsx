@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore, useToast, D, Icon } from '../../../components/app-shell.jsx';
 import { apiFetch } from '../../../services/api.js';
 import { createDraftSchema } from '../../../schemas/procurementSchema.js';
@@ -18,6 +18,31 @@ export function NewDraftForm({ close }) {
     { id: 'I-N1', kind: 'Inventaris', name: '', qty: '', unit: '', price: '', link: '', replaces: '' },
   ]);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const container = document.querySelector('.drawer-body');
+    if (!container || !window.Lenis) return;
+    
+    const lenis = new window.Lenis({
+      wrapper: container,
+      content: container,
+      lerp: 0.08,
+      smoothWheel: true,
+      wheelMultiplier: 1.1,
+    });
+    
+    let frameId;
+    function raf(time) {
+      lenis.raf(time);
+      frameId = requestAnimationFrame(raf);
+    }
+    frameId = requestAnimationFrame(raf);
+    
+    return () => {
+      cancelAnimationFrame(frameId);
+      lenis.destroy();
+    };
+  }, []);
 
   function update(i, patch) { setItems(arr => arr.map((x, j) => j === i ? { ...x, ...patch } : x)); }
   function add() { setItems(arr => [...arr, { id: 'I-N' + (arr.length + 1), kind: 'Inventaris', name: '', qty: '', unit: '', price: '', link: '', replaces: '' }]); }

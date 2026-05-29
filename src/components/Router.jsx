@@ -6,6 +6,7 @@ import { Inventory } from '../screens/dashboard/Inventory.jsx';
 import { Maintenance, BHP } from '../screens/dashboard/Maintenance.jsx';
 import { Users, Rooms, Audit, Labels } from '../screens/dashboard/Admin.jsx';
 import { Settings } from '../screens/dashboard/Settings.jsx';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export function Router() {
   const { state } = useStore();
@@ -31,11 +32,24 @@ export function Router() {
   const roleLabel = D.roles.find(r => r.id === role).short;
 
   return (
-    <>
+    <div className="flex flex-col w-full h-full">
       <PageBar breadcrumbs={[roleLabel, screenLabel]} />
-      <PageHost role={role} screen={screen}>
-        {Comp ? <Comp /> : <Dashboard />}
-      </PageHost>
-    </>
+      <div className="grow overflow-hidden relative w-full h-full flex flex-col">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={role + ':' + screen}
+            initial={{ opacity: 0, y: 15, filter: 'blur(8px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, y: -15, filter: 'blur(8px)' }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}
+          >
+            <PageHost role={role} screen={screen}>
+              {Comp ? <Comp /> : <Dashboard />}
+            </PageHost>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </div>
   );
 }

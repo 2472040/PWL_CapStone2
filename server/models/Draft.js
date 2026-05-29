@@ -22,9 +22,13 @@ const Draft = sequelize.define('Draft', {
     references: { model: 'users', key: 'id' },
   },
   status: {
-    type: DataTypes.ENUM('draft', 'submitted', 'finalized', 'completed'),
+    type: DataTypes.STRING(30),
     allowNull: false,
     defaultValue: 'draft',
+  },
+  revision_notes: {
+    type: DataTypes.TEXT,
+    allowNull: true,
   },
   submitted_at: {
     type: DataTypes.DATE,

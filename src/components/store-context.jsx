@@ -74,8 +74,20 @@ function reducer(s, a) {
     case 'COMPLETE_DRAFT': {
       return { ...s, drafts: s.drafts.map(d => d.code !== a.code ? d : ({ ...d, status: 'completed' })) };
     }
+    case 'REQUEST_REVISION': {
+      return { ...s, drafts: s.drafts.map(d => d.code !== a.code ? d : ({ ...d, status: 'revision', revision_notes: a.notes })) };
+    }
     case 'ADD_DRAFT_ITEM': {
       return { ...s, drafts: s.drafts.map(d => d.code !== a.code ? d : ({ ...d, items: [...d.items, a.item] })) };
+    }
+    case 'UPDATE_DRAFT_ITEM': {
+      return {
+        ...s,
+        drafts: s.drafts.map(d => d.code !== a.code ? d : ({
+          ...d,
+          items: d.items.map(it => it.id !== a.itemId ? it : ({ ...it, ...a.item }))
+        }))
+      };
     }
     case 'REMOVE_DRAFT_ITEM': {
       return { ...s, drafts: s.drafts.map(d => d.code !== a.code ? d : ({ ...d, items: d.items.filter(it => it.id !== a.itemId) })) };

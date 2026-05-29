@@ -3,6 +3,7 @@ import { useStore, D, useSearch } from '../../../components/app-shell.jsx';
 import { apiFetch } from '../../../services/api.js';
 import { DraftDetail } from './DraftDetail.jsx';
 import { DraftCard } from './PengadaanKalab.jsx';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export function HistoryKaprodi() {
   const { state, dispatch } = useStore();
@@ -38,25 +39,50 @@ export function HistoryKaprodi() {
   });
   const [openCode, setOpenCode] = useState(null);
   const opened = state.drafts.find(d => d.code === openCode);
-  if (opened) return <DraftDetail draft={opened} onBack={() => setOpenCode(null)} mode="kaprodi" />;
+
   return (
-    <div className="page" style={{'--role-accent': role.accent}}>
-      <div className="page-head" data-reveal>
-        <div>
-          <h1 className="page-title">Riwayat <em>draf</em></h1>
-          <p className="page-sub">Draf yang sudah difinalisasi atau diselesaikan — tidak bisa diubah.</p>
-        </div>
-      </div>
-      {query && reviewed.length === 0 && (
-        <div className="empty" data-reveal>
-          <div className="ico"><Icon name="search" size={20} /></div>
-          <h4>Tidak ada riwayat cocok</h4>
-          <div>Coba kata kunci lain.</div>
-        </div>
+    <AnimatePresence mode="wait">
+      {opened ? (
+        <motion.div
+          key="detail"
+          initial={{ opacity: 0, y: 15, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -15, scale: 0.98 }}
+          transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full"
+        >
+          <DraftDetail draft={opened} onBack={() => setOpenCode(null)} mode="kaprodi" />
+        </motion.div>
+      ) : (
+        <motion.div
+          key="list"
+          initial={{ opacity: 0, y: -15, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 15, scale: 0.98 }}
+          transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+          className="page"
+          style={{ '--role-accent': role.accent }}
+        >
+          <div className="page-head" data-reveal>
+            <div>
+              <h1 className="page-title">Riwayat <em>draf</em></h1>
+              <p className="page-sub">Draf yang sudah difinalisasi atau diselesaikan — tidak bisa diubah.</p>
+            </div>
+          </div>
+          {query && reviewed.length === 0 && (
+            <div className="empty" data-reveal>
+              <div className="ico"><Icon name="search" size={20} /></div>
+              <h4>Tidak ada riwayat cocok</h4>
+              <div>Coba kata kunci lain.</div>
+            </div>
+          )}
+          <div className="gap-[14px]" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }} data-reveal-children>
+            {reviewed.map(d => (
+              <DraftCard key={d.code} d={d} onClick={() => setOpenCode(d.code)} accent={role.accent} />
+            ))}
+          </div>
+        </motion.div>
       )}
-      <div className="gap-[14px]" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))'}} data-reveal-children>
-        {reviewed.map(d => <DraftCard key={d.code} d={d} onClick={() => setOpenCode(d.code)} accent={role.accent} />)}
-      </div>
-    </div>
+    </AnimatePresence>
   );
 }

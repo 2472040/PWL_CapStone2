@@ -112,4 +112,4 @@ window.LokaSounds = (function() {
     osc.stop(now + 0.3);
   }
 
-  return { click, hover, success, error, toggle, drawer };
+  return { click, hover, success, error, toggle, drawer }})();
