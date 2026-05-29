@@ -92,17 +92,14 @@ export default function HeroSection({ onEnterApp, ctaRef }) {
     <section className="au-hero" id="hero">
       <DynamicGridBackground />
 
-      {/* Viewport-sized intro — keeps preview card below the fold */}
-      <div className="au-hero-intro">
-        <TextReveal delay={0.2} />
-        <p className="au-hero-sub">
-          Sistem terintegrasi untuk Kepala Lab, Kaprodi, Staf Administrasi, dan Staf Lab — dari draf pengadaan tahunan, approval per-item, sampai log maintenance dan stok BHP yang menyusut otomatis.
-        </p>
-        <div className="au-hero-ctas" ref={ctaRef}>
-          <ShinyButton onClick={onEnterApp}>
-            Sign In &rarr;
-          </ShinyButton>
-        </div>
+      <TextReveal delay={0.2} />
+      <p className="au-hero-sub">
+        Sistem terintegrasi untuk Kepala Lab, Kaprodi, Staf Administrasi, dan Staf Lab — dari draf pengadaan tahunan, approval per-item, sampai log maintenance dan stok BHP yang menyusut otomatis.
+      </p>
+      <div className="au-hero-ctas" ref={ctaRef}>
+        <ShinyButton onClick={onEnterApp}>
+          Sign In &rarr;
+        </ShinyButton>
       </div>
 
       <div style={{ position: 'relative' }}>
