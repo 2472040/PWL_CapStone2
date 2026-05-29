@@ -22,16 +22,21 @@ gsap.registerPlugin(ScrollTrigger);
 
 export default function AuroraSite({ onEnterApp }) {
   const rootRef = useRef(null);
+  const heroCtaRef = useRef(null);
   const [showNavSignIn, setShowNavSignIn] = useState(false);
   // Flow state: 0=Kalab draft, 1=Kaprodi review, 2=Admin receive
   const [step, setStep] = useState(0);
 
+  // Show nav sign-in only when hero CTA button scrolls out of view
   useEffect(() => {
-    const handleScroll = () => {
-      setShowNavSignIn(window.scrollY > 280);
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    const target = heroCtaRef.current;
+    if (!target) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowNavSignIn(!entry.isIntersecting),
+      { threshold: 0, rootMargin: '0px' }
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
   }, []);
   const [approvals, setApprovals] = useState(() => {
     const o = {}; D.draft.items.forEach(it => o[it.id] = null); return o;
@@ -222,7 +227,7 @@ export default function AuroraSite({ onEnterApp }) {
 
       <div className="au-layer">
         <Nav showSignIn={showNavSignIn} onSignIn={onEnterApp} />
-        <HeroSection onEnterApp={onEnterApp} />
+        <HeroSection onEnterApp={onEnterApp} ctaRef={heroCtaRef} />
         <AdvancedMarquee />
         <FlowSection
           step={step} setStep={setStep}

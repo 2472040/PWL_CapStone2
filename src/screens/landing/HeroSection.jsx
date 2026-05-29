@@ -47,7 +47,7 @@ export function Sparkline() {
   );
 }
 
-export default function HeroSection({ onEnterApp }) {
+export default function HeroSection({ onEnterApp, ctaRef }) {
   const [tab, setTab] = useState('draft');
   const previewRef = useRef(null);
   const bodyRef = useRef(null);
@@ -96,7 +96,7 @@ export default function HeroSection({ onEnterApp }) {
       <p className="au-hero-sub">
         Sistem terintegrasi untuk Kepala Lab, Kaprodi, Staf Administrasi, dan Staf Lab — dari draf pengadaan tahunan, approval per-item, sampai log maintenance dan stok BHP yang menyusut otomatis.
       </p>
-      <div className="au-hero-ctas">
+      <div className="au-hero-ctas" ref={ctaRef}>
         <ShinyButton onClick={onEnterApp}>
           Sign In &rarr;
         </ShinyButton>
