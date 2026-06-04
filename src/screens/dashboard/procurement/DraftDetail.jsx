@@ -128,7 +128,7 @@ export function DraftDetail({ draft, onBack, mode }) {
     }
   }
 
-  async function markReceived(itemId) {
+  async function markReceived(itemId, formData) {
     const item = d.items.find(it => it.id === itemId);
     if (!item.received) {
       try {
@@ -137,11 +137,13 @@ export function DraftDetail({ draft, onBack, mode }) {
           body: JSON.stringify({
             draft_item_id: itemId,
             qty_received: item.qty,
-            received_date: new Date().toISOString().substring(0, 10)
+            received_date: formData.received_date,
+            code: formData.code,
+            qr_photo: formData.qr_photo
           })
         });
-        dispatch({ type: 'MARK_RECEIVED', code: d.code, itemId, date: new Date().toLocaleDateString('id-ID') });
-        toast('Status diperbarui', 'info');
+        dispatch({ type: 'MARK_RECEIVED', code: d.code, itemId, date: formData.received_date });
+        toast('Barang ditandai telah diterima', 'ok');
       } catch (err) {
         toast(err.message, 'warn');
       }
@@ -154,15 +156,14 @@ export function DraftDetail({ draft, onBack, mode }) {
     try {
       const currentVal = d.items.find(it => it.id === itemId)?.approval;
       const newVal = currentVal === value ? null : value;
-      const mappedVal = newVal === 'ok' ? 'approved' : newVal === 'no' ? 'rejected' : 'approved';
+      const mappedVal = newVal === 'ok' ? 'approved' : newVal === 'no' ? 'rejected' : 'delete';
       
-      if (newVal !== null) {
-        await apiFetch(`/procurement/drafts/${d.id}/approve`, {
-          method: 'POST',
-          body: JSON.stringify({ decisions: [{ item_id: itemId, status: mappedVal }] })
-        });
-      }
-      dispatch({ type: 'SET_APPROVAL', code: d.code, itemId, value });
+      await apiFetch(`/procurement/drafts/${d.id}/approve`, {
+        method: 'POST',
+        body: JSON.stringify({ decisions: [{ item_id: itemId, status: mappedVal }] })
+      });
+      
+      dispatch({ type: 'SET_APPROVAL', code: d.code, itemId, value: newVal });
     } catch (err) {
       toast(err.message, 'warn');
     }
@@ -172,9 +173,11 @@ export function DraftDetail({ draft, onBack, mode }) {
     try {
       await apiFetch(`/procurement/items/${itemId}`, { method: 'DELETE' });
       dispatch({ type: 'REMOVE_DRAFT_ITEM', code: d.code, itemId });
+      setDeleteCandidateId(null);
       toast('Item berhasil dihapus', 'ok');
     } catch (err) {
       toast('Gagal menghapus item: ' + err.message, 'warn');
+      setDeleteCandidateId(null);
     }
   }
 
@@ -201,7 +204,7 @@ export function DraftDetail({ draft, onBack, mode }) {
         dispatch({
           type: 'UPDATE_DRAFT_ITEM',
           code: d.code,
-          itemId,
+          itemId: itemId,
           item: {
             ...res.data,
             approval: null,
@@ -522,11 +525,11 @@ export function KalabKaprodiItems({
     <>
       <div className="items-table with-actions" data-reveal>
         <div className="items-table-head">
-          <div>TIPE</div>
-          <div>ITEM</div>
-          <div>QTY</div>
-          <div className="ar">SUBTOTAL</div>
-          <div className="ar">{mode === 'kaprodi' && !locked ? 'DECISION' : 'AKSI'}</div>
+          <div>Tipe</div>
+          <div>Nama Item</div>
+          <div>Jumlah</div>
+          <div className="ar">Subtotal</div>
+          <div className="ar">{mode === 'kaprodi' && !locked ? 'Keputusan' : 'Aksi'}</div>
         </div>
         {draft.items.map(it => {
           const st = it.approval;
@@ -534,57 +537,62 @@ export function KalabKaprodiItems({
 
           if (isEditing) {
             return (
-              <div key={it.id} className="item-row editing border border-violet/30 p-2.5 rounded my-1 flex gap-2 items-center" style={{ background: 'rgba(183,148,255,0.02)', gridTemplateColumns: '80px 1fr 140px 140px 100px', alignItems: 'center' }}>
-                <div className="flex flex-col gap-1 shrink-0">
+              <div key={it.id} className="item-row editing" style={{ background: 'rgba(183,148,255,0.04)', borderColor: 'rgba(167,139,250,0.3)', borderWidth: '1px', borderStyle: 'solid', borderRadius: '8px' }}>
+                {/* Col 1: Tipe */}
+                <div>
                   <select 
-                    className="input sm w-full" 
+                    className="select sm" 
                     value={editFields.kind} 
                     onChange={e => setEditFields(prev => ({ ...prev, kind: e.target.value }))}
+                    style={{ width: '100%' }}
                   >
                     <option value="Inventaris">INV</option>
                     <option value="BHP">BHP</option>
                   </select>
                 </div>
-                <div className="flex flex-col gap-1.5 grow">
+                {/* Col 2: Nama Item */}
+                <div className="flex flex-col gap-1">
                   <input 
-                    className="input sm font-bold w-full" 
+                    className="input sm font-bold" 
                     value={editFields.name} 
                     onChange={e => setEditFields(prev => ({ ...prev, name: e.target.value }))} 
                     placeholder="Nama barang..." 
                   />
                   <input 
-                    className="input sm text-[11px] mono w-full" 
+                    className="input sm text-xs mono" 
                     value={editFields.link || ''} 
                     onChange={e => setEditFields(prev => ({ ...prev, link: e.target.value }))} 
                     placeholder="Link pembelian" 
                   />
                   {editFields.kind === 'Inventaris' && (
                     <input 
-                      className="input sm text-[11px] w-full" 
+                      className="input sm text-xs" 
                       value={editFields.replaces || ''} 
                       onChange={e => setEditFields(prev => ({ ...prev, replaces: e.target.value }))} 
                       placeholder="Mengganti aset" 
                     />
                   )}
                 </div>
-                <div className="flex gap-1 items-center shrink-0 w-28">
+                {/* Col 3: Jumlah */}
+                <div className="flex flex-col gap-1">
                   <input 
-                    className="input sm mono w-12 text-center" 
+                    className="input sm mono text-center" 
                     type="number" 
                     min="1" 
                     value={editFields.qty} 
                     onChange={e => setEditFields(prev => ({ ...prev, qty: e.target.value }))} 
                   />
                   <input 
-                    className="input sm w-14" 
+                    className="input sm text-xs text-center" 
                     value={editFields.unit} 
                     onChange={e => setEditFields(prev => ({ ...prev, unit: e.target.value }))} 
                     placeholder="satuan" 
                   />
                 </div>
-                <div className="flex flex-col gap-1 text-right shrink-0 w-28">
+                {/* Col 4: Subtotal */}
+                <div className="flex flex-col gap-1 text-right">
                   <input 
-                    className="input sm mono text-right w-full" 
+                    className="input sm mono text-right" 
                     type="text" 
                     value={formatThousand(editFields.price)} 
                     onChange={e => {
@@ -593,11 +601,12 @@ export function KalabKaprodiItems({
                     }} 
                     placeholder="Harga (Rp)" 
                   />
-                  <span className="text-[10px] text-violet font-semibold block mt-0.5">
+                  <span className="text-xs text-violet font-semibold">
                     Sub: {window.fmtRp((parseInt(editFields.qty)||0) * (parseFloat(String(editFields.price).replace(/\D/g, ''))||0))}
                   </span>
                 </div>
-                <div className="item-actions flex gap-1 justify-center shrink-0 w-24">
+                {/* Col 5: Aksi */}
+                <div className="item-actions">
                   <button 
                     className="act-btn text-green hover:bg-green/10" 
                     onClick={() => onSaveItem(it.id)} 

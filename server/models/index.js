@@ -36,7 +36,7 @@ Draft.belongsTo(User, { as: 'finalizer', foreignKey: 'finalized_by' });
 
 // Draft ↔ DraftItem
 Draft.hasMany(DraftItem, { as: 'items', foreignKey: 'draft_id', onDelete: 'CASCADE' });
-DraftItem.belongsTo(Draft, { foreignKey: 'draft_id' });
+DraftItem.belongsTo(Draft, { as: 'draft', foreignKey: 'draft_id' });
 
 // DraftItem ↔ DraftApproval
 DraftItem.hasOne(DraftApproval, { as: 'approval', foreignKey: 'draft_item_id', onDelete: 'CASCADE' });

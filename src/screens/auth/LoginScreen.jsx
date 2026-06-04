@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { apiFetch, setToken } from '../../services/api.js';
 
 const DEMO_ACCOUNTS = [
-  { label: 'Sysadmin', email: 'anindita@kampus.id' },
+  { label: 'Administrator', email: 'anindita@kampus.id' },
   { label: 'Kalab', email: 'pradipta@kampus.id' },
   { label: 'Kaprodi', email: 'hendra@kampus.id' },
-  { label: 'Admin', email: 'faqih@kampus.id' },
+  { label: 'Staff Administrasi', email: 'faqih@kampus.id' },
   { label: 'Staf Lab', email: 'maharani@kampus.id' },
 ];
 

@@ -11,10 +11,10 @@
   };
 
   const roles = [
-    { id: 'sysadmin', title: 'Administrator', short: 'Sys Admin', accent: '#94a3b8' },
+    { id: 'sysadmin', title: 'Administrator', short: 'Administrator', accent: '#94a3b8' },
     { id: 'kalab',    title: 'Kepala Laboratorium', short: 'Kalab', accent: '#b794ff' },
     { id: 'kaprodi',  title: 'Ketua Program Studi', short: 'Kaprodi', accent: '#7eebd8' },
-    { id: 'admin',    title: 'Staf Administrasi', short: 'Admin', accent: '#a3e635' },
+    { id: 'admin',    title: 'Staff Administrasi', short: 'Staff Administrasi', accent: '#a3e635' },
     { id: 'staflab',  title: 'Staf Laboratorium', short: 'Staf Lab', accent: '#f5d27e' },
   ];
 
@@ -24,7 +24,6 @@
       { id: 'dashboard', label: 'Dashboard', icon: 'grid' },
       { id: 'users',     label: 'Pengguna', icon: 'users' },
       { id: 'rooms',     label: 'Ruangan', icon: 'room' },
-      { id: 'inventaris', label: 'Inventaris', icon: 'box' },
       { id: 'audit',     label: 'Audit log', icon: 'log' },
     ],
     kalab: [
@@ -42,7 +41,6 @@
     admin: [
       { id: 'dashboard',  label: 'Dashboard', icon: 'grid' },
       { id: 'receiving',  label: 'Penerimaan', icon: 'truck', badge: 8 },
-      { id: 'inventaris', label: 'Inventaris', icon: 'box' },
       { id: 'bhp',        label: 'Stok BHP', icon: 'flask' },
       { id: 'labels',     label: 'Cetak label', icon: 'qr' },
     ],

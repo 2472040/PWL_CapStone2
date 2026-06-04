@@ -33,7 +33,16 @@ const createDraft = async (req, res) => {
     const { title, items } = req.body;
 
     const year = new Date().getFullYear();
-    const count = await Draft.count({ transaction: t }) + 1;
+    const lastDraft = await Draft.findOne({ order: [['id', 'DESC']], transaction: t });
+    let count = 1;
+    if (lastDraft && lastDraft.code) {
+      const match = lastDraft.code.match(/LK(\d+)$/);
+      if (match) {
+        count = parseInt(match[1], 10) + 1;
+      } else {
+        count = lastDraft.id + 1;
+      }
+    }
     const code = `PRC-${year}-LK${String(count).padStart(2, '0')}`;
 
     const draft = await Draft.create(
@@ -178,12 +187,32 @@ const approveDraftItems = async (req, res) => {
     }
 
     for (const d of decisions) {
-      await DraftApproval.upsert({
-        draft_item_id: d.item_id,
-        approved_by: req.user.id,
-        status: d.status,
-        notes: d.notes || null,
-      }, { transaction: t });
+      if (d.status === 'delete' || d.status === null) {
+        await DraftApproval.destroy({
+          where: { draft_item_id: d.item_id },
+          transaction: t
+        });
+        continue;
+      }
+      
+      const existing = await DraftApproval.findOne({
+        where: { draft_item_id: d.item_id },
+        transaction: t
+      });
+      
+      if (existing) {
+        existing.status = d.status;
+        existing.approved_by = req.user.id;
+        existing.notes = d.notes || null;
+        await existing.save({ transaction: t });
+      } else {
+        await DraftApproval.create({
+          draft_item_id: d.item_id,
+          approved_by: req.user.id,
+          status: d.status,
+          notes: d.notes || null,
+        }, { transaction: t });
+      }
     }
 
     await t.commit();
@@ -279,32 +308,81 @@ const getReceiving = async (req, res) => {
 };
 
 const receiveItem = async (req, res) => {
+  const t = await sequelize.transaction();
   try {
-    const { draft_item_id, received_date, qty_received, notes } = req.body;
+    const { draft_item_id, received_date, qty_received, notes, code, qr_photo } = req.body;
     if (!draft_item_id || !received_date) {
+      await t.rollback();
       return res.status(400).json({ error: 'draft_item_id dan received_date wajib diisi.' });
     }
 
     const draftItem = await DraftItem.findByPk(draft_item_id, {
       include: [{ model: DraftApproval, as: 'approval' }],
+      transaction: t
     });
-    if (!draftItem) return res.status(404).json({ error: 'Item draf tidak ditemukan.' });
+    if (!draftItem) {
+      await t.rollback();
+      return res.status(404).json({ error: 'Item draf tidak ditemukan.' });
+    }
     if (!draftItem.approval || draftItem.approval.status !== 'approved') {
+      await t.rollback();
       return res.status(400).json({ error: 'Item belum disetujui.' });
     }
 
     const receiving = await Receiving.create({
       draft_item_id, received_by: req.user.id,
       received_date, qty_received: qty_received || draftItem.qty, notes,
-    });
+    }, { transaction: t });
 
-    await logAudit(req.user.id, 'receiving.confirm', `${draftItem.name} · ${qty_received || draftItem.qty} unit`, req.ip);
+    if (draftItem.kind === 'Inventaris') {
+      if (!code || !qr_photo) {
+        await t.rollback();
+        return res.status(400).json({ error: 'Kode dan Foto QR wajib untuk inventaris.' });
+      }
+      
+      const inv = await Inventory.create({
+        code,
+        name: draftItem.name,
+        category: 'Umum',
+        condition: 'Baik',
+        acquired_date: received_date,
+        value: draftItem.price,
+        specs: draftItem.qty + ' ' + draftItem.unit
+      }, { transaction: t });
+
+      await Label.create({
+        inventory_id: inv.id,
+        label_number: code,
+        qr_data: code,
+        photo_url: qr_photo
+      }, { transaction: t });
+
+    } else if (draftItem.kind === 'BHP') {
+      const existingBhp = await Bhp.findOne({ where: { name: draftItem.name }, transaction: t });
+      if (existingBhp) {
+        existingBhp.stock += parseInt(qty_received || draftItem.qty);
+        await existingBhp.save({ transaction: t });
+      } else {
+        await Bhp.create({
+          code: 'BHP-' + Date.now(),
+          name: draftItem.name,
+          category: 'Umum',
+          stock: qty_received || draftItem.qty,
+          unit: draftItem.unit
+        }, { transaction: t });
+      }
+    }
+
+    await logAudit(req.user.id, 'receiving.confirm', `${draftItem.name} · ${qty_received || draftItem.qty} unit`, req.ip, t);
+    
+    await t.commit();
     const io = req.app.get('io');
     if (io) io.emit('data_changed', { type: 'draft' });
     res.status(201).json({ data: receiving });
   } catch (err) {
+    if (t && !t.finished) await t.rollback();
     console.error(err);
-    res.status(500).json({ error: 'Gagal mencatat penerimaan.' });
+    res.status(500).json({ error: 'Gagal mencatat penerimaan: ' + err.message });
   }
 };
 

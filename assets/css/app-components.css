@@ -206,6 +206,21 @@ html[data-theme="light"] .role-popover { background: rgba(255,255,255,0.95); }
   padding: 8px;
 }
 
+/* Native <select> elements without .select class — ensure dark theme */
+select {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+}
+select option {
+  background: #18171c;
+  color: #f5f5f7;
+}
+
+/* Small size variant */
+.input.sm, .select.sm { padding: 6px 10px; font-size: 12px; }
+
 /* ── Activity Feed ── */
 .act-row {
   display: flex; align-items: center; gap: 12px;

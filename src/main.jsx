@@ -25,7 +25,7 @@ import {
 } from './components/app-shell.jsx';
 import { CustomCursor } from './components/app-cursor.jsx';
 import { NewUserForm, NewRoomForm, NewDraftForm, QRScanner } from './screens/dashboard/Admin.jsx';
-import { InventoryDetail } from './screens/dashboard/Inventory.jsx';
+import { InventoryDetail, NewInventoryForm } from './screens/dashboard/Inventory.jsx';
 import { MaintenanceForm, NewBhpForm } from './screens/dashboard/Maintenance.jsx';
 import { LogoutModal, ChangePasswordModal } from './screens/dashboard/Settings.jsx';
 import LandingPage from './screens/landing/index.jsx';
@@ -66,6 +66,7 @@ Object.assign(DrawerContent, {
   newDraft: NewDraftForm,
   qrScanner: QRScanner,
   newBhp: NewBhpForm, // Register the new Manual Restock Drawer
+  newInventory: NewInventoryForm,
 });
 
 Object.assign(ModalContent, {

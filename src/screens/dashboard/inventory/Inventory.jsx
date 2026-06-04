@@ -171,40 +171,6 @@ export function Inventory() {
     if (window.showToast) window.showToast('Laporan PDF berhasil diunduh!', 'ok');
   };
 
-  const exportInventoryCSV = () => {
-    if (window.showToast) window.showToast('Mengekspor data ke CSV…', 'info', 'download');
-
-    const headers = ['NO', 'KODE ASET', 'NAMA BARANG', 'KATEGORI', 'RUANGAN', 'KONDISI', 'VALUASI (IDR)', 'SERIAL NUMBER', 'SPESIFIKASI'];
-    const data = filtered.map((it, idx) => [
-      idx + 1,
-      it.code,
-      it.name,
-      it.cat,
-      it.room,
-      it.cond,
-      it.value,
-      it.serial,
-      it.specs
-    ]);
-
-    const csvRows = [
-      headers.join(','),
-      ...data.map(row => row.map(val => {
-        const escaped = String(val).replace(/"/g, '""');
-        return `"${escaped}"`;
-      }).join(','))
-    ];
-    const csvContent = "\uFEFF" + csvRows.join('\n'); // Add BOM for Excel UTF-8 support
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `Laporan_Inventaris_${new Date().toISOString().substring(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    if (window.showToast) window.showToast('Data CSV berhasil diunduh!', 'ok');
-  };
 
   const cats = ['all', ...new Set(state.inventory.map(it => it.cat))];
 
@@ -217,9 +183,7 @@ export function Inventory() {
         </div>
         <div className="flex gap-2" >
           <button className="btn border border-line" onClick={generateInventoryPDF} title="Cetak Laporan PDF"><Icon name="log" size={13} /> PDF</button>
-          <button className="btn border border-line" onClick={exportInventoryCSV} title="Ekspor Laporan Excel/CSV"><Icon name="download" size={13} /> CSV</button>
           {state.role === 'admin' && <button className="btn" onClick={() => window.showToast && window.showToast('Generate bulk label QR…', 'info', 'qr')}><Icon name="qr" size={13} /> Bulk label</button>}
-          {state.role === 'admin' && <button className="btn primary" onClick={() => window.showToast && window.showToast('Form tambah aset akan segera hadir', 'warn', 'info')}><Icon name="plus" size={13} strokeWidth={2.4} /> Tambah aset</button>}
         </div>
       </div>
 

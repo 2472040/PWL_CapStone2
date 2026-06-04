@@ -3,7 +3,7 @@ import { useStore, D, Icon, QR, downloadQR } from '../../../components/app-shell
 import { apiFetch } from '../../../services/api.js';
 
 export function Labels() {
-  const { state } = useStore();
+  const { state, dispatch } = useStore();
   const role = D.roles.find(r => r.id === 'admin');
   const [recent, setRecent] = useState([]);
 
@@ -33,7 +33,10 @@ export function Labels() {
           <h1 className="page-title">Cetak <em>label</em> QR</h1>
           <p className="page-sub">Generate QR/Barcode untuk aset yang baru diterima. Cetak ukuran 32 × 24 mm pada label thermal.</p>
         </div>
-        <button className="btn primary" onClick={() => window.showToast && window.showToast('Mencetak label batch…', 'info', 'download')}><Icon name="download" size={13} /> Print batch</button>
+        <div className="flex gap-2">
+          <button className="btn primary" onClick={() => dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'newInventory' } })}><Icon name="plus" size={13} strokeWidth={2.4} /> Tambah aset (Manual Scan)</button>
+          <button className="btn" onClick={() => window.showToast && window.showToast('Mencetak label batch…', 'info', 'download')}><Icon name="download" size={13} /> Print batch</button>
+        </div>
       </div>
 
       <div data-reveal className="gap-3" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))'}}>
