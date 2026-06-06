@@ -8,19 +8,27 @@ export function MaintenanceForm({ payload, close }) {
   
   const isEdit = !!payload?.dbId;
   const [selectedRoomId, setSelectedRoomId] = useState('');
-  const [assetCode, setAssetCode] = useState(payload?.asset || '');
+  const [selectedAssets, setSelectedAssets] = useState([]);
   const [action, setAction] = useState(payload?.action || '');
   const [cond, setCond] = useState(payload?.cond || 'Baik');
   const [maintDate, setMaintDate] = useState(payload?.rawDate ? payload.rawDate.substring(0, 10) : new Date().toISOString().substring(0, 10));
   const [bhpRows, setBhpRows] = useState([]);
   const [loading, setLoading] = useState(false);
-  const asset = state.inventory.find(i => i.code === assetCode);
+  const filteredAssets = state.inventory.filter(i => String(i.roomId) === String(selectedRoomId))
+  const selectedAssetData = filteredAssets.filter(a => selectedAssets.includes(a.code));
 
   useEffect(() => {
-    if (isEdit && asset) {
-      setSelectedRoomId(asset.roomId || '');
+    if (isEdit && payload?.asset) {
+      const editAsset = state.inventory.find(
+        i => i.code === payload.asset
+      );
+
+      if (editAsset) {
+        setSelectedRoomId(editAsset.roomId || '');
+        setSelectedAssets([editAsset.code]);
+      }
     }
-  }, [isEdit, asset]);
+  }, [isEdit, payload, state.inventory]);
 
   function addBhp() {
     const first = state.bhp[0];
@@ -30,10 +38,8 @@ export function MaintenanceForm({ payload, close }) {
   function updateBhp(idx, patch) { setBhpRows(r => r.map((x, i) => i === idx ? { ...x, ...patch } : x)); }
   function removeBhp(idx) { setBhpRows(r => r.filter((_, i) => i !== idx)); }
 
-  const filteredAssets = state.inventory.filter(i => String(i.roomId) === String(selectedRoomId));
-
   async function save() {
-    if (!asset) { toast('Pilih aset dulu', 'warn'); return; }
+    if (selectedAssets.length === 0) { toast('Pilih aset dulu', 'warn'); return; }
     if (!action) { toast('Isi tindakan maintenance', 'warn'); return; }
     if (!maintDate) { toast('Pilih tanggal maintenance', 'warn'); return; }
     
@@ -46,7 +52,7 @@ export function MaintenanceForm({ payload, close }) {
         condition_after: cond,
         date: maintDate
       } : {
-        inventory_id: asset.id,
+        inventory_ids: selectedAssetData.map(a => a.id),
         action,
         condition_after: cond,
         date: maintDate,
@@ -99,7 +105,9 @@ export function MaintenanceForm({ payload, close }) {
           }));
           dispatch({ type: 'SET_BHP', bhp: formattedBhp });
         }
-        const updatedInventory = state.inventory.map(x => x.code !== asset.code ? x : ({ ...x, cond: cond, last: 'baru saja' }));
+        const updatedInventory = state.inventory.map(x => 
+          selectedAssets.includes(x.code) ? ({ ...x, cond: cond, last: 'baru saja' }) : x
+        );
         dispatch({ type: 'SET_INVENTORY', inventory: updatedInventory });
 
         toast(isEdit ? 'Log maintenance berhasil diperbarui!' : 'Log maintenance disimpan ke database!', 'ok');
@@ -121,29 +129,88 @@ export function MaintenanceForm({ payload, close }) {
       <div className="drawer-body">
         <div className="field">
           <div className="field-lbl">Ruangan <span className="req">*</span></div>
-          <select className="select" value={selectedRoomId} onChange={e => { setSelectedRoomId(e.target.value); setAssetCode(''); }} disabled={loading || isEdit}>
+          <select className="select" value={selectedRoomId} onChange={e => {setSelectedRoomId(e.target.value); setSelectedAssets([]);}} disabled={loading || isEdit}>
             <option value="">Pilih ruangan…</option>
             {state.rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
           </select>
         </div>
 
         <div className="field">
-          <div className="field-lbl">Aset <span className="req">*</span></div>
-          <select className="select" value={assetCode} onChange={e => setAssetCode(e.target.value)} disabled={loading || !selectedRoomId || isEdit}>
-            <option value="">{selectedRoomId ? 'Pilih aset…' : 'Pilih ruangan terlebih dahulu'}</option>
-            {filteredAssets.map(i => <option key={i.code} value={i.code}>{i.code} — {i.name}</option>)}
-          </select>
+          <div className="field-lbl">
+            Aset <span className="req">*</span>
+          </div>
+
+          {!selectedRoomId ? (
+            <div className="text-xs text-3">
+              Pilih ruangan terlebih dahulu
+            </div>
+          ) : (
+            <div
+              style={{
+                maxHeight: 180,
+                overflowY: 'auto',
+                border: '1px solid var(--line-2)',
+                borderRadius: 8,
+                padding: 8
+              }}
+            >
+              {filteredAssets.map(asset => (
+                <label
+                  key={asset.code}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '6px 4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedAssets.includes(asset.code)}
+                    disabled={loading || isEdit}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedAssets(prev => [...prev, asset.code]);
+                      } else {
+                        setSelectedAssets(prev =>
+                          prev.filter(x => x !== asset.code)
+                        );
+                      }
+                    }}
+                  />
+
+                  <span>
+                    {asset.code} — {asset.name}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
         </div>
 
-        {asset && (
-          <div className="card compact mb-4 flex gap-3 items-center" >
-            <QR seed={asset.code} size={7} />
-            <div className="flex-1" >
-              <div className="fw-5 text-sm">{asset.name}</div>
-              <div className="text-xs text-3 mt-2">{asset.room} · kondisi saat ini: <span className={`cond ${asset.cond.toLowerCase().replace(' ', '-')}`}>{asset.cond}</span></div>
-            </div>
+        {selectedAssetData.length > 0 && (
+          <div className="card compact mb-4">
+            {selectedAssetData.map(asset => (
+              <div
+                key={asset.code}
+                className="flex gap-3 items-center mb-2"
+              >
+                <QR seed={asset.code} size={6} />
+
+                <div>
+                  <div className="fw-5">
+                    {asset.name}
+                  </div>
+
+                  <div className="text-xs text-3">
+                    {asset.code}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
-        )}
+          )}
 
         <div className="field">
           <div className="field-lbl">Tanggal Maintenance <span className="req">*</span></div>

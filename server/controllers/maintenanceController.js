@@ -26,47 +26,71 @@ const getMaintenanceLogs = async (req, res) => {
 const createMaintenance = async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const { inventory_id, action, condition_after, date, bhp_used } = req.body;
-    if (!inventory_id || !action || !condition_after || !date) {
-      return res.status(400).json({ error: 'Semua field wajib diisi.' });
+    const { inventory_ids, action, condition_after, date, bhp_used } = req.body;
+    if (!inventory_ids || !inventory_ids.length || !action || !condition_after || !date) {
+      return res.status(400).json({ error: 'Semua field wajib diisi (minimal pilih 1 aset).' });
     }
 
-    const inventory = await Inventory.findByPk(inventory_id);
-    if (!inventory) return res.status(404).json({ error: 'Item inventaris tidak ditemukan.' });
-
-    // Auto-generate code
+    const logsCreated = [];
+    const inventoryCodes = [];
+    
+    // Initial count for code generation
     const year = new Date().getFullYear();
-    const count = await MaintenanceLog.count() + 1;
-    const code = `M-${year}-${String(count).padStart(3, '0')}`;
+    const startCount = await MaintenanceLog.count({ transaction: t }) + 1;
 
-    const log = await MaintenanceLog.create({
-      code, inventory_id, tech_user_id: req.user.id,
-      action, condition_after, date,
-    }, { transaction: t });
+    for (let i = 0; i < inventory_ids.length; i++) {
+      const inv_id = inventory_ids[i];
+      const inventory = await Inventory.findByPk(inv_id, { transaction: t });
+      if (!inventory) continue;
 
-    // Update inventory condition
-    inventory.condition = condition_after;
-    inventory.last_checked = new Date();
-    await inventory.save({ transaction: t });
+      inventoryCodes.push(inventory.code);
+
+      // Auto-generate code for each log
+      const code = `M-${year}-${String(startCount + logsCreated.length).padStart(3, '0')}`;
+
+      const log = await MaintenanceLog.create({
+        code, inventory_id: inv_id, tech_user_id: req.user.id,
+        action, condition_after, date,
+      }, { transaction: t });
+
+      logsCreated.push(log);
+
+      // Update inventory condition
+      inventory.condition = condition_after;
+      inventory.last_checked = new Date();
+      await inventory.save({ transaction: t });
+    }
+
+    if (logsCreated.length === 0) {
+      await t.rollback();
+      return res.status(404).json({ error: 'Item inventaris tidak ditemukan.' });
+    }
 
     // Deduct BHP stock if used
     if (bhp_used && bhp_used.length > 0) {
       for (const item of bhp_used) {
-        const bhp = await Bhp.findByPk(item.bhp_id);
+        const bhp = await Bhp.findByPk(item.bhp_id, { transaction: t });
         if (!bhp) continue;
 
-        await MaintenanceBhp.create({
-          maintenance_log_id: log.id, bhp_id: item.bhp_id, qty_used: item.qty,
-        }, { transaction: t });
+        // Bagi jumlah BHP ke semua log aset (misal pakai 5 unit untuk 5 aset = 1 unit/aset)
+        const qtyPerAsset = parseFloat(item.qty) / logsCreated.length;
 
-        // Deduct stock
+        for (const log of logsCreated) {
+          await MaintenanceBhp.create({
+            maintenance_log_id: log.id, 
+            bhp_id: item.bhp_id, 
+            qty_used: qtyPerAsset,
+          }, { transaction: t });
+        }
+
+        // Deduct total stock dari gudang sekali saja
         bhp.stock = Math.max(0, parseFloat(bhp.stock) - parseFloat(item.qty));
         await bhp.save({ transaction: t });
       }
     }
 
     await t.commit();
-    await logAudit(req.user.id, 'maintenance.create', `${inventory.code} — ${action}`, req.ip);
+    await logAudit(req.user.id, 'maintenance.create', `${inventoryCodes.join(', ')} — ${action}`, req.ip);
 
     const io = req.app.get('io');
     if (io) {
@@ -74,13 +98,15 @@ const createMaintenance = async (req, res) => {
       io.emit('data_changed', { type: 'bhp' });
       io.emit('data_changed', { type: 'inventory' });
       io.emit('notification', {
-        message: `Log pemeliharaan baru dibuat untuk aset ${inventory.code} (${inventory.name}) dengan kondisi akhir: ${condition_after}.`,
+        message: `Log pemeliharaan baru dibuat untuk ${logsCreated.length} aset dengan kondisi akhir: ${condition_after}.`,
         roles: ['kalab', 'admin'],
         kind: 'info'
       });
     }
 
-    const result = await MaintenanceLog.findByPk(log.id, {
+    // Return the newly created logs
+    const result = await MaintenanceLog.findAll({
+      where: { id: logsCreated.map(l => l.id) },
       include: [
         { model: Inventory, attributes: ['id', 'code', 'name'] },
         { model: MaintenanceBhp, as: 'bhpUsed', include: [{ model: Bhp }] },
