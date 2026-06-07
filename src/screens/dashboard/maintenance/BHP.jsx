@@ -18,6 +18,9 @@ export function BHP() {
   const [restockReason, setRestockReason] = useState('');
   const [restocking, setRestocking] = useState(false);
 
+  const [monthFilter, setMonthFilter] = useState('all');
+  const [yearFilter, setYearFilter] = useState('all');
+
   useEffect(() => {
     async function loadBhpData() {
       try {
@@ -117,10 +120,24 @@ export function BHP() {
   }
 
   const filteredBhp = state.bhp.filter(b => {
+    if (yearFilter !== 'all' || monthFilter !== 'all') {
+      if (!b.lastIn || b.lastIn === '-') return false;
+      const parts = b.lastIn.split('-');
+      if (parts.length >= 2) {
+        const [bYear, bMonth] = parts;
+        if (yearFilter !== 'all' && bYear !== yearFilter) return false;
+        if (monthFilter !== 'all' && bMonth !== monthFilter) return false;
+      } else {
+        return false;
+      }
+    }
+
     if (!query) return true;
     const q = query.toLowerCase();
     return (b.name || '').toLowerCase().includes(q) || (b.id || '').toLowerCase().includes(q) || (b.cat || '').toLowerCase().includes(q);
   });
+
+  const years = [...new Set(state.bhp.map(b => b.lastIn && b.lastIn !== '-' ? b.lastIn.split('-')[0] : null))].filter(Boolean).sort();
 
   return (
     <div className="page" style={{'--role-accent': role ? role.accent : undefined}}>
@@ -129,7 +146,43 @@ export function BHP() {
           <h1 className="page-title">Stok <em>BHP</em></h1>
           <p className="page-sub">Barang Habis Pakai · {state.bhp.filter(b => b.stock <= b.min).length} item rendah dan perlu restock.</p>
         </div>
-        <button className="btn primary" onClick={() => dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'newBhp' } })}><Icon name="plus" size={13} strokeWidth={2.4} /> Restock manual</button>
+        {state.role === 'staflab' && (
+          <button className="btn primary" onClick={() => dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'newBhp' } })}><Icon name="plus" size={13} strokeWidth={2.4} /> Restock manual</button>
+        )}
+      </div>
+
+      <div data-reveal className="flex flex-wrap gap-2 mb-[18px]">
+        <select 
+          className="select sm" 
+          value={monthFilter} 
+          onChange={e => setMonthFilter(e.target.value)} 
+          title="Filter bulan terakhir masuk"
+          style={{ width: '130px' }}
+        >
+          <option value="all">Semua Bulan</option>
+          <option value="01">Januari</option>
+          <option value="02">Februari</option>
+          <option value="03">Maret</option>
+          <option value="04">April</option>
+          <option value="05">Mei</option>
+          <option value="06">Juni</option>
+          <option value="07">Juli</option>
+          <option value="08">Agustus</option>
+          <option value="09">September</option>
+          <option value="10">Oktober</option>
+          <option value="11">November</option>
+          <option value="12">Desember</option>
+        </select>
+        <select 
+          className="select sm" 
+          value={yearFilter} 
+          onChange={e => setYearFilter(e.target.value)} 
+          title="Filter tahun terakhir masuk"
+          style={{ width: '130px' }}
+        >
+          <option value="all">Semua Tahun</option>
+          {years.map(y => <option key={y} value={y}>{y}</option>)}
+        </select>
       </div>
 
       {query && filteredBhp.length === 0 && (
@@ -167,8 +220,12 @@ export function BHP() {
               <div className="text-3 mono text-xs">{b.lastIn}</div>
               <div className="flex gap-1" >
                 <button className="act-btn text-violet hover:bg-violet/10" style={{ color: '#a855f7' }} onClick={() => dispatch({ type: 'OPEN_MODAL', modal: { kind: 'aiPredictive', payload: { bhpId: b.dbId, bhpName: b.name } } })} title="AI Predictive Analysis"><Icon name="bolt" size={12} strokeWidth={2.4} /></button>
-                <button className="act-btn" onClick={() => { setRestockItem(b); setRestockQty(''); setRestockReason(''); }} title="Tambah Stok" aria-label={`Tambah stok ${b.name}`}><Icon name="plus" size={12} strokeWidth={2.4} /></button>
-                <button className="act-btn" onClick={() => { setReductionItem(b); setReductionQty('1'); setReductionReason(''); }} title="Kurangi Stok" aria-label={`Kurangi stok ${b.name}`}><Icon name="minus" size={12} strokeWidth={2.4} /></button>
+                {state.role === 'staflab' && (
+                  <>
+                    <button className="act-btn" onClick={() => { setRestockItem(b); setRestockQty(''); setRestockReason(''); }} title="Tambah Stok" aria-label={`Tambah stok ${b.name}`}><Icon name="plus" size={12} strokeWidth={2.4} /></button>
+                    <button className="act-btn" onClick={() => { setReductionItem(b); setReductionQty('1'); setReductionReason(''); }} title="Kurangi Stok" aria-label={`Kurangi stok ${b.name}`}><Icon name="minus" size={12} strokeWidth={2.4} /></button>
+                  </>
+                )}
               </div>
             </div>
           );

@@ -76,8 +76,8 @@ const authenticate = async (req, res, next) => {
       token = cookies.token || null;
     }
 
-    // 2. Fallback to Bearer Authorization header (Blocked in production to reduce attack surface)
-    if (!token && process.env.NODE_ENV !== 'production') {
+    // 2. Fallback to Bearer Authorization header
+    if (!token) {
       const authHeader = req.headers.authorization;
       if (authHeader && authHeader.startsWith('Bearer ')) {
         const bearerToken = authHeader.split(' ')[1];

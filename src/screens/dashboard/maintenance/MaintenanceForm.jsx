@@ -136,8 +136,27 @@ export function MaintenanceForm({ payload, close }) {
         </div>
 
         <div className="field">
-          <div className="field-lbl">
-            Aset <span className="req">*</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <div className="field-lbl" style={{ margin: 0 }}>
+              Aset <span className="req">*</span>
+            </div>
+            {selectedRoomId && filteredAssets.length > 0 && !isEdit && (
+              <label style={{ fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: 'var(--ink-3)', fontWeight: 500 }}>
+                <input 
+                  type="checkbox" 
+                  checked={selectedAssets.length === filteredAssets.length && filteredAssets.length > 0}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedAssets(filteredAssets.map(a => a.code));
+                    } else {
+                      setSelectedAssets([]);
+                    }
+                  }}
+                  disabled={loading}
+                />
+                Pilih Semua Aset
+              </label>
+            )}
           </div>
 
           {!selectedRoomId ? (

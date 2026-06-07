@@ -34,7 +34,8 @@ async function start() {
     console.log('✅ Database terhubung ke MySQL');
 
     // Sync all models (creates tables if not exist)
-    await sequelize.sync({ alter: true });
+    //await sequelize.sync();await sequelize.sync();
+    await sequelize.sync();
     console.log('✅ Semua tabel berhasil di-sync');
 
     // Run token blacklist cleanup on startup

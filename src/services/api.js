@@ -16,20 +16,23 @@ if (typeof window !== 'undefined') {
   window.clearApiCache = clearApiCache;
 }
 
-// check if user is logged in using a non-sensitive flag
-export const getToken = () => {
-  return localStorage.getItem("loka_logged_in");
-};
-
 // set login flag + store actual JWT in memory for Bearer header fallback
 export const setToken = (token) => {
-  _memoryToken = token; // Store actual JWT in memory
+  _memoryToken = token;
+
+  localStorage.setItem("token", token);
   localStorage.setItem("loka_logged_in", "true");
+};
+
+// check if user is logged in using a non-sensitive flag
+export const getToken = () => {
+  return _memoryToken || localStorage.getItem("token");
 };
 
 // clear login flag and memory token
 export const removeToken = () => {
   _memoryToken = null;
+  localStorage.removeItem("token");
   localStorage.removeItem("loka_logged_in");
 };
 
@@ -45,12 +48,14 @@ const getCookie = (name) => {
 
 // header helper — includes Bearer token from memory if available
 export const authHeaders = () => {
+  const token = getToken();
+
   return {
     "Content-Type": "application/json",
     "X-CSRF-Token": getCookie("csrfToken") || "",
-    "X-Requested-With": "XMLHttpRequest", // Protect against CSRF attacks
-    ...(_memoryToken && {
-      Authorization: `Bearer ${_memoryToken}`,
+    "X-Requested-With": "XMLHttpRequest",
+    ...(token && {
+      Authorization: `Bearer ${token}`,
     }),
   };
 };

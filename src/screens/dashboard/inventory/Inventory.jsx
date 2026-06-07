@@ -15,6 +15,8 @@ export function Inventory() {
   const { query: globalQuery } = useSearch();
   const role = D.roles.find(r => r.id === state.role);
   const [filter, setFilter] = useState('all');
+  const [monthFilter, setMonthFilter] = useState('all');
+  const [yearFilter, setYearFilter] = useState('all');
   const [localQuery, setLocalQuery] = useState('');
   const query = globalQuery || localQuery;
 
@@ -47,6 +49,11 @@ export function Inventory() {
 
   const filtered = state.inventory.filter(it => {
     if (filter !== 'all' && it.cat !== filter) return false;
+    
+    const [acqYear, acqMonth] = it.acquired.split('-');
+    if (yearFilter !== 'all' && acqYear !== yearFilter) return false;
+    if (monthFilter !== 'all' && acqMonth !== monthFilter) return false;
+
     if (query) {
       const q = query.toLowerCase();
       return it.name.toLowerCase().includes(q) || it.code.toLowerCase().includes(q) || it.room.toLowerCase().includes(q) || it.specs.toLowerCase().includes(q);
@@ -173,6 +180,7 @@ export function Inventory() {
 
 
   const cats = ['all', ...new Set(state.inventory.map(it => it.cat))];
+  const years = [...new Set(state.inventory.map(it => it.acquired.split('-')[0]))].filter(Boolean).sort();
 
   return (
     <div className="page" style={{'--role-accent': role ? role.accent : undefined}}>
@@ -192,6 +200,37 @@ export function Inventory() {
           <Icon name="search" size={13} strokeWidth={2} className="text-ink-3"  />
           <input value={localQuery} onChange={e => setLocalQuery(e.target.value)} placeholder={globalQuery ? `Filter: "${globalQuery}"` : "Cari aset…"} />
         </div>
+        <select 
+          className="select sm" 
+          value={monthFilter} 
+          onChange={e => setMonthFilter(e.target.value)} 
+          title="Filter bulan pengadaan"
+          style={{ width: '130px' }}
+        >
+          <option value="all">Semua Bulan</option>
+          <option value="01">Januari</option>
+          <option value="02">Februari</option>
+          <option value="03">Maret</option>
+          <option value="04">April</option>
+          <option value="05">Mei</option>
+          <option value="06">Juni</option>
+          <option value="07">Juli</option>
+          <option value="08">Agustus</option>
+          <option value="09">September</option>
+          <option value="10">Oktober</option>
+          <option value="11">November</option>
+          <option value="12">Desember</option>
+        </select>
+        <select 
+          className="select sm" 
+          value={yearFilter} 
+          onChange={e => setYearFilter(e.target.value)} 
+          title="Filter tahun pengadaan"
+          style={{ width: '130px' }}
+        >
+          <option value="all">Semua Tahun</option>
+          {years.map(y => <option key={y} value={y}>{y}</option>)}
+        </select>
         {cats.map(c => (
           <button key={c} onClick={() => setFilter(c)} className={`btn sm ${filter === c ? 'primary' : ''}`} style={{textTransform: 'capitalize'}}>
             {c === 'all' ? 'Semua' : c}

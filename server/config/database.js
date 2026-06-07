@@ -17,7 +17,7 @@ const sequelize = new Sequelize(
       idle: 10000,
     },
     define: {
-      timestamps: true,
+      timestamps: false,
       underscored: true,
     },
   }

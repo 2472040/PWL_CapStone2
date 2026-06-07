@@ -33,5 +33,5 @@
 
 ## Staf Lab
 - [x] Maintenance harus bisa **memilih banyak aset sekaligus** (misal 1 ruangan ada 5 aset rusak, bisa dipilih semua langsung, tidak satu-satu)
-- [ ] Tambah **filter** di halaman Inventaris dan BHP
-- [ ] Pengelolaan tambah/kurang stok BHP ada di Staf Lab (dipindahkan dari Staf Admin)
+- [x] Tambah **filter** di halaman Inventaris dan BHP
+- [x] Pengelolaan tambah/kurang stok BHP ada di Staf Lab (dipindahkan dari Staf Admin)

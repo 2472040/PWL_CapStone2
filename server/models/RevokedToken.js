@@ -18,8 +18,7 @@ const RevokedToken = sequelize.define('RevokedToken', {
   },
 }, {
   tableName: 'revoked_tokens',
-  timestamps: true,
-  updatedAt: false, // only createdAt is needed
+  timestamps: false,
 });
 
 module.exports = RevokedToken;
