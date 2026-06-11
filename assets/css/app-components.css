@@ -164,7 +164,7 @@ html[data-theme="light"] .role-popover { background: rgba(255,255,255,0.95); }
   padding: 20px 24px; border-bottom: 1px solid var(--color-line);
 }
 .drawer-title { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
-.drawer-body { flex: 1; overflow-y: auto; padding: 24px; }
+.drawer-body { flex: 1; overflow-y: auto; padding: 24px; min-height: 0; }
 .drawer-foot {
   display: flex; gap: 8px; padding: 16px 24px;
   border-top: 1px solid var(--color-line);

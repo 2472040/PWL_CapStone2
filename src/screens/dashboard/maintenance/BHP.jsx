@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useStore, useToast, Icon, D, useSearch } from '../../../components/app-shell.jsx';
 import { apiFetch } from '../../../services/api.js';
 
@@ -17,6 +18,12 @@ export function BHP() {
   const [restockQty, setRestockQty] = useState('');
   const [restockReason, setRestockReason] = useState('');
   const [restocking, setRestocking] = useState(false);
+
+  // Staflab restock request (via draft)
+  const [showRestockRequest, setShowRestockRequest] = useState(false);
+  const [restockRows, setRestockRows] = useState([]);
+  const [restockTitle, setRestockTitle] = useState('Restock BHP · ' + new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }));
+  const [submittingRestock, setSubmittingRestock] = useState(false);
 
   const [monthFilter, setMonthFilter] = useState('all');
   const [yearFilter, setYearFilter] = useState('all');
@@ -143,11 +150,17 @@ export function BHP() {
     <div className="page" style={{'--role-accent': role ? role.accent : undefined}}>
       <div className="page-head" data-reveal>
         <div>
-          <h1 className="page-title">Stok <em>BHP</em></h1>
-          <p className="page-sub">Barang Habis Pakai · {state.bhp.filter(b => b.stock <= b.min).length} item rendah dan perlu restock.</p>
+          <h1 className="page-title">Barang Habis Pakai</h1>
+          <p className="page-sub">Pantau stok barang habis pakai (BHP) dan prediksi AI kebutuhan stok berdasarkan tren historis dan riwayat maintenance aset di lab.</p>
         </div>
         {state.role === 'staflab' && (
-          <button className="btn primary" onClick={() => dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'newBhp' } })}><Icon name="plus" size={13} strokeWidth={2.4} /> Restock manual</button>
+          <button className="btn primary" onClick={() => {
+            setRestockRows([{ bhpId: state.bhp[0]?.id || '', qty: '', unit: state.bhp[0]?.unit || 'pcs', price: '' }]);
+            setRestockTitle('Restock BHP · ' + new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }));
+            setShowRestockRequest(true);
+          }}>
+            <Icon name="plus" size={13} strokeWidth={2.4} /> Ajukan Restock
+          </button>
         )}
       </div>
 
@@ -222,7 +235,6 @@ export function BHP() {
                 <button className="act-btn text-violet hover:bg-violet/10" style={{ color: '#a855f7' }} onClick={() => dispatch({ type: 'OPEN_MODAL', modal: { kind: 'aiPredictive', payload: { bhpId: b.dbId, bhpName: b.name } } })} title="AI Predictive Analysis"><Icon name="bolt" size={12} strokeWidth={2.4} /></button>
                 {state.role === 'staflab' && (
                   <>
-                    <button className="act-btn" onClick={() => { setRestockItem(b); setRestockQty(''); setRestockReason(''); }} title="Tambah Stok" aria-label={`Tambah stok ${b.name}`}><Icon name="plus" size={12} strokeWidth={2.4} /></button>
                     <button className="act-btn" onClick={() => { setReductionItem(b); setReductionQty('1'); setReductionReason(''); }} title="Kurangi Stok" aria-label={`Kurangi stok ${b.name}`}><Icon name="minus" size={12} strokeWidth={2.4} /></button>
                   </>
                 )}
@@ -232,8 +244,98 @@ export function BHP() {
         })}
       </div>
 
+      {/* ── Staflab Restock Request Modal ── */}
+      {showRestockRequest && createPortal(
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 9999, animation: 'fade-in 0.2s ease-out'
+        }}>
+          <div className="card" style={{ width: '90%', maxWidth: '520px', background: 'var(--surface)', border: '1px solid var(--line-2)', padding: '28px' }}>
+            <div className="flex between aic mb-4">
+              <h3 className="text-lg fw-6">Ajukan Restock BHP</h3>
+              <button className="x-btn" onClick={() => setShowRestockRequest(false)} disabled={submittingRestock}><Icon name="x" size={14} /></button>
+            </div>
+            <p className="text-xs text-3 mb-4" style={{ lineHeight: 1.5 }}>
+              Pengajuan akan dikirim sebagai draf pengadaan ke <strong>Kaprodi</strong> untuk di-review dan disetujui sebelum barang bisa diterima.
+            </p>
+
+            <div className="field mb-3">
+              <div className="field-lbl">Judul Pengajuan</div>
+              <input className="input" value={restockTitle} onChange={e => setRestockTitle(e.target.value)} disabled={submittingRestock} />
+            </div>
+
+            <div className="flex between aic mb-2">
+              <div className="field-lbl m-0">Item BHP ({restockRows.length})</div>
+              <button className="btn sm" onClick={() => setRestockRows(r => [...r, { bhpId: state.bhp[0]?.id || '', qty: '', unit: state.bhp[0]?.unit || 'pcs', price: '' }])} disabled={submittingRestock}>
+                <Icon name="plus" size={11} /> Tambah
+              </button>
+            </div>
+
+            <div style={{ maxHeight: '280px', overflowY: 'auto', marginBottom: '16px' }}>
+              {restockRows.map((row, i) => {
+                const selectedBhp = state.bhp.find(b => b.id === row.bhpId);
+                return (
+                  <div key={i} className="card compact mb-2 p-3" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                    <div className="flex gap-2 aic mb-2">
+                      <select className="select flex-1" value={row.bhpId} onChange={e => {
+                        const found = state.bhp.find(b => b.id === e.target.value);
+                        setRestockRows(r => r.map((x, j) => j === i ? { ...x, bhpId: e.target.value, unit: found?.unit || 'pcs' } : x));
+                      }} disabled={submittingRestock}>
+                        {state.bhp.map(b => <option key={b.id} value={b.id}>{b.name} (stok: {b.stock} {b.unit})</option>)}
+                      </select>
+                      <button className="x-btn" onClick={() => setRestockRows(r => r.filter((_, j) => j !== i))} disabled={submittingRestock || restockRows.length <= 1}>
+                        <Icon name="x" size={12} />
+                      </button>
+                    </div>
+                    <div className="flex gap-2">
+                      <input className="input mono flex-1" type="number" min="1" value={row.qty} onChange={e => setRestockRows(r => r.map((x, j) => j === i ? { ...x, qty: e.target.value } : x))} placeholder="Jumlah" disabled={submittingRestock} />
+                      <span className="flex aic text-xs text-3 mono" style={{ minWidth: '30px' }}>{row.unit}</span>
+                      <input className="input mono flex-1" type="number" min="0" value={row.price} onChange={e => setRestockRows(r => r.map((x, j) => j === i ? { ...x, price: e.target.value } : x))} placeholder="Harga satuan (Rp)" disabled={submittingRestock} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex gap-2 justify-end">
+              <button className="btn" onClick={() => setShowRestockRequest(false)} disabled={submittingRestock}>Batal</button>
+              <button className="btn primary" disabled={submittingRestock} onClick={async () => {
+                const validRows = restockRows.filter(r => r.bhpId && r.qty && Number(r.qty) > 0);
+                if (validRows.length === 0) { toast('Isi minimal 1 item BHP dengan jumlah!', 'warn'); return; }
+
+                setSubmittingRestock(true);
+                try {
+                  const items = validRows.map(r => {
+                    const found = state.bhp.find(b => b.id === r.bhpId);
+                    return { kind: 'BHP', name: found?.name || r.bhpId, qty: Number(r.qty), unit: r.unit || 'pcs', price: Number(r.price) || 0, link: null, replaces: null };
+                  });
+
+                  const createRes = await apiFetch('/procurement/drafts', {
+                    method: 'POST',
+                    body: JSON.stringify({ title: restockTitle, items })
+                  });
+                  if (!createRes.data) throw new Error('Gagal membuat pengajuan');
+
+                  await apiFetch(`/procurement/drafts/${createRes.data.id}/submit`, { method: 'POST' });
+                  toast('Pengajuan restock berhasil dikirim ke Kaprodi!', 'ok');
+                  setShowRestockRequest(false);
+                } catch (err) {
+                  toast('Gagal mengirim pengajuan: ' + err.message, 'warn');
+                } finally {
+                  setSubmittingRestock(false);
+                }
+              }}>
+                {submittingRestock ? 'Mengirim...' : <><Icon name="arrow" size={13} /> Ajukan ke Kaprodi</>}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       {/* ── Reduction Modal ── */}
-      {reductionItem && (
+      {reductionItem && createPortal(
         <div style={{
           position: 'fixed',
           top: 0,
@@ -304,11 +406,12 @@ export function BHP() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ── Restock (Addition) Modal ── */}
-      {restockItem && (
+      {restockItem && createPortal(
         <div style={{
           position: 'fixed',
           top: 0,
@@ -378,7 +481,8 @@ export function BHP() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

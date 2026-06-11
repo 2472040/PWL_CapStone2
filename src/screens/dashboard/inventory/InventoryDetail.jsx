@@ -42,6 +42,15 @@ export function InventoryDetail({ payload, close }) {
         <div className="text-3 text-xs mono mb-3 tracking-[0.1em] uppercase" >— Spesifikasi</div>
         <div className="card compact mb-6 text-[13px] text-ink-2" >{it.specs}</div>
 
+        {it.photo_url && (
+          <>
+            <div className="text-3 text-xs mono mb-3 tracking-[0.1em] uppercase" >— Bukti QR Universitas</div>
+            <div className="card compact mb-6 flex justify-center p-2" style={{ background: 'rgba(0,0,0,0.2)' }}>
+              <img src={it.photo_url} alt="QR Universitas" style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '4px', objectFit: 'contain' }} />
+            </div>
+          </>
+        )}
+
         <div className="text-3 text-xs mono mb-3 tracking-[0.1em] uppercase" >— Riwayat maintenance</div>
         {logs.length === 0 ? (
           <div className="empty">

@@ -68,24 +68,36 @@ const createMaintenance = async (req, res) => {
 
     // Deduct BHP stock if used
     if (bhp_used && bhp_used.length > 0) {
+      // Group BHP usage by bhp_id to deduct total stock later
+      const totalBhpUsage = {};
+
       for (const item of bhp_used) {
-        const bhp = await Bhp.findByPk(item.bhp_id, { transaction: t });
-        if (!bhp) continue;
+        // item: { asset_code, bhp_id, qty }
+        const log = logsCreated.find(l => {
+          // Find the inventory code for this log
+          const invCode = inventoryCodes[logsCreated.indexOf(l)];
+          return invCode === item.asset_code;
+        });
 
-        // Bagi jumlah BHP ke semua log aset (misal pakai 5 unit untuk 5 aset = 1 unit/aset)
-        const qtyPerAsset = parseFloat(item.qty) / logsCreated.length;
-
-        for (const log of logsCreated) {
+        if (log && item.qty > 0) {
           await MaintenanceBhp.create({
-            maintenance_log_id: log.id, 
-            bhp_id: item.bhp_id, 
-            qty_used: qtyPerAsset,
+            maintenance_log_id: log.id,
+            bhp_id: item.bhp_id,
+            qty_used: parseFloat(item.qty),
           }, { transaction: t });
-        }
 
-        // Deduct total stock dari gudang sekali saja
-        bhp.stock = Math.max(0, parseFloat(bhp.stock) - parseFloat(item.qty));
-        await bhp.save({ transaction: t });
+          if (!totalBhpUsage[item.bhp_id]) totalBhpUsage[item.bhp_id] = 0;
+          totalBhpUsage[item.bhp_id] += parseFloat(item.qty);
+        }
+      }
+
+      // Deduct total stock
+      for (const bhp_id of Object.keys(totalBhpUsage)) {
+        const bhp = await Bhp.findByPk(bhp_id, { transaction: t });
+        if (bhp) {
+          bhp.stock = Math.max(0, parseFloat(bhp.stock) - totalBhpUsage[bhp_id]);
+          await bhp.save({ transaction: t });
+        }
       }
     }
 

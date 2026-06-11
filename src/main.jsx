@@ -132,12 +132,14 @@ function Shell({ onLogout }) {
   useEffect(() => {
     if (!window.Lenis) return;
     const main = document.querySelector('.main');
-    if (!main) return;
+    const content = document.querySelector('.scroll-content');
+    if (!main || !content) return;
     
     main.scrollTop = 0;
     
     const lenis = new window.Lenis({
       wrapper: main,
+      content: content,
       lerp: 0.08, smoothWheel: true, wheelMultiplier: 1.2,
     });
     
@@ -150,6 +152,7 @@ function Shell({ onLogout }) {
       lenis.resize();
     });
     resizeObserver.observe(main);
+    resizeObserver.observe(content); // Observe content size changes
     
     return () => {
       lenis.destroy();
@@ -168,7 +171,9 @@ function Shell({ onLogout }) {
       <MobileSidebarToggle />
       <Sidebar />
       <main className="main">
-        <Router />
+        <div className="scroll-content">
+          <Router />
+        </div>
       </main>
       <Drawer />
       <Modal />

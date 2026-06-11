@@ -1,4 +1,4 @@
-const { Draft, DraftItem, DraftApproval, Receiving, User, sequelize } = require('../models');
+const { Draft, DraftItem, DraftApproval, Receiving, User, Inventory, Label, Bhp, sequelize } = require('../models');
 const { logAudit } = require('../middleware/audit');
 const { Op } = require('sequelize');
 
@@ -9,7 +9,7 @@ const { Op } = require('sequelize');
 const getDrafts = async (req, res) => {
   try {
     const where = {};
-    if (req.user.role === 'kalab') where.created_by = req.user.id;
+    if (req.user.role === 'kalab' || req.user.role === 'staflab') where.created_by = req.user.id;
     if (req.query.status) where.status = req.query.status;
 
     const drafts = await Draft.findAll({

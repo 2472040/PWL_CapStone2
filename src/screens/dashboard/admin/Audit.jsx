@@ -201,11 +201,11 @@ export function Audit() {
             fontSize: '12px',
           }}>
             <option value="all">Semua Aksi</option>
-            <option value="auth">Autentikasi (auth.*)</option>
-            <option value="draft">Pengadaan (draft.*, receiving.*)</option>
-            <option value="maintenance">Maintenance (maintenance.*, bhp.*)</option>
-            <option value="admin">Administrasi (user.*, room.*, inv.*)</option>
-            <option value="backup">Pencadangan (backup.*)</option>
+            <option value="auth">Autentikasi</option>
+            <option value="draft">Pengadaan</option>
+            <option value="maintenance">Maintenance</option>
+            <option value="admin">Administrasi</option>
+            <option value="backup">Pencadangan</option>
           </select>
         </div>
 

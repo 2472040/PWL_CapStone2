@@ -33,7 +33,7 @@ export function MaintenanceForm({ payload, close }) {
   function addBhp() {
     const first = state.bhp[0];
     if (!first) { toast('Tidak ada data BHP tersedia', 'warn'); return; }
-    setBhpRows(r => [...r, { id: first.id, qty: 1 }]);
+    setBhpRows(r => [...r, { id: first.id, qty: 1, assetCode: selectedAssets.length > 0 ? selectedAssets[0] : 'all' }]);
   }
   function updateBhp(idx, patch) { setBhpRows(r => r.map((x, i) => i === idx ? { ...x, ...patch } : x)); }
   function removeBhp(idx) { setBhpRows(r => r.filter((_, i) => i !== idx)); }
@@ -47,6 +47,22 @@ export function MaintenanceForm({ payload, close }) {
     try {
       const endpoint = isEdit ? `/maintenance/${payload.dbId}` : '/maintenance';
       const method = isEdit ? 'PUT' : 'POST';
+      
+      let bhpPayload = [];
+      if (!isEdit) {
+        bhpRows.forEach(b => {
+          const bd = state.bhp.find(x => x.id === b.id);
+          if (!bd) return;
+          if (b.assetCode === 'all') {
+            selectedAssets.forEach(ac => {
+              bhpPayload.push({ asset_code: ac, bhp_id: bd.dbId, qty: parseFloat(b.qty) });
+            });
+          } else {
+            bhpPayload.push({ asset_code: b.assetCode, bhp_id: bd.dbId, qty: parseFloat(b.qty) });
+          }
+        });
+      }
+
       const body = isEdit ? {
         action,
         condition_after: cond,
@@ -56,13 +72,7 @@ export function MaintenanceForm({ payload, close }) {
         action,
         condition_after: cond,
         date: maintDate,
-        bhp_used: bhpRows.map(b => {
-          const bd = state.bhp.find(x => x.id === b.id);
-          return {
-            bhp_id: bd.dbId,
-            qty: parseFloat(b.qty)
-          };
-        })
+        bhp_used: bhpPayload
       };
 
       const res = await apiFetch(endpoint, {
@@ -105,9 +115,7 @@ export function MaintenanceForm({ payload, close }) {
           }));
           dispatch({ type: 'SET_BHP', bhp: formattedBhp });
         }
-        const updatedInventory = state.inventory.map(x => 
-          selectedAssets.includes(x.code) ? ({ ...x, cond: cond, last: 'baru saja' }) : x
-        );
+        const updatedInventory = state.inventory.map(x => !selectedAssets.includes(x.code) ? x : ({ ...x, cond: cond, last: 'baru saja' }));
         dispatch({ type: 'SET_INVENTORY', inventory: updatedInventory });
 
         toast(isEdit ? 'Log maintenance berhasil diperbarui!' : 'Log maintenance disimpan ke database!', 'ok');
@@ -129,22 +137,20 @@ export function MaintenanceForm({ payload, close }) {
       <div className="drawer-body">
         <div className="field">
           <div className="field-lbl">Ruangan <span className="req">*</span></div>
-          <select className="select" value={selectedRoomId} onChange={e => {setSelectedRoomId(e.target.value); setSelectedAssets([]);}} disabled={loading || isEdit}>
+          <select className="select" value={selectedRoomId} onChange={e => { setSelectedRoomId(e.target.value); setSelectedAssets([]); }} disabled={loading || isEdit}>
             <option value="">Pilih ruangan…</option>
             {state.rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
           </select>
         </div>
 
         <div className="field">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <div className="field-lbl" style={{ margin: 0 }}>
-              Aset <span className="req">*</span>
-            </div>
-            {selectedRoomId && filteredAssets.length > 0 && !isEdit && (
-              <label style={{ fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: 'var(--ink-3)', fontWeight: 500 }}>
-                <input 
-                  type="checkbox" 
-                  checked={selectedAssets.length === filteredAssets.length && filteredAssets.length > 0}
+          <div className="flex between aic mb-2">
+            <div className="field-lbl mb-0">Aset yang dimaintenance <span className="req">*</span></div>
+            {filteredAssets.length > 0 && !isEdit && (
+              <label className="text-xs flex aic gap-1.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectedAssets.length === filteredAssets.length}
                   onChange={(e) => {
                     if (e.target.checked) {
                       setSelectedAssets(filteredAssets.map(a => a.code));
@@ -154,7 +160,7 @@ export function MaintenanceForm({ payload, close }) {
                   }}
                   disabled={loading}
                 />
-                Pilih Semua Aset
+                Pilih Semua
               </label>
             )}
           </div>
@@ -269,22 +275,35 @@ export function MaintenanceForm({ payload, close }) {
         ) : (
           <div className="field">
             <div className="flex between aic mb-2">
-              <div className="field-lbl">BHP yang dipakai</div>
-              <button className="btn sm" onClick={addBhp} disabled={loading}><Icon name="plus" size={11} /> Tambah BHP</button>
+              <div className="field-lbl mb-0">BHP yang dipakai</div>
+              <button className="btn sm" onClick={addBhp} disabled={loading || selectedAssets.length === 0}><Icon name="plus" size={11} /> Tambah BHP</button>
             </div>
             {bhpRows.length === 0 && <div className="text-3 text-xs mono" style={{padding: '8px 0'}}>// tidak ada BHP yang dipakai</div>}
-            {bhpRows.map((b, i) => {
-              const bd = state.bhp.find(x => x.id === b.id);
-              return (
-                <div key={i} className="gap-2 grid mb-1.5" style={{ gridTemplateColumns: '1fr 100px auto' }} >
-                  <select className="select" value={b.id} onChange={e => updateBhp(i, { id: e.target.value })} disabled={loading}>
-                    {state.bhp.map(x => <option key={x.id} value={x.id}>{x.id} — {x.name} (stok: {x.stock} {x.unit})</option>)}
-                  </select>
-                  <input className="input mono" type="number" step="0.1" value={b.qty} onChange={e => updateBhp(i, { qty: e.target.value })} placeholder={bd?.unit} disabled={loading} />
-                  <button className="x-btn" onClick={() => removeBhp(i)} disabled={loading}><Icon name="x" size={12} /></button>
-                </div>
-              );
-            })}
+            <div className="flex flex-col gap-2">
+              {bhpRows.map((b, i) => {
+                const bd = state.bhp.find(x => x.id === b.id);
+                return (
+                  <div key={i} className="bg-surface/50 border border-line-2 p-2 rounded-md">
+                    <div className="flex items-center gap-2 mb-2">
+                      <select className="select flex-1" value={b.assetCode} onChange={e => updateBhp(i, { assetCode: e.target.value })} disabled={loading}>
+                        <option value="all">Untuk Semua Aset Terpilih</option>
+                        {selectedAssets.map(ac => (
+                          <option key={ac} value={ac}>{ac}</option>
+                        ))}
+                      </select>
+                      <button className="x-btn" onClick={() => removeBhp(i)} disabled={loading}><Icon name="x" size={12} /></button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <select className="select flex-[2]" value={b.id} onChange={e => updateBhp(i, { id: e.target.value })} disabled={loading}>
+                        {state.bhp.map(x => <option key={x.id} value={x.id}>{x.name} (stok: {x.stock})</option>)}
+                      </select>
+                      <input className="input mono flex-1" type="number" step="0.1" value={b.qty} onChange={e => updateBhp(i, { qty: e.target.value })} placeholder={bd?.unit} disabled={loading} />
+                      <span className="text-xs text-3 font-mono">{bd?.unit}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
             {bhpRows.length > 0 && (
               <div className="text-xs text-3 mt-2" style={{padding: '8px 12px', background: 'var(--surface)', borderRadius: 8, border: '1px dashed var(--line-2)'}}>
                 <Icon name="info" size={11} /> Stok BHP akan otomatis berkurang setelah disimpan

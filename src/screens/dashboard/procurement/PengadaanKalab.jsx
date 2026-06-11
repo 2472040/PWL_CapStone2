@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 export function PengadaanKalab() {
   const { state, dispatch } = useStore();
   const { query } = useSearch();
-  const role = D.roles.find(r => r.id === 'kalab');
+  const role = D.roles.find(r => r.id === state.role);
   const toast = useToast();
 
   useEffect(() => {
@@ -35,11 +35,31 @@ export function PengadaanKalab() {
     loadDrafts();
   }, [dispatch, toast]);
 
+  const [monthFilter, setMonthFilter] = useState('all');
+  const [yearFilter, setYearFilter] = useState('all');
+  const [sortOrder, setSortOrder] = useState('desc');
+
   const myDrafts = state.drafts.filter(d => {
+    if (yearFilter !== 'all' || monthFilter !== 'all') {
+      if (!d.submitted_at) return false;
+      const dateObj = new Date(d.submitted_at);
+      const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const y = String(dateObj.getFullYear());
+      if (yearFilter !== 'all' && y !== yearFilter) return false;
+      if (monthFilter !== 'all' && m !== monthFilter) return false;
+    }
+
     if (!query) return true;
     const q = query.toLowerCase();
     return d.title.toLowerCase().includes(q) || d.code.toLowerCase().includes(q) || (d.by && d.by.toLowerCase().includes(q)) || d.items.some(it => it.name.toLowerCase().includes(q));
+  }).sort((a, b) => {
+    const dateA = a.submitted_at ? new Date(a.submitted_at).getTime() : (a.created_at ? new Date(a.created_at).getTime() : 0);
+    const dateB = b.submitted_at ? new Date(b.submitted_at).getTime() : (b.created_at ? new Date(b.created_at).getTime() : 0);
+    return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
   });
+
+  const years = [...new Set(state.drafts.map(d => d.submitted_at ? String(new Date(d.submitted_at).getFullYear()) : null))].filter(Boolean).sort();
+
   const [openCode, setOpenCode] = useState(null);
   const opened = state.drafts.find(d => d.code === openCode);
 
@@ -54,7 +74,7 @@ export function PengadaanKalab() {
           transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
           className="w-full"
         >
-          <DraftDetail draft={opened} onBack={() => setOpenCode(null)} mode="kalab" />
+          <DraftDetail draft={opened} onBack={() => setOpenCode(null)} mode={state.role} />
         </motion.div>
       ) : (
         <motion.div
@@ -76,11 +96,54 @@ export function PengadaanKalab() {
             </button>
           </div>
 
+          <div data-reveal className="flex flex-wrap gap-2 mb-[18px]">
+            <select 
+              className="select sm" 
+              value={monthFilter} 
+              onChange={e => setMonthFilter(e.target.value)} 
+              title="Filter bulan"
+              style={{ width: '130px' }}
+            >
+              <option value="all">Semua Bulan</option>
+              <option value="01">Januari</option>
+              <option value="02">Februari</option>
+              <option value="03">Maret</option>
+              <option value="04">April</option>
+              <option value="05">Mei</option>
+              <option value="06">Juni</option>
+              <option value="07">Juli</option>
+              <option value="08">Agustus</option>
+              <option value="09">September</option>
+              <option value="10">Oktober</option>
+              <option value="11">November</option>
+              <option value="12">Desember</option>
+            </select>
+            <select 
+              className="select sm" 
+              value={yearFilter} 
+              onChange={e => setYearFilter(e.target.value)} 
+              title="Filter tahun"
+              style={{ width: '130px' }}
+            >
+              <option value="all">Semua Tahun</option>
+              {years.map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+            <button 
+              className="btn sm" 
+              onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')} 
+              title={sortOrder === 'asc' ? 'Urutan: Terlama → Terbaru' : 'Urutan: Terbaru → Terlama'}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 'fit-content' }}
+            >
+              <Icon name={sortOrder === 'asc' ? 'arrowUp' : 'arrowDown'} size={13} strokeWidth={2} />
+              {sortOrder === 'asc' ? 'Terlama' : 'Terbaru'}
+            </button>
+          </div>
+
           {query && myDrafts.length === 0 && (
             <div className="empty" data-reveal>
               <div className="ico"><Icon name="search" size={20} /></div>
               <h4>Tidak ada draf cocok</h4>
-              <div>Coba kata kunci lain atau kosongkan pencarian.</div>
+              <div>Coba kata kunci lain atau sesuaikan filter.</div>
             </div>
           )}
 

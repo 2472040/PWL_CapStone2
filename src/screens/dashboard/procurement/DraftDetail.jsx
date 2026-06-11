@@ -14,13 +14,14 @@ export function DraftDetail({ draft, onBack, mode }) {
   const { state, dispatch } = useStore();
   const toast = useToast();
   const role = D.roles.find(r => r.id === mode);
-  const locked = draft.status === 'finalized' || draft.status === 'completed';
+  const locked = draft.status === 'finalized' || draft.status === 'completed' || ((mode === 'kalab' || mode === 'staflab') && draft.status === 'submitted');
   const d = draft;
+  const isStaflab = mode === 'staflab';
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [addingItem, setAddingItem] = useState(false);
   const [newItem, setNewItem] = useState({
-    kind: 'Inventaris',
+    kind: isStaflab ? 'BHP' : 'Inventaris',
     name: '',
     qty: '',
     unit: 'unit',
@@ -130,25 +131,22 @@ export function DraftDetail({ draft, onBack, mode }) {
 
   async function markReceived(itemId, formData) {
     const item = d.items.find(it => it.id === itemId);
-    if (!item.received) {
-      try {
-        await apiFetch(`/procurement/receiving`, {
-          method: 'POST',
-          body: JSON.stringify({
-            draft_item_id: itemId,
-            qty_received: item.qty,
-            received_date: formData.received_date,
-            code: formData.code,
-            qr_photo: formData.qr_photo
-          })
-        });
-        dispatch({ type: 'MARK_RECEIVED', code: d.code, itemId, date: formData.received_date });
-        toast('Barang ditandai telah diterima', 'ok');
-      } catch (err) {
-        toast(err.message, 'warn');
-      }
-    } else {
-      toast('Item sudah diterima', 'info');
+    // Remove the `if (!item.received)` check because partial receiving means an item can be received multiple times
+    try {
+      await apiFetch(`/procurement/receiving`, {
+        method: 'POST',
+        body: JSON.stringify({
+          draft_item_id: itemId,
+          qty_received: formData.qty_received || item.qty,
+          received_date: formData.received_date,
+          code: formData.code,
+          qr_photo: formData.qr_photo
+        })
+      });
+      dispatch({ type: 'MARK_RECEIVED', code: d.code, itemId, date: formData.received_date });
+      toast('Barang ditandai telah diterima', 'ok');
+    } catch (err) {
+      toast(err.message, 'warn');
     }
   }
 
@@ -330,7 +328,7 @@ export function DraftDetail({ draft, onBack, mode }) {
         <div>
           <div className="mono text-xs text-3 mb-2 tracking-[0.08em]" >{d.code}</div>
           <h1 className="page-title text-[30px]" >{d.title}</h1>
-          <p className="page-sub">{d.by} · {d.role} · diajukan {d.submitted}</p>
+          <p className="page-sub">{d.by} · {d.role} · {d.status === 'draft' ? 'belum diajukan' : `diajukan ${d.submitted}`}</p>
         </div>
         <div className="flex gap-2 items-center" >
           {d.status === 'completed' && (
@@ -338,19 +336,17 @@ export function DraftDetail({ draft, onBack, mode }) {
               <Icon name="download" size={13} /> Cetak BAST (PDF)
             </a>
           )}
-          {mode === 'kalab' && (d.status === 'draft' || d.status === 'revision') && <>
+          {(mode === 'kalab' || mode === 'staflab') && (d.status === 'draft' || d.status === 'revision') && <>
             <span className="chip locked">{d.status === 'revision' ? 'Butuh Revisi' : 'Draft'}</span>
             <button className="btn primary" onClick={submitDraft}>
               <Icon name="arrow" size={12} /> {d.status === 'revision' ? 'Ajukan Ulang ke Kaprodi' : 'Ajukan ke Kaprodi'}
             </button>
           </>}
-          {mode === 'kalab' && d.status === 'submitted' && <>
+          {(mode === 'kalab' || mode === 'staflab') && d.status === 'submitted' && <>
             <span className="chip warn"><span className="dot" /> Menunggu review Kaprodi</span>
-            <button className="btn font-semibold" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.1)' }} onClick={submitDraft}>
-              <Icon name="arrow" size={12} /> Ajukan Perubahan Ulang
-            </button>
+            <span className="chip locked" style={{ background: 'rgba(251,191,36,0.08)', borderColor: 'rgba(251,191,36,0.25)', color: 'var(--color-gold)', boxShadow: '0 0 12px rgba(251,191,36,0.15)' }}>Locked · tidak bisa diubah</span>
           </>}
-          {mode === 'kalab' && locked && <span className="chip locked">Locked · tidak bisa diubah</span>}
+          {(mode === 'kalab' || mode === 'staflab') && (d.status === 'finalized' || d.status === 'completed') && <span className="chip locked">Locked · tidak bisa diubah</span>}
           {mode === 'kaprodi' && d.status === 'submitted' && (
             <button className="btn font-semibold text-rose border-rose/30 bg-rose/5 hover:bg-rose/10" onClick={requestRevision}>
               <Icon name="x" size={12} /> Minta Revisi
@@ -396,7 +392,7 @@ export function DraftDetail({ draft, onBack, mode }) {
             onCancelEdit={handleCancelEdit}
           />
           
-          {mode === 'kalab' && (d.status === 'draft' || d.status === 'revision' || d.status === 'submitted') && (
+          {(mode === 'kalab' || mode === 'staflab') && (d.status === 'draft' || d.status === 'revision') && (
             <div className="mt-6" data-reveal>
               {!showAddForm ? (
                 <button className="btn" onClick={() => setShowAddForm(true)} style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.1)' }}>
@@ -414,8 +410,11 @@ export function DraftDetail({ draft, onBack, mode }) {
                   </div>
 
                   <div className="flex gap-2 mb-3">
-                    <button type="button" onClick={() => setNewItem(prev => ({ ...prev, kind: 'Inventaris' }))} className={`btn sm ${newItem.kind === 'Inventaris' ? 'primary' : ''}`}>Inventaris</button>
-                    <button type="button" onClick={() => setNewItem(prev => ({ ...prev, kind: 'BHP' }))} className={`btn sm ${newItem.kind === 'BHP' ? 'primary' : ''}`}>BHP</button>
+                    {!isStaflab && <>
+                      <button type="button" onClick={() => setNewItem(prev => ({ ...prev, kind: 'Inventaris' }))} className={`btn sm ${newItem.kind === 'Inventaris' ? 'primary' : ''}`}>Inventaris</button>
+                      <button type="button" onClick={() => setNewItem(prev => ({ ...prev, kind: 'BHP' }))} className={`btn sm ${newItem.kind === 'BHP' ? 'primary' : ''}`}>BHP</button>
+                    </>}
+                    {isStaflab && <span className="chip" style={{ background: 'rgba(245,210,126,0.12)', borderColor: 'rgba(245,210,126,0.3)', color: 'var(--color-gold)' }}>BHP</span>}
                   </div>
 
                   <div className="field mb-3">
@@ -453,7 +452,7 @@ export function DraftDetail({ draft, onBack, mode }) {
                     <input className="input" value={newItem.link} onChange={e => setNewItem(prev => ({ ...prev, link: e.target.value }))} placeholder="https://tokopedia.com/..." disabled={addingItem} />
                   </div>
 
-                  {newItem.kind === 'Inventaris' && (
+                  {!isStaflab && newItem.kind === 'Inventaris' && (
                     <div className="field mb-4">
                       <div className="field-lbl">Mengganti Aset <span className="text-xs text-ink-3">(Opsional jika untuk replace barang rusak)</span></div>
                       <input className="input" value={newItem.replaces} onChange={e => setNewItem(prev => ({ ...prev, replaces: e.target.value }))} placeholder="Kode Aset (contoh: LAB-INV-MKS-001)" disabled={addingItem} />
@@ -521,6 +520,7 @@ export function KalabKaprodiItems({
   draft, mode, locked, setApproval, totals, onRemoveItem,
   editingItemId, editFields, setEditFields, startEdit, onSaveItem, onCancelEdit
 }) {
+  const isStaflab = mode === 'staflab';
   return (
     <>
       <div className="items-table with-actions" data-reveal>
@@ -540,15 +540,19 @@ export function KalabKaprodiItems({
               <div key={it.id} className="item-row editing" style={{ background: 'rgba(183,148,255,0.04)', borderColor: 'rgba(167,139,250,0.3)', borderWidth: '1px', borderStyle: 'solid', borderRadius: '8px' }}>
                 {/* Col 1: Tipe */}
                 <div>
-                  <select 
-                    className="select sm" 
-                    value={editFields.kind} 
-                    onChange={e => setEditFields(prev => ({ ...prev, kind: e.target.value }))}
-                    style={{ width: '100%' }}
-                  >
-                    <option value="Inventaris">INV</option>
-                    <option value="BHP">BHP</option>
-                  </select>
+                  {!isStaflab ? (
+                    <select 
+                      className="select sm" 
+                      value={editFields.kind} 
+                      onChange={e => setEditFields(prev => ({ ...prev, kind: e.target.value }))}
+                      style={{ width: '100%' }}
+                    >
+                      <option value="Inventaris">INV</option>
+                      <option value="BHP">BHP</option>
+                    </select>
+                  ) : (
+                    <span className="chip" style={{ background: 'rgba(245,210,126,0.12)', borderColor: 'rgba(245,210,126,0.3)', color: 'var(--color-gold)' }}>BHP</span>
+                  )}
                 </div>
                 {/* Col 2: Nama Item */}
                 <div className="flex flex-col gap-1">
@@ -564,7 +568,7 @@ export function KalabKaprodiItems({
                     onChange={e => setEditFields(prev => ({ ...prev, link: e.target.value }))} 
                     placeholder="Link pembelian" 
                   />
-                  {editFields.kind === 'Inventaris' && (
+                  {!isStaflab && editFields.kind === 'Inventaris' && (
                     <input 
                       className="input sm text-xs" 
                       value={editFields.replaces || ''} 
@@ -653,7 +657,7 @@ export function KalabKaprodiItems({
                       <Icon name="check" size={13} strokeWidth={2.4} />
                     </button>
                   </>
-                ) : mode === 'kalab' && (draft.status === 'draft' || draft.status === 'revision' || draft.status === 'submitted') ? (
+                ) : (mode === 'kalab' || mode === 'staflab') && (draft.status === 'draft' || draft.status === 'revision') ? (
                   <div className="flex gap-1.5">
                     <button className="act-btn text-violet hover:bg-violet/10" onClick={() => startEdit(it)} title="Ubah Item">
                       <Icon name="edit" size={12} />

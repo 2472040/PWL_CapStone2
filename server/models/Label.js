@@ -21,7 +21,7 @@ const Label = sequelize.define('Label', {
     allowNull: true,
   },
   photo_url: {
-    type: DataTypes.STRING(500),
+    type: DataTypes.TEXT('long'),
     allowNull: true,
   },
 }, {

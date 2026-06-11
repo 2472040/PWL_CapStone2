@@ -194,7 +194,7 @@ body:has(.app) { height: 100vh; overflow: hidden; }
 .searchbox input { background: none; border: none; outline: none; color: var(--color-ink); font-size: 14px; width: 200px; }
 .searchbox input::placeholder { color: var(--color-ink-4); }
 
-.page { padding: 40px; max-width: 1400px; margin: 0 auto; }
+.page { padding: 40px 40px 200px 40px; max-width: 1400px; margin: 0 auto; min-height: 100%; }
 .page-title { font-size: 32px; font-weight: 600; letter-spacing: -0.03em; margin: 0 0 8px; }
 .page-sub { font-size: 16px; color: var(--color-ink-3); margin: 0 0 32px; max-width: 600px; line-height: 1.5; }
 .page-head { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 40px; }

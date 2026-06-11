@@ -80,92 +80,151 @@ export function AdminReceiveGrid({ draft, totals, onToggle }) {
 
   const eligible = draft.items.filter(it => it.approval !== 'no');
 
-  const handleOpenForm = (id) => {
-    setOpenForms(prev => ({ ...prev, [id]: true }));
-    setFormsData(prev => ({ ...prev, [id]: { received_date: new Date().toISOString().substring(0, 10), code: '', qr_photo: null } }));
+  const displayCards = [];
+  eligible.forEach(it => {
+    if (it.kind === 'Inventaris') {
+      const receivings = it.receivings || [];
+      for (let i = 0; i < it.qty; i++) {
+        const rec = receivings[i];
+        displayCards.push({
+          ...it,
+          cardId: `${it.id}-${i}`,
+          unitIndex: i + 1,
+          isRec: !!rec,
+          recData: rec,
+          maxQty: 1
+        });
+      }
+    } else {
+      const receivings = it.receivings || [];
+      const totalReceived = receivings.reduce((sum, r) => sum + (parseFloat(r.qty_received) || 0), 0);
+      displayCards.push({
+        ...it,
+        cardId: `${it.id}-bhp`,
+        isRec: totalReceived >= it.qty,
+        recData: receivings.length > 0 ? receivings[receivings.length - 1] : null,
+        totalReceived,
+        maxQty: it.qty - totalReceived
+      });
+    }
+  });
+
+  const handleOpenForm = (cardId, maxQty) => {
+    setOpenForms(prev => ({ ...prev, [cardId]: true }));
+    setFormsData(prev => ({ 
+      ...prev, 
+      [cardId]: { 
+        received_date: new Date().toISOString().substring(0, 10), 
+        code: '', 
+        qr_photo: null,
+        qty_received: maxQty 
+      } 
+    }));
   };
 
-  const handleCancelForm = (id) => {
-    setOpenForms(prev => ({ ...prev, [id]: false }));
+  const handleCancelForm = (cardId) => {
+    setOpenForms(prev => ({ ...prev, [cardId]: false }));
   };
 
-  const handleChange = (id, field, value) => {
-    setFormsData(prev => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
+  const handleChange = (cardId, field, value) => {
+    setFormsData(prev => ({ ...prev, [cardId]: { ...prev[cardId], [field]: value } }));
   };
 
-  const handleFileChange = (id, file) => {
+  const handleFileChange = (cardId, file) => {
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (e) => handleChange(id, 'qr_photo', e.target.result);
+    reader.onload = (e) => handleChange(cardId, 'qr_photo', e.target.result);
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = (id) => {
-    const data = formsData[id];
-    const item = eligible.find(it => it.id === id);
-    if (item.kind === 'Inventaris' && (!data.code || !data.qr_photo)) {
-      alert('Untuk inventaris, Penomoran Label Aset dan Foto QR/Barcode wajib diisi.');
+  const handleSubmit = (card) => {
+    const data = formsData[card.cardId];
+    if (card.kind === 'Inventaris' && (!data.code || !data.qr_photo)) {
+      alert('Untuk inventaris, Penomoran Label Internal dan Foto QR dari Universitas wajib diisi.');
       return;
     }
-    onToggle(id, data);
+    if (card.kind !== 'Inventaris' && (!data.qty_received || data.qty_received <= 0)) {
+      alert('Jumlah diterima harus lebih dari 0.');
+      return;
+    }
+    onToggle(card.id, data);
   };
 
   return (
     <>
       <div className="gap-[14px]" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))'}}>
-        {eligible.map(it => {
-          const isRec = it.received;
-          const showForm = openForms[it.id];
-          const data = formsData[it.id] || {};
+        {displayCards.map(card => {
+          const isRec = card.isRec;
+          const showForm = openForms[card.cardId];
+          const data = formsData[card.cardId] || {};
 
           return (
-            <div key={it.id} data-reveal className="p-5 rounded-[18px]" style={{background: isRec ? 'rgba(163,230,53,0.1)' : '', border: '1px solid ' + (isRec ? 'rgba(163,230,53,0.3)' : 'var(--color-line)'), transition: 'all 0.25s'}}>
+            <div key={card.cardId} data-reveal className="p-5 rounded-[18px]" style={{background: isRec ? 'rgba(163,230,53,0.1)' : '', border: '1px solid ' + (isRec ? 'rgba(163,230,53,0.3)' : 'var(--color-line)'), transition: 'all 0.25s'}}>
               <div className="flex items-start justify-between mb-3.5" >
                 <div>
-                  <div className={`item-kind ${it.kind === 'Inventaris' ? 'inv' : 'bhp'} mb-2`} >
-                    {it.kind === 'Inventaris' ? 'INV' : 'BHP'}
+                  <div className={`item-kind ${card.kind === 'Inventaris' ? 'inv' : 'bhp'} mb-2`} >
+                    {card.kind === 'Inventaris' ? 'INV' : 'BHP'}
                   </div>
                   {isRec && <div className="mono text-xs text-3 tracking-[0.06em]" >DITERIMA</div>}
+                  {!isRec && card.kind !== 'Inventaris' && card.totalReceived > 0 && <div className="mono text-xs text-amber-500 tracking-[0.06em]" >PARSIAL ({card.totalReceived}/{card.qty})</div>}
                 </div>
               </div>
-              <div className="leading-[1.3] mb-1.5 text-sm" >{it.name}</div>
-              <div className="text-3 text-xs mono mb-4 tracking-[0.04em]" >{it.qty} {it.unit} · @ {window.fmtRpShort(it.price)}</div>
-              {it.replaces && <div className="text-xs" style={{color: 'var(--gold)', marginBottom: 12}}>↺ {it.replaces}</div>}
+              <div className="leading-[1.3] mb-1.5 text-sm" >{card.name} {card.kind === 'Inventaris' ? `(Unit ${card.unitIndex}/${card.qty})` : ''}</div>
+              <div className="text-3 text-xs mono mb-4 tracking-[0.04em]" >
+                {card.kind === 'Inventaris' ? `1 ${card.unit}` : `${card.qty} ${card.unit}`} · @ {window.fmtRpShort(card.price)}
+              </div>
+              {card.replaces && <div className="text-xs" style={{color: 'var(--gold)', marginBottom: 12}}>↺ {card.replaces}</div>}
               
               {!isRec && !showForm && (
-                <button onClick={() => handleOpenForm(it.id)} className="btn justify-center" >
+                <button onClick={() => handleOpenForm(card.cardId, card.maxQty)} className="btn justify-center" >
                   Tandai diterima
                 </button>
               )}
 
-              {isRec && (
-                <div className="btn ok justify-center" >
-                  <Icon name="check" size={13} strokeWidth={2.4} /> Diterima · {it.receivedDate || 'hari ini'}
-                </div>
-              )}
-
               {showForm && !isRec && (
-                <div className="mt-4 p-3 rounded-xl" style={{background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)'}}>
-                  <div className="mb-3">
-                    <label className="text-xs text-3 mb-1 block">Tanggal Terima</label>
-                    <input type="date" className="inp w-full" value={data.received_date || ''} onChange={e => handleChange(it.id, 'received_date', e.target.value)} />
+                <div className="bg-surface/50 border border-line-2 rounded-lg p-3 text-xs flex flex-col gap-3">
+                  <div className="field mb-0">
+                    <div className="field-lbl">Tanggal Diterima <span className="req">*</span></div>
+                    <input type="date" className="input text-xs" value={data.received_date} onChange={(e) => handleChange(card.cardId, 'received_date', e.target.value)} />
                   </div>
-                  {it.kind === 'Inventaris' && (
+                  {card.kind === 'Inventaris' && (
                     <>
-                      <div className="mb-3">
-                        <label className="text-xs text-3 mb-1 block">Penomoran Label Aset</label>
-                        <input type="text" className="inp w-full" placeholder="Cth: INV/2026/001" value={data.code || ''} onChange={e => handleChange(it.id, 'code', e.target.value)} />
+                      <div className="field mb-0">
+                        <div className="field-lbl">Penomoran Label Internal <span className="req">*</span></div>
+                        <input type="text" className="input text-xs" placeholder="Contoh: INV-2026-001" value={data.code} onChange={(e) => handleChange(card.cardId, 'code', e.target.value)} />
+                        <div className="text-[10px] text-ink-3 mt-1">Sistem akan otomatis meng-generate QR Code dari nomor ini.</div>
                       </div>
-                      <div className="mb-4">
-                        <label className="text-xs text-3 mb-1 block">Foto QR / Barcode</label>
-                        <input type="file" accept="image/*" className="inp w-full text-xs" onChange={e => handleFileChange(it.id, e.target.files[0])} />
+                      <div className="field mb-0">
+                        <div className="field-lbl">Upload Foto QR Universitas <span className="req">*</span></div>
+                        <input type="file" className="input text-xs" accept="image/*" onChange={(e) => handleFileChange(card.cardId, e.target.files[0])} />
                       </div>
                     </>
                   )}
-                  <div className="flex gap-2">
-                    <button className="btn primary flex-1 justify-center" onClick={() => handleSubmit(it.id)}>Simpan</button>
-                    <button className="btn flex-1 justify-center" onClick={() => handleCancelForm(it.id)}>Batal</button>
+                  {card.kind !== 'Inventaris' && (
+                    <div className="field mb-0">
+                      <div className="field-lbl">Jumlah Diterima <span className="req">*</span></div>
+                      <input type="number" className="input text-xs" max={card.maxQty} min={0.1} step="0.1" value={data.qty_received} onChange={(e) => handleChange(card.cardId, 'qty_received', e.target.value)} />
+                      <div className="text-[10px] text-ink-3 mt-1">Sisa yang harus diterima: {card.maxQty} {card.unit}</div>
+                    </div>
+                  )}
+                  <div className="flex gap-2 mt-1">
+                    <button onClick={() => handleSubmit(card)} className="btn sm primary flex-1 justify-center">Simpan</button>
+                    <button onClick={() => handleCancelForm(card.cardId)} className="btn sm justify-center">Batal</button>
                   </div>
+                </div>
+              )}
+
+              {isRec && (
+                <div className="mt-3 pt-3 border-t border-line-2/50 text-[11px] text-ink-3 flex flex-col gap-1.5">
+                  <div className="flex gap-2 aic"><Icon name="calendar" size={11} /> {card.recData && new Date(card.recData.received_date).toLocaleDateString('id-ID')}</div>
+                  {card.kind === 'Inventaris' && card.recData?.Inventory && (
+                    <>
+                      <div className="flex gap-2 aic"><Icon name="tag" size={11} /> {card.recData.Inventory.code}</div>
+                      {card.recData.Inventory.Labels && card.recData.Inventory.Labels[0]?.photo_url && (
+                        <div className="flex gap-2 aic text-emerald-500"><Icon name="check" size={11} /> Foto QR Univ tersimpan</div>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
             </div>

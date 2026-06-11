@@ -10,14 +10,14 @@ const {
 
 router.use(authenticate);
 
-// Kalab — pengadaan
-router.get('/drafts', authorize('kalab', 'kaprodi', 'admin'), getDrafts);
-router.post('/drafts', authorize('kalab'), validate(createDraftSchema), createDraft);
-router.put('/drafts/:id', authorize('kalab'), updateDraft);
-router.post('/drafts/:id/submit', authorize('kalab'), submitDraft);
-router.post('/drafts/:id/items', authorize('kalab'), validate(draftItemSchema), addDraftItem);
-router.put('/items/:itemId', authorize('kalab'), validate(draftItemSchema), updateDraftItem);
-router.delete('/items/:itemId', authorize('kalab'), deleteDraftItem);
+// Kalab & Staflab — pengadaan
+router.get('/drafts', authorize('kalab', 'staflab', 'kaprodi', 'admin'), getDrafts);
+router.post('/drafts', authorize('kalab', 'staflab'), validate(createDraftSchema), createDraft);
+router.put('/drafts/:id', authorize('kalab', 'staflab'), updateDraft);
+router.post('/drafts/:id/submit', authorize('kalab', 'staflab'), submitDraft);
+router.post('/drafts/:id/items', authorize('kalab', 'staflab'), validate(draftItemSchema), addDraftItem);
+router.put('/items/:itemId', authorize('kalab', 'staflab'), validate(draftItemSchema), updateDraftItem);
+router.delete('/items/:itemId', authorize('kalab', 'staflab'), deleteDraftItem);
 
 // Kaprodi — review
 router.get('/review', authorize('kaprodi'), getDraftsForReview);

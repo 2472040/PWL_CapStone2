@@ -13,39 +13,18 @@ function formatThousand(val) {
 export function NewDraftForm({ close }) {
   const { state, dispatch } = useStore();
   const toast = useToast();
-  const [title, setTitle] = useState('Pengadaan Lab Komputer · Q3 2026');
+  const isStaflab = state.role === 'staflab';
+  const defaultKind = isStaflab ? 'BHP' : 'Inventaris';
+  const [title, setTitle] = useState(isStaflab ? 'Pengadaan BHP Lab · Q3 2026' : 'Pengadaan Lab Komputer · Q3 2026');
   const [items, setItems] = useState([
-    { id: 'I-N1', kind: 'Inventaris', name: '', qty: '', unit: '', price: '', link: '', replaces: '' },
+    { id: 'I-N1', kind: defaultKind, name: '', qty: '', unit: '', price: '', link: '', replaces: '' },
   ]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const container = document.querySelector('.drawer-body');
-    if (!container || !window.Lenis) return;
-    
-    const lenis = new window.Lenis({
-      wrapper: container,
-      content: container,
-      lerp: 0.08,
-      smoothWheel: true,
-      wheelMultiplier: 1.1,
-    });
-    
-    let frameId;
-    function raf(time) {
-      lenis.raf(time);
-      frameId = requestAnimationFrame(raf);
-    }
-    frameId = requestAnimationFrame(raf);
-    
-    return () => {
-      cancelAnimationFrame(frameId);
-      lenis.destroy();
-    };
-  }, []);
+
 
   function update(i, patch) { setItems(arr => arr.map((x, j) => j === i ? { ...x, ...patch } : x)); }
-  function add() { setItems(arr => [...arr, { id: 'I-N' + (arr.length + 1), kind: 'Inventaris', name: '', qty: '', unit: '', price: '', link: '', replaces: '' }]); }
+  function add() { setItems(arr => [...arr, { id: 'I-N' + (arr.length + 1), kind: defaultKind, name: '', qty: '', unit: '', price: '', link: '', replaces: '' }]); }
   function remove(i) { setItems(arr => arr.filter((_, j) => j !== i)); }
 
   const total = items.reduce((s, it) => s + (Number(it.qty) || 0) * (Number(it.price) || 0), 0);
@@ -143,8 +122,11 @@ export function NewDraftForm({ close }) {
         {items.map((it, i) => (
           <div key={i} className="card compact mb-3 p-3.5" >
             <div className="flex gap-2 mb-2 aic">
-              <button onClick={() => update(i, { kind: 'Inventaris' })} className={`btn sm ${it.kind === 'Inventaris' ? 'primary' : ''}`} disabled={loading}>Inventaris</button>
-              <button onClick={() => update(i, { kind: 'BHP' })} className={`btn sm ${it.kind === 'BHP' ? 'primary' : ''}`} disabled={loading}>BHP</button>
+              {!isStaflab && <>
+                <button onClick={() => update(i, { kind: 'Inventaris' })} className={`btn sm ${it.kind === 'Inventaris' ? 'primary' : ''}`} disabled={loading}>Inventaris</button>
+                <button onClick={() => update(i, { kind: 'BHP' })} className={`btn sm ${it.kind === 'BHP' ? 'primary' : ''}`} disabled={loading}>BHP</button>
+              </>}
+              {isStaflab && <span className="chip" style={{ background: 'rgba(245,210,126,0.12)', borderColor: 'rgba(245,210,126,0.3)', color: 'var(--color-gold)' }}>BHP</span>}
               <div className="grow" />
               <button className="x-btn" onClick={() => remove(i)} disabled={loading}><Icon name="x" size={12} /></button>
             </div>
@@ -165,7 +147,7 @@ export function NewDraftForm({ close }) {
               />
             </div>
             <input className="input mb-2" value={it.link} onChange={e => update(i, { link: e.target.value })} placeholder="Link pembelian (opsional)" disabled={loading} />
-            {it.kind === 'Inventaris' && (
+            {!isStaflab && it.kind === 'Inventaris' && (
               <input className="input" value={it.replaces} onChange={e => update(i, { replaces: e.target.value })} placeholder="Mengganti aset apa? (opsional)" disabled={loading} />
             )}
             <div className="text-xs text-3 mono mt-2 fw-5 text-right" >Subtotal: {window.fmtRp((Number(it.qty)||0) * (Number(it.price)||0))}</div>

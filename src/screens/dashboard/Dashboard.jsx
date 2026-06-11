@@ -164,12 +164,6 @@ export function Dashboard() {
         ))}
       </div>
 
-      {(state.role === 'kaprodi' || state.role === 'kalab') && (
-        <div className="mb-3.5" data-reveal>
-          <FinancialChart data={dashboardData?.financialAnalytics} />
-        </div>
-      )}
-
       <div className="gap-3.5 grid" >
         <div className="card glow" style={{'--role-accent': role.accent}} data-reveal>
           <div className="flex between aic mb-4">

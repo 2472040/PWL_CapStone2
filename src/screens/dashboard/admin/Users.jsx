@@ -45,14 +45,19 @@ export function Users() {
   }
 
   async function handleDeleteUser(user) {
-    if (!confirm(`Apakah Anda yakin ingin menonaktifkan pengguna "${user.name}"? Sesi aktif pengguna akan dicabut.`)) return;
+    const neverLoggedIn = !user.last_login && !user.lastLogin;
+    const msg = neverLoggedIn 
+      ? `Apakah Anda yakin ingin menghapus permanen pengguna "${user.name}" yang belum pernah login ini?`
+      : `Apakah Anda yakin ingin menonaktifkan pengguna "${user.name}"? Sesi aktif pengguna akan dicabut.`;
+      
+    if (!confirm(msg)) return;
     try {
-      await apiFetch(`/users/${user.id}`, { method: 'DELETE' });
-      const res = await apiFetch('/users');
-      if (res.data) {
-        dispatch({ type: 'SET_USERS', users: res.data });
+      const res = await apiFetch(`/users/${user.id}`, { method: 'DELETE' });
+      const refresh = await apiFetch('/users');
+      if (refresh.data) {
+        dispatch({ type: 'SET_USERS', users: refresh.data });
       }
-      toast(`Pengguna "${user.name}" berhasil dinonaktifkan.`, 'ok');
+      toast(res.message || `Pengguna "${user.name}" berhasil diproses.`, 'ok');
     } catch (err) {
       toast('Gagal menghapus pengguna: ' + err.message, 'warn');
     }
@@ -199,10 +204,14 @@ export function NewUserForm({ payload, close }) {
   const [email, setEmail] = useState(payload?.email || '');
   const [role, setRole] = useState(payload?.role || 'staflab');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function save() {
     if (!name || !email) { toast('Isi nama dan email', 'warn'); return; }
+    if (!isEdit && !password) { toast('Password wajib diisi untuk pengguna baru', 'warn'); return; }
+    if (password && password !== confirmPassword) { toast('Password dan konfirmasi tidak cocok', 'warn'); return; }
+    
     setLoading(true);
     try {
       const endpoint = isEdit ? `/users/${payload.id}` : '/users';
@@ -216,8 +225,6 @@ export function NewUserForm({ payload, close }) {
       
       if (password) {
         body.password = password;
-      } else if (!isEdit) {
-        body.password = 'password123';
       }
 
       const res = await apiFetch(endpoint, {
@@ -261,11 +268,17 @@ export function NewUserForm({ payload, close }) {
           </select>
         </div>
         <div className="field">
-          <div className="field-lbl">{isEdit ? 'Ubah Password (kosongkan jika tidak ingin diubah)' : 'Password'}</div>
-          <input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={isEdit ? "Masukkan password baru jika ingin diubah" : "password123"} disabled={loading} />
+          <div className="field-lbl">{isEdit ? 'Ubah Password (kosongkan jika tidak ingin diubah)' : 'Password'} <span className={!isEdit ? 'req' : 'hidden'}>*</span></div>
+          <input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={isEdit ? "Masukkan password baru jika ingin diubah" : "Wajib diisi untuk akun baru"} disabled={loading} />
         </div>
+        {password && (
+          <div className="field">
+            <div className="field-lbl">Konfirmasi Password <span className="req">*</span></div>
+            <input className="input" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Ketik ulang password" disabled={loading} />
+          </div>
+        )}
         <div className="card compact text-xs text-3 mt-4" >
-          <Icon name="info" size={11} /> {isEdit ? 'Perubahan role akan segera mencabut sesi aktif pengguna tersebut.' : 'Pengguna baru dapat langsung login menggunakan password default.'}
+          <Icon name="info" size={11} /> {isEdit ? 'Perubahan role akan segera mencabut sesi aktif pengguna tersebut.' : 'Password tidak boleh dikosongkan untuk pendaftaran pengguna baru.'}
         </div>
       </div>
       <div className="drawer-foot">

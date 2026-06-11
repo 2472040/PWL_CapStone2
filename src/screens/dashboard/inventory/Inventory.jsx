@@ -36,7 +36,8 @@ export function Inventory() {
             acquired: i.acquired_date ? i.acquired_date.substring(0, 7) : '2025-01',
             value: i.value || 0,
             serial: i.serial || '-',
-            specs: i.specs || '-'
+            specs: i.specs || '-',
+            photo_url: i.label?.photo_url || null
           }));
           dispatch({ type: 'SET_INVENTORY', inventory: inv });
         }

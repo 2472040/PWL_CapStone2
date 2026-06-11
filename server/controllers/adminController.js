@@ -117,6 +117,18 @@ const deleteUser = async (req, res) => {
     if (!user) return res.status(404).json({ error: 'Pengguna tidak ditemukan.' });
 
     const userName = user.name;
+    
+    // Hard delete if never logged in
+    if (!user.last_login) {
+      await logAudit(req.user.id, 'user.delete', userName, req.ip);
+      await user.destroy();
+      
+      const io = req.app.get('io');
+      if (io) io.emit('data_changed', { type: 'user' });
+
+      return res.json({ message: `Pengguna "${userName}" dihapus secara permanen.` });
+    }
+
     // Soft delete: set status to paused and invalidate tokens
     user.status = 'paused';
     user.token_version = (user.token_version || 0) + 1;
