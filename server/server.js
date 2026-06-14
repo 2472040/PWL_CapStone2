@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3000;
  * cryptographically secure keys and permanently writes them to the .env file.
  */
 function ensureProductionSecrets() {
-  const criticalSecrets = ['JWT_SECRET', 'BACKUP_ENCRYPTION_SECRET', 'AUDIT_LOG_SECRET'];
+  const criticalSecrets = ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'BACKUP_ENCRYPTION_SECRET', 'AUDIT_LOG_SECRET'];
   const missing = criticalSecrets.filter((secret) => !process.env[secret]);
 
   if (missing.length > 0) {
@@ -105,8 +105,10 @@ async function start() {
     await tokenBlacklist.cleanup();
     // Run cleanup every 6 hours
     setInterval(
-      async () => {
-        await tokenBlacklist.cleanup();
+      () => {
+        tokenBlacklist.cleanup().catch((err) =>
+          console.error('[Blacklist Cleanup Interval Error]', err.message)
+        );
       },
       6 * 60 * 60 * 1000
     );

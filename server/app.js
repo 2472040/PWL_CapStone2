@@ -105,6 +105,10 @@ app.get('/print/label/:id', async (req, res) => {
       return res
         .status(404)
         .render('error', { title: 'Not Found', message: 'Label tidak ditemukan.' });
+    if (!label.Inventory)
+      return res
+        .status(404)
+        .render('error', { title: 'Not Found', message: 'Item inventaris untuk label ini tidak ditemukan.' });
     res.render('print-label', {
       title: `Label ${label.Inventory.code}`,
       label,

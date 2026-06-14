@@ -16,23 +16,22 @@ if (typeof window !== 'undefined') {
   window.clearApiCache = clearApiCache;
 }
 
-// set login flag + store actual JWT in memory for Bearer header fallback
+// set login flag + store JWT in memory only (never persisted to localStorage to prevent XSS theft)
 export const setToken = (token) => {
   _memoryToken = token;
 
-  localStorage.setItem('token', token);
+  // Only store a non-sensitive login flag in localStorage — the actual JWT lives in memory + HttpOnly cookie
   localStorage.setItem('loka_logged_in', 'true');
 };
 
 // check if user is logged in using a non-sensitive flag
 export const getToken = () => {
-  return _memoryToken || localStorage.getItem('token');
+  return _memoryToken;
 };
 
 // clear login flag and memory token
 export const removeToken = () => {
   _memoryToken = null;
-  localStorage.removeItem('token');
   localStorage.removeItem('loka_logged_in');
 };
 

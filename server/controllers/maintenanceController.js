@@ -174,6 +174,11 @@ const updateBhp = async (req, res) => {
     const { stock, min_stock, last_in, name, unit, category, reason } = req.body;
     const oldStock = parseFloat(bhp.stock) || 0;
 
+    // Prevent setting stock to a negative value
+    if (stock !== undefined && parseFloat(stock) < 0) {
+      return res.status(400).json({ error: 'Stok tidak boleh bernilai negatif.' });
+    }
+
     if (stock !== undefined) bhp.stock = stock;
     if (min_stock !== undefined) bhp.min_stock = min_stock;
     if (last_in) bhp.last_in = last_in;
@@ -215,11 +220,17 @@ const createBhp = async (req, res) => {
       return res.status(400).json({ error: 'Code, name, dan unit wajib diisi.' });
     }
 
+    // Prevent negative stock injection
+    const parsedStock = parseFloat(stock) || 0;
+    if (parsedStock < 0) {
+      return res.status(400).json({ error: 'Stok awal tidak boleh bernilai negatif.' });
+    }
+
     const bhp = await Bhp.create({
       code,
       name,
       unit,
-      stock: stock || 0,
+      stock: parsedStock,
       min_stock: min_stock || 0,
       last_in,
       category,

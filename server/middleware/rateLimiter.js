@@ -1,6 +1,24 @@
 const ipAttempts = new Map();
 const userAttempts = new Map();
 
+// Periodically prune stale entries every 15 minutes to prevent memory leaks
+const CLEANUP_INTERVAL = 15 * 60 * 1000;
+const ENTRY_TTL = 15 * 60 * 1000;
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, timestamps] of ipAttempts) {
+    const fresh = timestamps.filter((t) => now - t < ENTRY_TTL);
+    if (fresh.length === 0) ipAttempts.delete(key);
+    else ipAttempts.set(key, fresh);
+  }
+  for (const [key, timestamps] of userAttempts) {
+    const fresh = timestamps.filter((t) => now - t < ENTRY_TTL);
+    if (fresh.length === 0) userAttempts.delete(key);
+    else userAttempts.set(key, fresh);
+  }
+}, CLEANUP_INTERVAL).unref();
+
 /**
  * Custom Rate Limiter and Progressive Delay Middleware for Login
  * 1. IP-based limit: 5 attempts per 15 minutes.

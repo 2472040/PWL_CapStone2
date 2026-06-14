@@ -52,7 +52,9 @@ export function AuthInitializer({ pendingRole }) {
       }
     }
 
-    if (getToken()) {
+    // Check login flag (not the JWT itself) to decide whether to verify session with backend
+    const isLoggedIn = getToken() || localStorage.getItem('loka_logged_in') === 'true';
+    if (isLoggedIn) {
       loadCurrentUser();
     }
 
@@ -63,7 +65,8 @@ export function AuthInitializer({ pendingRole }) {
 
   // Real-time synchronization polling mechanism
   useEffect(() => {
-    if (!getToken()) return;
+    const isLoggedIn = getToken() || localStorage.getItem('loka_logged_in') === 'true';
+    if (!isLoggedIn) return;
 
     const pollData = async () => {
       try {

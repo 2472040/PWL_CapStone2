@@ -43,7 +43,12 @@ const createDraft = async (req, res) => {
     const { title, items } = req.body;
 
     const year = new Date().getFullYear();
-    const lastDraft = await Draft.findOne({ order: [['id', 'DESC']], transaction: t });
+    // Lock the last draft row to prevent concurrent duplicate code generation
+    const lastDraft = await Draft.findOne({
+      order: [['id', 'DESC']],
+      transaction: t,
+      lock: t.LOCK.UPDATE,
+    });
     let count = 1;
     if (lastDraft && lastDraft.code) {
       const match = lastDraft.code.match(/LK(\d+)$/);
@@ -74,12 +79,12 @@ const createDraft = async (req, res) => {
     res.status(201).json({ data: result });
   } catch (err) {
     console.error('INITIAL ERROR IN CREATEDRAFT:', err);
-    try {
-      if (t && !t.finished) {
+    if (t) {
+      try {
         await t.rollback();
+      } catch (rollbackErr) {
+        console.error('FAILED TO ROLLBACK TRANSACTION:', rollbackErr.message);
       }
-    } catch (rollbackErr) {
-      console.error('FAILED TO ROLLBACK TRANSACTION:', rollbackErr.message);
     }
     res.status(500).json({ error: 'Gagal membuat draf pengadaan.' });
   }
@@ -351,6 +356,13 @@ const receiveItem = async (req, res) => {
       return res.status(400).json({ error: 'draft_item_id dan received_date wajib diisi.' });
     }
 
+    // Prevent negative quantity manipulation — qty must be a positive number
+    const parsedQty = qty_received ? parseInt(qty_received, 10) : null;
+    if (parsedQty !== null && parsedQty <= 0) {
+      await t.rollback();
+      return res.status(400).json({ error: 'Jumlah diterima (qty_received) harus bernilai positif.' });
+    }
+
     const draftItem = await DraftItem.findByPk(draft_item_id, {
       include: [{ model: DraftApproval, as: 'approval' }],
       transaction: t,
@@ -426,8 +438,7 @@ const receiveItem = async (req, res) => {
       req.user.id,
       'receiving.confirm',
       `${draftItem.name} · ${qty_received || draftItem.qty} unit`,
-      req.ip,
-      t
+      req.ip
     );
 
     await t.commit();
@@ -435,7 +446,9 @@ const receiveItem = async (req, res) => {
     if (io) io.emit('data_changed', { type: 'draft' });
     res.status(201).json({ data: receiving });
   } catch (err) {
-    if (t && !t.finished) await t.rollback();
+    if (t) {
+      try { await t.rollback(); } catch (_) { /* already committed or rolled back */ }
+    }
     console.error(err);
     res.status(500).json({ error: 'Gagal mencatat penerimaan: ' + err.message });
   }

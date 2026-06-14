@@ -62,7 +62,7 @@ const getDashboardStats = async (req, res) => {
     // 2. Top 3 Lowest / Critical Stock BHP items
     const top3LowBhp = await Bhp.findAll({
       where: sequelize.where(sequelize.col('stock'), Op.lte, sequelize.col('min_stock')),
-      order: [[sequelize.literal('stock / min_stock'), 'ASC']],
+      order: [[sequelize.literal('CASE WHEN min_stock > 0 THEN stock / min_stock ELSE stock END'), 'ASC']],
       limit: 3,
     });
     stats.top3LowBhp = top3LowBhp.map((b) => {

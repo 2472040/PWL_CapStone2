@@ -59,15 +59,16 @@ const login = asyncHandler(async (req, res) => {
     { expiresIn: '15m' }
   );
 
-  // Generate Refresh Token (7d)
+  // Generate Refresh Token (7d) — signed with a separate secret for isolation
   const refreshJti = crypto.randomUUID();
+  const refreshSecret = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET;
   const refreshToken = jwt.sign(
     {
       id: user.id,
       jti: refreshJti,
       type: 'refresh',
     },
-    process.env.JWT_SECRET,
+    refreshSecret,
     { expiresIn: '7d' }
   );
 
@@ -132,12 +133,23 @@ const me = asyncHandler(async (req, res) => {
 });
 
 const updateProfile = asyncHandler(async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, currentPassword } = req.body;
   const userId = req.user.id;
 
   const user = await User.findByPk(userId);
   if (!user) {
     throw new NotFoundError('Pengguna tidak ditemukan.');
+  }
+
+  // Require current password verification before allowing sensitive changes
+  if (password || (email && email !== user.email)) {
+    if (!currentPassword) {
+      throw new BadRequestError('Password saat ini wajib diisi untuk mengubah email atau password.');
+    }
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isCurrentPasswordValid) {
+      throw new UnauthorizedError('Password saat ini tidak sesuai.');
+    }
   }
 
   if (email && email !== user.email) {
@@ -278,10 +290,11 @@ const refresh = asyncHandler(async (req, res) => {
     throw new UnauthorizedError('Refresh token tidak ditemukan. Silakan login kembali.');
   }
 
-  // Verify Refresh Token JWT signature
+  // Verify Refresh Token JWT signature (uses dedicated refresh secret if configured)
   let decoded;
   try {
-    decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
+    const refreshSecret = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET;
+    decoded = jwt.verify(refreshToken, refreshSecret);
   } catch (e) {
     throw new UnauthorizedError('Refresh token tidak valid atau kadaluarsa.');
   }
@@ -345,15 +358,16 @@ const refresh = asyncHandler(async (req, res) => {
     { expiresIn: '15m' }
   );
 
-  // Generate new Refresh Token (7d)
+  // Generate new Refresh Token (7d) — signed with dedicated refresh secret
   const newRefreshJti = crypto.randomUUID();
+  const newRefreshSecret = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET;
   const newRefreshToken = jwt.sign(
     {
       id: user.id,
       jti: newRefreshJti,
       type: 'refresh',
     },
-    process.env.JWT_SECRET,
+    newRefreshSecret,
     { expiresIn: '7d' }
   );
 
@@ -381,6 +395,15 @@ const refresh = asyncHandler(async (req, res) => {
     sameSite: 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000,
     path: '/api/auth/refresh',
+  });
+
+  // Rotate CSRF token on refresh to limit exposure window
+  const newCsrfToken = crypto.randomBytes(32).toString('hex');
+  res.cookie('csrfToken', newCsrfToken, {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 
   // Optional: Clean up expired tokens for this user in background
