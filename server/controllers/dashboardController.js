@@ -1,4 +1,4 @@
-const { User, Room, Inventory, Bhp, Draft, DraftItem, MaintenanceLog, AuditLog } = require('../models');
+const { User, Room, Inventory, Bhp, Draft, DraftItem, DraftApproval, MaintenanceLog, AuditLog } = require('../models');
 const { Op } = require('sequelize');
 const sequelize = require('../config/database');
 

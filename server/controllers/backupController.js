@@ -92,7 +92,6 @@ const exportBackup = async (req, res) => {
  * Authorized for: sysadmin only
  */
 const restoreBackup = async (req, res) => {
-  const transaction = await sequelize.transaction();
   try {
     const { backupFile } = req.body;
     if (!backupFile || !backupFile.iv || !backupFile.encrypted) {
@@ -128,43 +127,49 @@ const restoreBackup = async (req, res) => {
 
     const payload = JSON.parse(decrypted);
 
-    // Disable foreign keys temporarily for bulk truncate & restore
-    await sequelize.query('SET FOREIGN_KEY_CHECKS = 0', { transaction });
+    // Start transaction only after validation succeeds
+    const transaction = await sequelize.transaction();
+    try {
+      // Disable foreign keys temporarily for bulk truncate & restore
+      await sequelize.query('SET FOREIGN_KEY_CHECKS = 0', { transaction });
 
-    // Truncate tables
-    const modelsList = [
-      User, Room, Inventory, Bhp, Draft, DraftItem, 
-      DraftApproval, MaintenanceLog, MaintenanceBhp, 
-      Receiving, Label, AuditLog
-    ];
-    for (const model of modelsList) {
-      await model.destroy({ truncate: true, force: true, transaction });
+      // Truncate tables
+      const modelsList = [
+        User, Room, Inventory, Bhp, Draft, DraftItem, 
+        DraftApproval, MaintenanceLog, MaintenanceBhp, 
+        Receiving, Label, AuditLog
+      ];
+      for (const model of modelsList) {
+        await model.destroy({ truncate: true, force: true, transaction });
+      }
+
+      // Restore tables in safe order
+      if (payload.users && payload.users.length) await User.bulkCreate(payload.users, { transaction });
+      if (payload.rooms && payload.rooms.length) await Room.bulkCreate(payload.rooms, { transaction });
+      if (payload.inventory && payload.inventory.length) await Inventory.bulkCreate(payload.inventory, { transaction });
+      if (payload.bhp && payload.bhp.length) await Bhp.bulkCreate(payload.bhp, { transaction });
+      if (payload.drafts && payload.drafts.length) await Draft.bulkCreate(payload.drafts, { transaction });
+      if (payload.draftItems && payload.draftItems.length) await DraftItem.bulkCreate(payload.draftItems, { transaction });
+      if (payload.draftApprovals && payload.draftApprovals.length) await DraftApproval.bulkCreate(payload.draftApprovals, { transaction });
+      if (payload.maintenanceLogs && payload.maintenanceLogs.length) await MaintenanceLog.bulkCreate(payload.maintenanceLogs, { transaction });
+      if (payload.maintenanceBhp && payload.maintenanceBhp.length) await MaintenanceBhp.bulkCreate(payload.maintenanceBhp, { transaction });
+      if (payload.receivings && payload.receivings.length) await Receiving.bulkCreate(payload.receivings, { transaction });
+      if (payload.labels && payload.labels.length) await Label.bulkCreate(payload.labels, { transaction });
+      if (payload.auditLogs && payload.auditLogs.length) await AuditLog.bulkCreate(payload.auditLogs, { transaction });
+
+      // Enable foreign keys back
+      await sequelize.query('SET FOREIGN_KEY_CHECKS = 1', { transaction });
+
+      await transaction.commit();
+
+      await logAudit(req.user.id, 'backup.restore', 'database_restore', req.ip);
+
+      res.json({ message: 'Database berhasil direstore secara penuh dengan verifikasi checksum!' });
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
     }
-
-    // Restore tables in safe order
-    if (payload.users && payload.users.length) await User.bulkCreate(payload.users, { transaction });
-    if (payload.rooms && payload.rooms.length) await Room.bulkCreate(payload.rooms, { transaction });
-    if (payload.inventory && payload.inventory.length) await Inventory.bulkCreate(payload.inventory, { transaction });
-    if (payload.bhp && payload.bhp.length) await Bhp.bulkCreate(payload.bhp, { transaction });
-    if (payload.drafts && payload.drafts.length) await Draft.bulkCreate(payload.drafts, { transaction });
-    if (payload.draftItems && payload.draftItems.length) await DraftItem.bulkCreate(payload.draftItems, { transaction });
-    if (payload.draftApprovals && payload.draftApprovals.length) await DraftApproval.bulkCreate(payload.draftApprovals, { transaction });
-    if (payload.maintenanceLogs && payload.maintenanceLogs.length) await MaintenanceLog.bulkCreate(payload.maintenanceLogs, { transaction });
-    if (payload.maintenanceBhp && payload.maintenanceBhp.length) await MaintenanceBhp.bulkCreate(payload.maintenanceBhp, { transaction });
-    if (payload.receivings && payload.receivings.length) await Receiving.bulkCreate(payload.receivings, { transaction });
-    if (payload.labels && payload.labels.length) await Label.bulkCreate(payload.labels, { transaction });
-    if (payload.auditLogs && payload.auditLogs.length) await AuditLog.bulkCreate(payload.auditLogs, { transaction });
-
-    // Enable foreign keys back
-    await sequelize.query('SET FOREIGN_KEY_CHECKS = 1', { transaction });
-
-    await transaction.commit();
-
-    await logAudit(req.user.id, 'backup.restore', 'database_restore', req.ip);
-
-    res.json({ message: 'Database berhasil direstore secara penuh dengan verifikasi checksum!' });
   } catch (err) {
-    await transaction.rollback();
     console.error('[Backup Restore Error]', err);
     res.status(500).json({ error: 'Gagal merestore backup. File mungkin tidak kompatibel atau rusak.' });
   }

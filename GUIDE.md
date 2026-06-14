@@ -1,64 +1,64 @@
-# LokaLab — Panduan Setup & Testing
+# 🚀 Panduan Pemasangan & Pengujian Sistem LokaLab
 
-LokaLab Suite adalah aplikasi sistem inventaris & pengadaan laboratorium tingkat SaaS dengan integrasi WebSockets real-time, cetak BAST (Berita Acara Serah Terima) dalam format PDF resmi, audit log diffing ("Sebelum ➔ Sesudah"), serta dukungan penuh Dockerization.
+LokaLab Suite dirancang dengan mengutamakan kemudahan pemasangan (*deployment*) di lingkungan lokal maupun produksi. Proyek ini mendukung penuh kontainerisasi menggunakan Docker serta konfigurasi manual terpisah.
 
-## 🚀 OPSI 1: Setup Mudah & Instan (Menggunakan Docker - Direkomendasikan)
+---
 
-Dengan Docker, Anda **tidak perlu menginstal XAMPP, Node.js, atau membuat database secara manual**. Cukup satu perintah, dan seluruh aplikasi (MySQL, Server API Node.js, dan Vite React) akan otomatis dikonfigurasi dan dijalankan.
+## 🐋 Opsi 1: Pemasangan Menggunakan Docker (Sangat Direkomendasikan)
 
-### Prasyarat Opsi 1
-* Sudah memasang **Docker** dan **Docker Desktop** di komputer Anda.
+Dengan menggunakan Docker, Anda **tidak perlu menginstal Node.js, database MySQL secara terpisah, atau melakukan konfigurasi tabel secara manual**. Seluruh dependensi dan konfigurasi jaringan kontainer (MySQL, Server Backend Express, dan App Frontend Vite React) telah diatur secara otomatis.
 
-### Cara Menjalankan
-1. Pastikan port `3306`, `3000`, dan `5173` di komputer Anda sedang tidak terpakai (matikan XAMPP atau proses Node.js lokal jika ada).
-2. Jalankan perintah berikut di terminal root proyek:
+### 📋 Prasyarat Docker
+* Docker Desktop atau Docker Engine telah terpasang dan aktif di komputer Anda.
+
+### ⚙️ Langkah-Langkah Menjalankan
+1. Pastikan port `3306`, `3000`, dan `5173` di mesin lokal Anda tidak sedang digunakan oleh layanan lain (seperti XAMPP MySQL atau proses Node.js lokal).
+2. Buka terminal pada direktori utama (*root*) proyek dan jalankan perintah berikut untuk membangun (*build*) dan mengaktifkan kontainer:
    ```bash
    docker-compose up --build -d
    ```
-   kalo udah ada dan pernah di build gunakan command
+3. Jika kontainer sudah pernah dibangun sebelumnya, Anda cukup mengaktifkannya kembali menggunakan perintah:
+   ```bash
+   docker-compose up -d
    ```
-    docker-compose up -d
-  ```
-3. Docker secara otomatis akan mengunduh database MySQL, membangun container backend & frontend, menyinkronkan tabel, dan mengaktifkan web.
-4. Buka browser dan buka **`http://localhost:5173`**!
-5. Untuk mematikan server dengan aman setelah selesai digunakan, jalankan:
+4. Sistem secara otomatis akan menyiapkan database MySQL, menyinkronkan skema tabel, mengisi data awal (*seed*), dan menjalankan seluruh server aplikasi.
+5. Akses antarmuka pengguna melalui peramban web di alamat: **`http://localhost:5173`**
+6. Untuk menghentikan seluruh layanan kontainer secara aman setelah selesai digunakan, jalankan perintah:
    ```bash
    docker-compose down
    ```
 
 ---
 
-## 🛠️ OPSI 2: Setup Manual secara Lokal (Tanpa Docker)
+## 🛠️ Opsi 2: Pemasangan Manual Secara Lokal (Tanpa Docker)
 
-### Prasyarat Opsi 2
-| Software | Keterangan |
-|----------|------------|
-| **Node.js** | v18+ (cek: `node -v`) |
-| **XAMPP** | MySQL harus running (port 3306) |
-| **MySQL Workbench** | Opsional, untuk lihat data di database |
-| **Browser** | Chrome / Edge / Firefox |
+Opsi ini digunakan jika Anda ingin melakukan pengembangan (*development*) aktif secara manual di mesin lokal Anda tanpa virtualisasi.
 
-### 1. Setup Awal (Sekali Saja)
+### 📋 Prasyarat Manual
+| Komponen | Versi Minimal | Kegunaan |
+| :--- | :--- | :--- |
+| **Node.js** | v18+ | Runtime eksekusi JavaScript (Backend & Frontend Builder) |
+| **XAMPP / MySQL Server** | Port 3306 | Media penyimpanan data relasional utama |
+| **Layanan Web Browser** | Versi Modern | Peramban untuk mengakses antarmuka LokaLab (Chrome, Edge, Firefox) |
 
-#### 1.1 Clone & Install Dependencies
+### 🔧 Langkah-Langkah Setup Awal (Hanya Sekali)
+
+#### 1. Pemasangan Dependensi
+Buka terminal pada direktori proyek dan jalankan perintah pemasangan pustaka dependensi untuk backend dan frontend:
 ```bash
-git clone https://github.com/2472040/PWL_CapStone2.git
-cd PWL_CapStone2
 npm install
 ```
 
-#### 1.2 Nyalakan XAMPP MySQL
-Buka XAMPP Control Panel → klik **Start** pada MySQL.
+#### 2. Konfigurasi Basis Data MySQL
+1. Aktifkan modul **MySQL** pada Control Panel XAMPP Anda.
+2. Hubungkan ke database lokal menggunakan aplikasi pengelola database (seperti MySQL Workbench atau phpMyAdmin), kemudian jalankan perintah SQL berikut untuk membuat skema basis data baru:
+   ```sql
+   CREATE DATABASE IF NOT EXISTS lokalab_inventory 
+   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   ```
 
-#### 1.3 Buat Database
-Buka **MySQL Workbench** atau terminal XAMPP, jalankan:
-```sql
-CREATE DATABASE IF NOT EXISTS lokalab_inventory 
-CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
-
-#### 1.4 Konfigurasi .env
-File `.env` sudah ada di root project. Isinya:
+#### 3. Konfigurasi Berkas Lingkungan (`.env`)
+Pastikan berkas `.env` di direktori utama (*root*) proyek telah terkonfigurasi dengan benar sebagai berikut:
 ```env
 DB_HOST=localhost
 DB_PORT=3306
@@ -73,93 +73,60 @@ PORT=3000
 NODE_ENV=development
 ```
 
-#### 1.5 Seed Database (Isi Data Awal)
+#### 4. Pengisian Data Awal (Database Seeding)
+Jalankan perintah seeder untuk menyinkronkan seluruh tabel basis data Sequelize dan memasukkan daftar akun demo standar:
 ```bash
 npm run seed
 ```
 
 ---
 
-### 2. Menjalankan Aplikasi secara Manual
+## 🏃‍♂️ Menjalankan Aplikasi Secara Manual
 
-Jalankan perintah ini di terminal Anda:
+Setelah seluruh langkah setup awal di atas berhasil diselesaikan, Anda dapat menjalankan backend dan frontend secara bersamaan menggunakan perintah terintegrasi berikut:
 ```bash
 npm run dev:all
 ```
-Ini akan menjalankan backend server API (port `3000`) dan frontend Vite React (port `5173`) secara bersamaan.
+* **Layanan Frontend (Vite + React)** akan berjalan pada port `5173` (akses: `http://localhost:5173`)
+* **Layanan Backend API (Express.js)** akan berjalan pada port `3000`.
 
 ---
 
-## 🔑 3. Akun Demo untuk Login
+## 🧪 Validasi Keamanan & Pengujian Keamanan Terotomatisasi
 
-Semua akun menggunakan password: **`password123`**
+LokaLab Suite dilengkapi dengan rangkaian uji keamanan terotomatisasi (*Automated Security Tests*) untuk memverifikasi fungsionalitas RBAC, algoritma enkripsi backup, proteksi *Rate Limiting*, dan integritas rantai audit log.
 
-| Email | Role | Fitur yang Bisa Diakses |
-|-------|------|------------------------|
-| `anindita@kampus.id` | **Sys Admin** | Kelola pengguna, ruangan, audit log ("Sebelum ➔ Sesudah") |
-| `pradipta@kampus.id` | **Kalab** | Buat draf pengadaan, real-time update sync |
-| `hendra@kampus.id` | **Kaprodi** | Review & finalisasi draf pengadaan |
-| `faqih@kampus.id` | **Admin** | Penerimaan barang, cetak label, unduh BAST PDF resmi |
-| `maharani@kampus.id` | **Staf Lab** | Maintenance log, kelola stok BHP |
-
----
-
-## ⚡ 4. Fitur-Fitur Premium Baru
-
-### 4.1 Real-time Sync (WebSockets)
-Aplikasi menggunakan **Socket.io** untuk melakukan sinkronisasi data secara real-time. Ketika Kaprodi atau Kalab mengubah status pengadaan, backend akan memancarkan sinyal ke seluruh client yang sedang online untuk memperbarui dashboard secara otomatis tanpa reload halaman.
-
-### 4.2 Laporan BAST PDF Resmi
-Saat draf pengadaan diselesaikan (`completed`), Staf Admin dapat mengunduh dokumen **Berita Acara Serah Terima (BAST)** resmi dalam format PDF berstandar universitas melalui tombol **"Cetak BAST (PDF)"** di rincian pengadaan. 
-* Endpoint API: `GET /api/procurement/drafts/:id/pdf`
-
-### 4.3 Audit Log Diffing ("Sebelum ➔ Sesudah")
-Halaman audit log pada peran **Sys Admin** kini merekam perubahan data secara detail. Log tidak hanya menuliskan *"memperbarui ruangan"* tetapi menuliskan perubahan properti secara spesifik, seperti:
-`[Kapasitas: 30 ➔ 45, Deskripsi: Lab A ➔ Lab Utama]`
-
----
-
-## 🧪 5. Testing API Manual & Keamanan
-
-### Pengujian Unit Keamanan
-Anda dapat menjalankan automated security tests yang memverifikasi integritas RBAC, enkripsi backup AES-256-GCM, dan hash chaining audit log:
+Jalankan perintah pengujian berikut di terminal:
 ```bash
 npm run security-test
 ```
 
-### Contoh Endpoint API Penting
-| Method | Endpoint | Role | Keterangan |
-|--------|----------|------|------------|
-| GET | `/api/health` | Semua | Health check (tanpa auth) |
-| POST | `/api/auth/login` | Semua | Login |
-| GET | `/api/procurement/drafts/:id/pdf` | Admin | Cetak PDF Berita Acara Serah Terima |
-| GET | `/api/audit-logs` | sysadmin | Audit log terenkripsi & ter-diff |
-
 ---
 
-## ❓ 6. Troubleshooting (Pemecahan Masalah)
+## ❓ Pemecahan Masalah (Troubleshooting)
 
-### ❌ Port EADDRINUSE (Port sudah terpakai)
-Terjadi jika port `3000` atau `5173` sedang dipakai oleh proses lain. Matikan proses tersebut secara paksa:
-```bash
+### ❌ Error: Port EADDRINUSE (Port 3000 atau 5173 telah digunakan)
+Masalah ini terjadi jika ada sisa proses Node.js yang masih berjalan di latar belakang. Anda dapat menghentikan paksa proses yang menggunakan port tersebut menggunakan utilitas bawaan:
+```powershell
+# Menghentikan proses pada port 3000 & 5173 secara paksa
 npx kill-port 3000
 npx kill-port 5173
 ```
 
-### ❌ Data tidak sinkron atau ingin reset
-Jalankan ulang seeder untuk mengembalikan data awal bawaan:
+### ❌ Inkonsistensi Data Basis Data
+Jika data basis data Anda mengalami kerusakan selama pengujian fungsionalitas, Anda dapat melakukan reset database ke kondisi awal demo dengan menjalankan kembali perintah:
 ```bash
 npm run seed
 ```
 
 ---
 
-## 📦 7. Perintah Script NPM yang Tersedia
+## 📦 Daftar Skrip NPM yang Tersedia
 
-| Perintah | Fungsi |
-|----------|--------|
-| `npm run dev:all` | Menjalankan frontend Vite dan backend Express sekaligus |
-| `npm run seed` | Mereset dan mengisi database dengan data awal demo |
-| `npm run security-test` | Menjalankan 10 pengujian keamanan & enkripsi |
-| `npm run build` | Melakukan build frontend untuk siap produksi |
-| `npm run preview` | Preview hasil build |
+| Skrip Perintah | Kegunaan Fungsional |
+| :--- | :--- |
+| `npm run dev:all` | Menjalankan server backend Express dan frontend Vite secara bersamaan dalam mode *development*. |
+| `npm run seed` | Melakukan reset database dan mengisi ulang data standar akun demo. |
+| `npm run security-test` | Mengeksekusi rangkaian uji unit keamanan dan integritas enkripsi sistem. |
+| `npm run build` | Melakukan kompilasi (*compile*) kode frontend menjadi berkas siap produksi pada folder `/dist`. |
+| `npm run preview` | Menjalankan server lokal untuk melakukan peninjauan hasil build produksi frontend. |

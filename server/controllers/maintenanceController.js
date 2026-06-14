@@ -28,6 +28,7 @@ const createMaintenance = async (req, res) => {
   try {
     const { inventory_ids, action, condition_after, date, bhp_used } = req.body;
     if (!inventory_ids || !inventory_ids.length || !action || !condition_after || !date) {
+      await t.rollback();
       return res.status(400).json({ error: 'Semua field wajib diisi (minimal pilih 1 aset).' });
     }
 
@@ -219,7 +220,7 @@ const getBhpPrediction = async (req, res) => {
         model: MaintenanceLog,
         attributes: ['date']
       }],
-      order: [['created_at', 'ASC']]
+      order: [['id', 'ASC']]
     });
 
     const currentStock = parseFloat(bhp.stock) || 0;
@@ -479,13 +480,14 @@ const getBhpPrediction = async (req, res) => {
 };
 
 const updateMaintenance = async (req, res) => {
-  const t = await sequelize.transaction();
+  let t;
   try {
     const log = await MaintenanceLog.findByPk(req.params.id, {
       include: [{ model: Inventory, attributes: ['id', 'code', 'name'] }]
     });
     if (!log) return res.status(404).json({ error: 'Log maintenance tidak ditemukan.' });
 
+    t = await sequelize.transaction();
     const { action, condition_after, date } = req.body;
     const diffs = [];
 
@@ -535,7 +537,13 @@ const updateMaintenance = async (req, res) => {
 
     res.json({ data: result });
   } catch (err) {
-    await t.rollback();
+    if (t) {
+      try {
+        await t.rollback();
+      } catch (rollbackErr) {
+        // Ignored
+      }
+    }
     console.error('[Update Maintenance Error]', err);
     res.status(500).json({ error: 'Gagal memperbarui log maintenance.' });
   }

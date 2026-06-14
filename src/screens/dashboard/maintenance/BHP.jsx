@@ -3,6 +3,13 @@ import { createPortal } from 'react-dom';
 import { useStore, useToast, Icon, D, useSearch } from '../../../components/app-shell.jsx';
 import { apiFetch } from '../../../services/api.js';
 
+function formatThousand(val) {
+  if (val === undefined || val === null || val === '') return '';
+  const numString = String(val).replace(/\D/g, ''); // strip non-digits
+  if (!numString) return '';
+  return Number(numString).toLocaleString('id-ID'); // formats with dot separators in Indonesian locale
+}
+
 export function BHP() {
   const { state, dispatch } = useStore();
   const { query } = useSearch();
@@ -291,7 +298,17 @@ export function BHP() {
                     <div className="flex gap-2">
                       <input className="input mono flex-1" type="number" min="1" value={row.qty} onChange={e => setRestockRows(r => r.map((x, j) => j === i ? { ...x, qty: e.target.value } : x))} placeholder="Jumlah" disabled={submittingRestock} />
                       <span className="flex aic text-xs text-3 mono" style={{ minWidth: '30px' }}>{row.unit}</span>
-                      <input className="input mono flex-1" type="number" min="0" value={row.price} onChange={e => setRestockRows(r => r.map((x, j) => j === i ? { ...x, price: e.target.value } : x))} placeholder="Harga satuan (Rp)" disabled={submittingRestock} />
+                      <input 
+                        className="input mono flex-1" 
+                        type="text" 
+                        value={formatThousand(row.price)} 
+                        onChange={e => {
+                          const clean = e.target.value.replace(/\D/g, '');
+                          setRestockRows(r => r.map((x, j) => j === i ? { ...x, price: clean } : x));
+                        }} 
+                        placeholder="Harga satuan (Rp)" 
+                        disabled={submittingRestock} 
+                      />
                     </div>
                   </div>
                 );
@@ -308,7 +325,15 @@ export function BHP() {
                 try {
                   const items = validRows.map(r => {
                     const found = state.bhp.find(b => b.id === r.bhpId);
-                    return { kind: 'BHP', name: found?.name || r.bhpId, qty: Number(r.qty), unit: r.unit || 'pcs', price: Number(r.price) || 0, link: null, replaces: null };
+                    return { 
+                      kind: 'BHP', 
+                      name: found?.name || r.bhpId, 
+                      qty: Number(r.qty), 
+                      unit: r.unit || 'pcs', 
+                      price: Number(String(r.price).replace(/\D/g, '')) || 0, 
+                      link: null, 
+                      replaces: null 
+                    };
                   });
 
                   const createRes = await apiFetch('/procurement/drafts', {

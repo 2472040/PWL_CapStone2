@@ -14,6 +14,7 @@ const Receiving = require('./Receiving');
 const Label = require('./Label');
 const AuditLog = require('./AuditLog');
 const RevokedToken = require('./RevokedToken');
+const RefreshToken = require('./RefreshToken');
 
 // =============================================
 // Associations
@@ -75,6 +76,10 @@ Inventory.hasOne(Label, { as: 'label', foreignKey: 'inventory_id' });
 AuditLog.belongsTo(User, { foreignKey: 'user_id' });
 User.hasMany(AuditLog, { foreignKey: 'user_id' });
 
+// RefreshToken ↔ User
+User.hasMany(RefreshToken, { foreignKey: 'user_id', onDelete: 'CASCADE' });
+RefreshToken.belongsTo(User, { foreignKey: 'user_id' });
+
 module.exports = {
   sequelize,
   User,
@@ -90,4 +95,5 @@ module.exports = {
   Label,
   AuditLog,
   RevokedToken,
+  RefreshToken,
 };

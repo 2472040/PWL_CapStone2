@@ -126,12 +126,21 @@ export function TiltEngine() {
         });
         return;
       }
+
+      const interactive = e.target.closest('button, a, input, select, textarea, [role="button"]');
+      if (interactive) {
+        card.style.transform = '';
+        const shine = card.querySelector('.tilt-shine');
+        if (shine) shine.style.background = '';
+        return;
+      }
+
       const rect = card.getBoundingClientRect();
       const x = (e.clientX - rect.left) / rect.width;
       const y = (e.clientY - rect.top) / rect.height;
       const rotateX = (y - 0.5) * -5; // deg — subtle tilt
       const rotateY = (x - 0.5) * 5;
-      card.style.transform = `perspective(1800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.005, 1.005, 1.005)`;
+      card.style.transform = `perspective(1800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
       const shine = card.querySelector('.tilt-shine');
       if (shine) {
         shine.style.background = `linear-gradient(${135 + rotateY * 2}deg, rgba(255,255,255,${0.04 + Math.abs(x - 0.5) * 0.03}) 0%, transparent 60%)`;
@@ -171,11 +180,25 @@ export function CardHoverEngine() {
       if (!card) return;
       if (card.classList.contains('tilt-card')) return;
 
+      const interactive = e.target.closest('button, a, input, select, textarea, [role="button"]');
+      if (interactive) {
+        window.gsap.to(card, {
+          y: 0,
+          scale: 1,
+          borderColor: '',
+          boxShadow: '',
+          duration: 0.2,
+          ease: 'power2.out',
+          overwrite: 'auto'
+        });
+        return;
+      }
+
       const roleAccent = document.documentElement.style.getPropertyValue('--role-accent') || '#a78bfa';
 
       window.gsap.to(card, {
-        y: -4,
-        scale: 1.01,
+        y: -2,
+        scale: 1,
         borderColor: `${roleAccent}44`,
         boxShadow: `0 16px 36px -12px rgba(0,0,0,0.6), 0 0 24px -6px ${roleAccent}18`,
         duration: 0.35,

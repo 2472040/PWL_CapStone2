@@ -60,6 +60,51 @@ export const authHeaders = () => {
   };
 };
 
+let _refreshPromise = null;
+
+async function attemptTokenRefresh() {
+  if (_refreshPromise) {
+    return _refreshPromise;
+  }
+
+  _refreshPromise = (async () => {
+    try {
+      const csrfCookie = getCookie("csrfToken");
+      const res = await fetch(`${API_BASE}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          ...(csrfCookie && { 'X-CSRF-Token': csrfCookie }),
+        }
+      });
+
+      if (!res.ok) {
+        throw new Error('Session expired');
+      }
+
+      const data = await res.json();
+      if (data && data.data && data.data.token) {
+        setToken(data.data.token);
+        return data.data.token;
+      }
+      throw new Error('Invalid refresh response');
+    } catch (e) {
+      removeToken();
+      localStorage.removeItem('loka-role');
+      localStorage.removeItem('loka-view');
+      if (window.__lokaLogout) window.__lokaLogout();
+      else window.location.reload();
+      throw e;
+    } finally {
+      _refreshPromise = null;
+    }
+  })();
+
+  return _refreshPromise;
+}
+
 // wrapper fetch with credentials: 'include' support
 export async function apiFetch(endpoint, options = {}) {
   const method = (options.method || 'GET').toUpperCase();
@@ -81,7 +126,7 @@ export async function apiFetch(endpoint, options = {}) {
   }
 
   try {
-    const response = await fetch(`${API_BASE}${endpoint}`, {
+    let response = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
       credentials: "include", // Ensure HttpOnly cookies are attached
       headers: {
@@ -90,6 +135,25 @@ export async function apiFetch(endpoint, options = {}) {
       },
     });
 
+    // Intercept 401 Unauthorized for Access Token Expiration
+    if (response.status === 401 && endpoint !== '/auth/login' && endpoint !== '/auth/refresh') {
+      try {
+        console.log(`🔑 [API Session] Access token expired, attempting silent refresh for ${endpoint}...`);
+        await attemptTokenRefresh();
+        // Retry the original request with the new tokens
+        response = await fetch(`${API_BASE}${endpoint}`, {
+          ...options,
+          credentials: "include",
+          headers: {
+            ...authHeaders(),
+            ...(options.headers || {}),
+          },
+        });
+      } catch (refreshErr) {
+        throw new Error("Sesi Anda telah berakhir. Silakan login kembali.");
+      }
+    }
+
     let result;
     const contentType = response.headers.get("content-type");
     if (contentType && contentType.includes("application/json")) {
@@ -97,7 +161,7 @@ export async function apiFetch(endpoint, options = {}) {
     } else {
       const text = await response.text();
       // Handle HTML proxy errors (e.g. 401 from middleware)
-      if (response.status === 401 && endpoint !== '/auth/login') {
+      if (response.status === 401 && endpoint !== '/auth/login' && endpoint !== '/auth/refresh') {
         removeToken();
         localStorage.removeItem('loka-role');
         localStorage.removeItem('loka-view');
@@ -108,7 +172,7 @@ export async function apiFetch(endpoint, options = {}) {
     }
 
     if (!response.ok) {
-      if (response.status === 401 && endpoint !== '/auth/login') {
+      if (response.status === 401 && endpoint !== '/auth/login' && endpoint !== '/auth/refresh') {
         removeToken();
         localStorage.removeItem('loka-role');
         localStorage.removeItem('loka-view');

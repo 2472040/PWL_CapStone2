@@ -1,8 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { useStore, D, QR, Icon, useSearch } from '../../../components/app-shell.jsx';
+import { useStore, D, QR, Icon, useSearch, useToast } from '../../../components/app-shell.jsx';
 import { apiFetch } from '../../../services/api.js';
 import { DraftDetail } from './DraftDetail.jsx';
 import { DraftCard } from './PengadaanKalab.jsx';
+
+function generateNextLabel(baseLabel, index) {
+  if (index === 0) return baseLabel;
+  const match = baseLabel.match(/^(.*?)(\d+)$/);
+  if (!match) {
+    return `${baseLabel}-${index + 1}`;
+  }
+  const prefix = match[1];
+  const numStr = match[2];
+  const nextNum = parseInt(numStr, 10) + index;
+  const paddedNum = String(nextNum).padStart(numStr.length, '0');
+  return prefix + paddedNum;
+}
 
 export function ReceivingAdmin() {
   const { state, dispatch } = useStore();
@@ -75,8 +88,19 @@ export function ReceivingAdmin() {
 }
 
 export function AdminReceiveGrid({ draft, totals, onToggle }) {
+  const { dispatch } = useStore();
+  const toast = useToast();
   const [openForms, setOpenForms] = useState({});
   const [formsData, setFormsData] = useState({});
+
+  // Bulk Receive state
+  const [showBulk, setShowBulk] = useState(false);
+  const [bulkItemId, setBulkItemId] = useState('');
+  const [bulkDate, setBulkDate] = useState(new Date().toISOString().substring(0, 10));
+  const [bulkStartCode, setBulkStartCode] = useState('');
+  const [bulkQrPhoto, setBulkQrPhoto] = useState(null);
+  const [bulkProgress, setBulkProgress] = useState(null); // { current, total, label }
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   const eligible = draft.items.filter(it => it.approval !== 'no');
 
@@ -150,8 +174,193 @@ export function AdminReceiveGrid({ draft, totals, onToggle }) {
     onToggle(card.id, data);
   };
 
+  const unreceivedItems = eligible.filter(it => {
+    if (it.kind !== 'Inventaris') return false;
+    const recCount = (it.receivings || []).length;
+    return recCount < it.qty;
+  }).map(it => {
+    const recCount = (it.receivings || []).length;
+    const remaining = it.qty - recCount;
+    return {
+      ...it,
+      remaining,
+      recCount
+    };
+  });
+
   return (
     <>
+      {unreceivedItems.length > 0 && (
+        <div className="card mb-5 p-4 border border-line-2" style={{ background: 'rgba(255,255,255,0.01)' }}>
+          <div className="flex between aic mb-3">
+            <div className="flex gap-2 aic">
+              <Icon name="bolt" className="text-violet animate-pulse animate-duration-[2000ms]" size={16} />
+              <b className="text-sm">Penerimaan Massal (Bulk Receive)</b>
+            </div>
+            <button className={`btn sm ${showBulk ? '' : 'primary'}`} onClick={() => setShowBulk(!showBulk)}>
+              {showBulk ? 'Sembunyikan' : 'Buka Form'}
+            </button>
+          </div>
+
+          {showBulk && (
+            <div className="grid gap-3 mt-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+              <div className="field">
+                <div className="field-lbl">Pilih Aset <span className="req">*</span></div>
+                <select 
+                  className="select text-xs w-full" 
+                  value={bulkItemId} 
+                  onChange={e => {
+                    setBulkItemId(e.target.value);
+                    const selected = unreceivedItems.find(it => String(it.id) === e.target.value);
+                    if (selected) {
+                      setBulkStartCode(`INV-${new Date().getFullYear()}-${String(selected.id).padStart(3, '0')}-001`);
+                    }
+                  }}
+                  disabled={bulkLoading}
+                >
+                  <option value="">Pilih barang...</option>
+                  {unreceivedItems.map(it => (
+                    <option key={it.id} value={it.id}>{it.name} ({it.remaining} unit belum diterima)</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="field">
+                <div className="field-lbl">Tanggal Diterima <span className="req">*</span></div>
+                <input 
+                  type="date" 
+                  className="input text-xs w-full" 
+                  value={bulkDate} 
+                  onChange={e => setBulkDate(e.target.value)} 
+                  disabled={bulkLoading}
+                />
+              </div>
+
+              <div className="field">
+                <div className="field-lbl">Label Awal (Nomor Seri) <span className="req">*</span></div>
+                <input 
+                  type="text" 
+                  className="input text-xs w-full" 
+                  placeholder="Contoh: INV-2026-001" 
+                  value={bulkStartCode} 
+                  onChange={e => setBulkStartCode(e.target.value)} 
+                  disabled={bulkLoading}
+                />
+              </div>
+
+              <div className="field">
+                <div className="field-lbl">Foto QR Universitas <span className="req">*</span></div>
+                <input 
+                  type="file" 
+                  className="input text-xs w-full" 
+                  accept="image/*" 
+                  onChange={e => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (el) => setBulkQrPhoto(el.target.result);
+                      reader.readAsDataURL(file);
+                    }
+                  }} 
+                  disabled={bulkLoading}
+                />
+              </div>
+            </div>
+          )}
+
+          {showBulk && bulkItemId && (
+            <div className="mt-3 p-3 bg-surface/50 border border-line-2 rounded-lg flex flex-col gap-3">
+              {(() => {
+                const sel = unreceivedItems.find(it => String(it.id) === bulkItemId);
+                if (!sel) return null;
+                return (
+                  <div className="text-xs text-3 leading-relaxed">
+                    Sistem akan memproses penerimaan sebanyak <b className="text-ink-2">{sel.remaining} unit</b> untuk barang <b className="text-ink-2">{sel.name}</b>.
+                    <br />
+                    Label yang dihasilkan: <span className="mono bg-surface px-1.5 py-0.5 rounded text-violet">{bulkStartCode}</span> s.d. <span className="mono bg-surface px-1.5 py-0.5 rounded text-violet">{generateNextLabel(bulkStartCode, sel.remaining - 1)}</span>.
+                  </div>
+                );
+              })()}
+
+              {bulkProgress && (
+                <div className="w-full">
+                  <div className="flex between text-xs mb-1.5">
+                    <span>Memproses unit {bulkProgress.current} dari {bulkProgress.total}...</span>
+                    <span className="mono text-violet">{bulkProgress.label}</span>
+                  </div>
+                  <div className="h-2 rounded bg-surface overflow-hidden">
+                    <div 
+                      className="h-full bg-violet" 
+                      style={{ 
+                        width: `${(bulkProgress.current / bulkProgress.total) * 100}%`,
+                        transition: 'width 0.3s ease-out' 
+                      }} 
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2 justify-end">
+                <button 
+                  className="btn primary" 
+                  disabled={bulkLoading || !bulkStartCode || !bulkQrPhoto}
+                  onClick={async () => {
+                    const sel = unreceivedItems.find(it => String(it.id) === bulkItemId);
+                    if (!sel) return;
+                    setBulkLoading(true);
+                    try {
+                      for (let index = 0; index < sel.remaining; index++) {
+                        const currentLabel = generateNextLabel(bulkStartCode, index);
+                        setBulkProgress({ current: index + 1, total: sel.remaining, label: currentLabel });
+                        
+                        await apiFetch(`/procurement/receiving`, {
+                          method: 'POST',
+                          body: JSON.stringify({
+                            draft_item_id: sel.id,
+                            qty_received: 1,
+                            received_date: bulkDate,
+                            code: currentLabel,
+                            qr_photo: bulkQrPhoto
+                          })
+                        });
+                      }
+
+                      // Refresh drafts state to update the UI
+                      const res = await apiFetch('/procurement/receiving');
+                      const validDrafts = (res.data || []).map(d => ({
+                        ...d,
+                        by: d.creator?.name || d.by,
+                        role: d.creator?.role || d.role,
+                        items: d.items?.map(it => ({
+                          ...it,
+                          approval: it.approval?.status === 'approved' ? 'ok' : it.approval?.status === 'rejected' ? 'no' : null,
+                          received: it.receivings && it.receivings.length > 0,
+                          receivedDate: it.receivings && it.receivings.length > 0 ? new Date(it.receivings[0].received_date).toLocaleDateString('id-ID') : null
+                        })) || []
+                      }));
+                      dispatch({ type: 'SET_DRAFTS', drafts: validDrafts });
+                      toast('Penerimaan massal berhasil diselesaikan!', 'ok');
+                      
+                      // Reset form
+                      setBulkItemId('');
+                      setBulkQrPhoto(null);
+                      setBulkProgress(null);
+                      setShowBulk(false);
+                    } catch (err) {
+                      toast('Gagal memproses penerimaan massal: ' + err.message, 'warn');
+                    } finally {
+                      setBulkLoading(false);
+                    }
+                  }}
+                >
+                  {bulkLoading ? 'Memproses...' : 'Mulai Penerimaan Massal'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="gap-[14px]" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))'}}>
         {displayCards.map(card => {
           const isRec = card.isRec;

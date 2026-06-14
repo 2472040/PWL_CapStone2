@@ -105,10 +105,8 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint tidak ditemukan.' });
 });
 
-// Error handler
-app.use((err, req, res, next) => {
-  logger.error('[Server Error]', err);
-  res.status(500).json({ error: 'Terjadi kesalahan internal server.' });
-});
+// Centralized Global Error Handler
+const globalErrorHandler = require('./middleware/errorHandler');
+app.use(globalErrorHandler);
 
 module.exports = app;

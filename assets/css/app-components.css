@@ -308,7 +308,7 @@ select option {
   display: flex; align-items: center; justify-content: center;
   transition: all 0.2s var(--ease-spring);
 }
-.act-btn:hover { background: var(--color-surface-2); color: var(--color-ink); transform: scale(1.08); }
+.act-btn:hover { background: var(--color-surface-2); color: var(--color-ink); transform: translateY(-1px); }
 .act-btn.ok-active { background: rgba(52,211,153,0.2); color: var(--color-green); border-color: rgba(52,211,153,0.4); }
 .act-btn.no-active { background: rgba(251,113,133,0.2); color: var(--color-rose); border-color: rgba(251,113,133,0.4); }
 

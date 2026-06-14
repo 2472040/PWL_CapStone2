@@ -1,12 +1,37 @@
-import React from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 import { useStore, PageBar, PageHost, D } from './app-shell.jsx';
-import { Dashboard } from '../screens/dashboard/Dashboard.jsx';
-import { PengadaanKalab, ReviewKaprodi, ReceivingAdmin, HistoryKaprodi } from '../screens/dashboard/Procurement.jsx';
-import { Inventory } from '../screens/dashboard/Inventory.jsx';
-import { Maintenance, BHP } from '../screens/dashboard/Maintenance.jsx';
-import { Users, Rooms, Audit, Labels } from '../screens/dashboard/Admin.jsx';
-import { Settings } from '../screens/dashboard/Settings.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// Delayed fallback to prevent visual blinking for fast page transitions
+function DelayedFallback() {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setShow(true), 180);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!show) return <div className="grow" />;
+  return (
+    <div className="grow flex items-center justify-center min-h-[300px]" style={{ opacity: 0.4 }}>
+      <div className="w-6 h-6 rounded-full border-2 border-current border-t-transparent animate-spin" style={{ color: 'var(--role-accent, var(--color-ink-3))' }} />
+    </div>
+  );
+}
+
+// Lazy loaded page components
+const Dashboard = React.lazy(() => import('../screens/dashboard/Dashboard.jsx').then(m => ({ default: m.Dashboard })));
+const PengadaanKalab = React.lazy(() => import('../screens/dashboard/procurement/PengadaanKalab.jsx').then(m => ({ default: m.PengadaanKalab })));
+const ReviewKaprodi = React.lazy(() => import('../screens/dashboard/procurement/ReviewKaprodi.jsx').then(m => ({ default: m.ReviewKaprodi })));
+const ReceivingAdmin = React.lazy(() => import('../screens/dashboard/procurement/ReceivingAdmin.jsx').then(m => ({ default: m.ReceivingAdmin })));
+const HistoryKaprodi = React.lazy(() => import('../screens/dashboard/procurement/HistoryKaprodi.jsx').then(m => ({ default: m.HistoryKaprodi })));
+const Inventory = React.lazy(() => import('../screens/dashboard/inventory/Inventory.jsx').then(m => ({ default: m.Inventory })));
+const Maintenance = React.lazy(() => import('../screens/dashboard/maintenance/Maintenance.jsx').then(m => ({ default: m.Maintenance })));
+const BHP = React.lazy(() => import('../screens/dashboard/maintenance/BHP.jsx').then(m => ({ default: m.BHP })));
+const Users = React.lazy(() => import('../screens/dashboard/admin/Users.jsx').then(m => ({ default: m.Users })));
+const Rooms = React.lazy(() => import('../screens/dashboard/admin/Rooms.jsx').then(m => ({ default: m.Rooms })));
+const Audit = React.lazy(() => import('../screens/dashboard/admin/Audit.jsx').then(m => ({ default: m.Audit })));
+const Labels = React.lazy(() => import('../screens/dashboard/admin/Labels.jsx').then(m => ({ default: m.Labels })));
+const Settings = React.lazy(() => import('../screens/dashboard/settings/Settings.jsx').then(m => ({ default: m.Settings })));
 
 export function Router() {
   const { state } = useStore();
@@ -45,7 +70,9 @@ export function Router() {
             style={{ width: '100%', minHeight: '100%', display: 'flex', flexDirection: 'column' }}
           >
             <PageHost role={role} screen={screen}>
-              {Comp ? <Comp /> : <Dashboard />}
+              <Suspense fallback={<DelayedFallback />}>
+                {Comp ? <Comp /> : <Dashboard />}
+              </Suspense>
             </PageHost>
           </motion.div>
         </AnimatePresence>

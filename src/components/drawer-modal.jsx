@@ -1,8 +1,24 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, Suspense } from 'react';
 import { useStore } from './store-context.jsx';
 
 export const DrawerContent = {};
 export const ModalContent = {};
+
+// Helper component to delay the appearance of the loading indicator
+function DelayedFallback({ message }) {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setShow(true), 200);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!show) return null;
+  return (
+    <div className="p-8 text-center text-sm" style={{ color: 'var(--color-ink-3)', opacity: 0.5 }}>
+      {message}
+    </div>
+  );
+}
 
 // =========================================================
 // Drawer with focus trap
@@ -80,7 +96,11 @@ export function Drawer() {
     <>
       <div ref={backdropRef} className="modal-backdrop" onClick={() => dispatch({ type: 'CLOSE_DRAWER' })} aria-hidden="true" />
       <div ref={ref} className="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
-        {Comp && <Comp payload={activeDrawer.payload} close={() => dispatch({ type: 'CLOSE_DRAWER' })} />}
+        {Comp && (
+          <Suspense fallback={<DelayedFallback message="Memuat form..." />}>
+            <Comp payload={activeDrawer.payload} close={() => dispatch({ type: 'CLOSE_DRAWER' })} />
+          </Suspense>
+        )}
       </div>
     </>
   );
@@ -163,7 +183,11 @@ export function Modal() {
     <>
       <div ref={backdropRef} className="modal-backdrop z-[95]" onClick={() => dispatch({ type: 'CLOSE_MODAL' })} aria-hidden="true" />
       <div ref={ref} className="modal-center z-[96]" role="dialog" aria-modal="true">
-        {Comp && <Comp payload={activeModal.payload} close={() => dispatch({ type: 'CLOSE_MODAL' })} />}
+        {Comp && (
+          <Suspense fallback={<DelayedFallback message="Memuat..." />}>
+            <Comp payload={activeModal.payload} close={() => dispatch({ type: 'CLOSE_MODAL' })} />
+          </Suspense>
+        )}
       </div>
     </>
   );

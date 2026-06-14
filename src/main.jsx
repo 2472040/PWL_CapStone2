@@ -24,10 +24,21 @@ import {
   D 
 } from './components/app-shell.jsx';
 import { CustomCursor } from './components/app-cursor.jsx';
-import { NewUserForm, NewRoomForm, NewDraftForm, QRScanner } from './screens/dashboard/Admin.jsx';
-import { InventoryDetail, NewInventoryForm } from './screens/dashboard/Inventory.jsx';
-import { MaintenanceForm, NewBhpForm } from './screens/dashboard/Maintenance.jsx';
-import { LogoutModal, ChangePasswordModal } from './screens/dashboard/Settings.jsx';
+// Lazy loaded drawers and modals for extreme performance & code splitting
+const NewUserForm = React.lazy(() => import('./screens/dashboard/admin/Users.jsx').then(m => ({ default: m.NewUserForm })));
+const NewRoomForm = React.lazy(() => import('./screens/dashboard/admin/Rooms.jsx').then(m => ({ default: m.NewRoomForm })));
+const NewDraftForm = React.lazy(() => import('./screens/dashboard/procurement/NewDraftForm.jsx').then(m => ({ default: m.NewDraftForm })));
+const QRScanner = React.lazy(() => import('./screens/dashboard/admin/QRScanner.jsx').then(m => ({ default: m.QRScanner })));
+
+const InventoryDetail = React.lazy(() => import('./screens/dashboard/inventory/InventoryDetail.jsx').then(m => ({ default: m.InventoryDetail })));
+const NewInventoryForm = React.lazy(() => import('./screens/dashboard/inventory/NewInventoryForm.jsx').then(m => ({ default: m.NewInventoryForm })));
+
+const MaintenanceForm = React.lazy(() => import('./screens/dashboard/maintenance/MaintenanceForm.jsx').then(m => ({ default: m.MaintenanceForm })));
+const NewBhpForm = React.lazy(() => import('./screens/dashboard/maintenance/BHP.jsx').then(m => ({ default: m.NewBhpForm })));
+
+const LogoutModal = React.lazy(() => import('./screens/dashboard/settings/LogoutModal.jsx').then(m => ({ default: m.LogoutModal })));
+const ChangePasswordModal = React.lazy(() => import('./screens/dashboard/settings/ChangePasswordModal.jsx').then(m => ({ default: m.ChangePasswordModal })));
+
 import LandingPage from './screens/landing/index.jsx';
 
 // Split components for readability and maintenance
@@ -35,7 +46,8 @@ import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { Router } from './components/Router.jsx';
 import { AuthInitializer } from './components/AuthInitializer.jsx';
 import { LoginScreen } from './screens/auth/LoginScreen.jsx';
-import { AiPredictiveModal } from './components/AiPredictiveModal.jsx';
+
+const AiPredictiveModal = React.lazy(() => import('./components/AiPredictiveModal.jsx').then(m => ({ default: m.AiPredictiveModal })));
 
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
