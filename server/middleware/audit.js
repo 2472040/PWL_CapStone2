@@ -3,6 +3,23 @@ const { AuditLog } = require('../models');
 
 // In-memory Promise-based sequential queue to completely eliminate audit log race conditions
 let writeQueue = Promise.resolve();
+let lastHashPromise = null;
+
+/**
+ * Lazy helper to load the latest hash from database or reuse the cached promise.
+ */
+const getLastHash = async () => {
+  if (lastHashPromise) return lastHashPromise;
+  lastHashPromise = (async () => {
+    const lastLog = await AuditLog.findOne({
+      order: [['id', 'DESC']],
+    });
+    return lastLog && lastLog.hash
+      ? lastLog.hash
+      : '0000000000000000000000000000000000000000000000000000000000000000';
+  })();
+  return lastHashPromise;
+};
 
 /**
  * Helper to log user actions to audit_logs table with HMAC-SHA256 hash chaining.
@@ -18,14 +35,8 @@ const logAudit = async (userId, action, target, ip, details = '') => {
         }
         const activeSecret = secret || 'lokalab-default-audit-secret-key-2026';
         
-        // Find the latest audit log to chain hashes
-        const lastLog = await AuditLog.findOne({
-          order: [['id', 'DESC']],
-        });
-
-        const previousHash = lastLog && lastLog.hash
-          ? lastLog.hash
-          : '0000000000000000000000000000000000000000000000000000000000000000';
+        // Retrieve cached or database last hash
+        const previousHash = await getLastHash();
 
         // We use a deterministic timestamp in seconds for hash calculation
         // to avoid millisecond truncation mismatches with MySQL DATETIME type.
@@ -34,6 +45,9 @@ const logAudit = async (userId, action, target, ip, details = '') => {
 
         const dataToHash = `${previousHash}|${timeSecs}|${userId || ''}|${action}|${target || ''}|${ip || ''}|${details || ''}`;
         const hash = crypto.createHmac('sha256', activeSecret).update(dataToHash).digest('hex');
+
+        // Optimistically update the cache for subsequent queue items
+        lastHashPromise = Promise.resolve(hash);
 
         await AuditLog.create({
           user_id: userId,
@@ -48,6 +62,8 @@ const logAudit = async (userId, action, target, ip, details = '') => {
         resolve();
       } catch (err) {
         console.error('[Audit Log Error]', err.message);
+        // Reset the cache to force refetching from database on next write since this one failed
+        lastHashPromise = null;
         resolve(); // Always resolve the queue chain to prevent blocking subsequent logs
       }
     });
