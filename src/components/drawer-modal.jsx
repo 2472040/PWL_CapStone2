@@ -42,15 +42,15 @@ export function Drawer() {
       if (window.gsap && ref.current && backdropRef.current) {
         window.gsap.killTweensOf([ref.current, backdropRef.current]);
         window.gsap.to(backdropRef.current, { opacity: 0, duration: 0.25, ease: 'power3.inOut' });
-        window.gsap.to(ref.current, { 
-          x: 80, 
-          opacity: 0, 
-          duration: 0.3, 
+        window.gsap.to(ref.current, {
+          x: 80,
+          opacity: 0,
+          duration: 0.3,
           ease: 'power3.inOut',
           onComplete: () => {
             setActiveDrawer(null);
             setIsClosing(false);
-          }
+          },
         });
       } else {
         setActiveDrawer(null);
@@ -63,7 +63,9 @@ export function Drawer() {
   useEffect(() => {
     if (!activeDrawer || isClosing || !ref.current) return;
     const drawerEl = ref.current;
-    const focusable = drawerEl.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    const focusable = drawerEl.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
     if (first) first.focus();
@@ -86,16 +88,35 @@ export function Drawer() {
   useEffect(() => {
     if (!activeDrawer || isClosing || !ref.current || !window.gsap) return;
     window.gsap.killTweensOf([ref.current, backdropRef.current]);
-    window.gsap.fromTo(backdropRef.current, { opacity: 0 }, { opacity: 1, duration: 0.28, ease: 'power3.out' });
-    window.gsap.fromTo(ref.current, { x: 80, opacity: 0 }, { x: 0, opacity: 1, duration: 0.45, ease: 'power4.out' });
+    window.gsap.fromTo(
+      backdropRef.current,
+      { opacity: 0 },
+      { opacity: 1, duration: 0.28, ease: 'power3.out' }
+    );
+    window.gsap.fromTo(
+      ref.current,
+      { x: 80, opacity: 0 },
+      { x: 0, opacity: 1, duration: 0.45, ease: 'power4.out' }
+    );
   }, [activeDrawer, isClosing]);
 
   if (!activeDrawer) return null;
   const Comp = DrawerContent[activeDrawer.kind];
   return (
     <>
-      <div ref={backdropRef} className="modal-backdrop" onClick={() => dispatch({ type: 'CLOSE_DRAWER' })} aria-hidden="true" />
-      <div ref={ref} className="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+      <div
+        ref={backdropRef}
+        className="modal-backdrop"
+        onClick={() => dispatch({ type: 'CLOSE_DRAWER' })}
+        aria-hidden="true"
+      />
+      <div
+        ref={ref}
+        className="drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="drawer-title"
+      >
         {Comp && (
           <Suspense fallback={<DelayedFallback message="Memuat form..." />}>
             <Comp payload={activeDrawer.payload} close={() => dispatch({ type: 'CLOSE_DRAWER' })} />
@@ -128,16 +149,16 @@ export function Modal() {
       if (window.gsap && ref.current && backdropRef.current) {
         window.gsap.killTweensOf([ref.current, backdropRef.current]);
         window.gsap.to(backdropRef.current, { opacity: 0, duration: 0.2, ease: 'power3.inOut' });
-        window.gsap.to(ref.current, { 
-          y: 20, 
-          scale: 0.95, 
-          opacity: 0, 
-          duration: 0.25, 
+        window.gsap.to(ref.current, {
+          y: 20,
+          scale: 0.95,
+          opacity: 0,
+          duration: 0.25,
           ease: 'power3.inOut',
           onComplete: () => {
             setActiveModal(null);
             setIsClosing(false);
-          }
+          },
         });
       } else {
         setActiveModal(null);
@@ -150,7 +171,9 @@ export function Modal() {
   useEffect(() => {
     if (!activeModal || isClosing || !ref.current) return;
     const modalEl = ref.current;
-    const focusable = modalEl.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    const focusable = modalEl.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
     if (first) first.focus();
@@ -173,15 +196,28 @@ export function Modal() {
   useEffect(() => {
     if (!activeModal || isClosing || !ref.current || !window.gsap) return;
     window.gsap.killTweensOf([ref.current, backdropRef.current]);
-    window.gsap.fromTo(backdropRef.current, { opacity: 0 }, { opacity: 1, duration: 0.25, ease: 'power3.out' });
-    window.gsap.fromTo(ref.current, { y: 20, scale: 0.96, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.4, ease: 'power4.out' });
+    window.gsap.fromTo(
+      backdropRef.current,
+      { opacity: 0 },
+      { opacity: 1, duration: 0.25, ease: 'power3.out' }
+    );
+    window.gsap.fromTo(
+      ref.current,
+      { y: 20, scale: 0.96, opacity: 0 },
+      { y: 0, scale: 1, opacity: 1, duration: 0.4, ease: 'power4.out' }
+    );
   }, [activeModal, isClosing]);
 
   if (!activeModal) return null;
   const Comp = ModalContent[activeModal.kind];
   return (
     <>
-      <div ref={backdropRef} className="modal-backdrop z-[95]" onClick={() => dispatch({ type: 'CLOSE_MODAL' })} aria-hidden="true" />
+      <div
+        ref={backdropRef}
+        className="modal-backdrop z-[95]"
+        onClick={() => dispatch({ type: 'CLOSE_MODAL' })}
+        aria-hidden="true"
+      />
       <div ref={ref} className="modal-center z-[96]" role="dialog" aria-modal="true">
         {Comp && (
           <Suspense fallback={<DelayedFallback message="Memuat..." />}>

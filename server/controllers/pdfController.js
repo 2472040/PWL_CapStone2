@@ -6,8 +6,8 @@ const fonts = {
     normal: 'Helvetica',
     bold: 'Helvetica-Bold',
     italics: 'Helvetica-Oblique',
-    bolditalics: 'Helvetica-BoldOblique'
-  }
+    bolditalics: 'Helvetica-BoldOblique',
+  },
 };
 
 const printer = new PdfPrinter(fonts);
@@ -18,15 +18,15 @@ const generateBastPdf = async (req, res) => {
       include: [
         { model: User, as: 'creator', attributes: ['id', 'name', 'role'] },
         { model: User, as: 'finalizer', attributes: ['id', 'name', 'role'] },
-        { model: DraftItem, as: 'items', include: [{ model: DraftApproval, as: 'approval' }] }
-      ]
+        { model: DraftItem, as: 'items', include: [{ model: DraftApproval, as: 'approval' }] },
+      ],
     });
 
     if (!draft) {
       return res.status(404).json({ error: 'Draf tidak ditemukan.' });
     }
 
-    const items = draft.items.filter(it => !it.approval || it.approval.status === 'approved');
+    const items = draft.items.filter((it) => !it.approval || it.approval.status === 'approved');
 
     const tableBody = [
       [
@@ -35,8 +35,8 @@ const generateBastPdf = async (req, res) => {
         { text: 'TIPE', style: 'tableHeader' },
         { text: 'QTY', style: 'tableHeader' },
         { text: 'HARGA SATUAN', style: 'tableHeader' },
-        { text: 'SUBTOTAL', style: 'tableHeader' }
-      ]
+        { text: 'SUBTOTAL', style: 'tableHeader' },
+      ],
     ];
 
     let totalValuation = 0;
@@ -49,7 +49,7 @@ const generateBastPdf = async (req, res) => {
         { text: it.kind === 'Inventaris' ? 'INV' : 'BHP', style: 'tableCellCenter' },
         { text: `${it.qty} ${it.unit}`, style: 'tableCellCenter' },
         { text: `Rp ${it.price.toLocaleString('id-ID')}`, style: 'tableCellRight' },
-        { text: `Rp ${subtotal.toLocaleString('id-ID')}`, style: 'tableCellRight' }
+        { text: `Rp ${subtotal.toLocaleString('id-ID')}`, style: 'tableCellRight' },
       ]);
     });
 
@@ -58,19 +58,29 @@ const generateBastPdf = async (req, res) => {
         // Kop Surat
         { text: 'LOKALAB SUITE — INVENTORY & LAB SUITE', style: 'kopHeader' },
         { text: 'Fakultas Teknologi Informasi · Universitas Loka Kampus', style: 'kopSub' },
-        { text: 'Bandung, Jawa Barat · Email: support@lokalab.id · Telp: (022) 123456', style: 'kopContact' },
-        { canvas: [{ type: 'line', x1: 0, y1: 5, x2: 515, y2: 5, lineWidth: 1.5, strokeColor: '#1a1a2e' }] },
+        {
+          text: 'Bandung, Jawa Barat · Email: support@lokalab.id · Telp: (022) 123456',
+          style: 'kopContact',
+        },
+        {
+          canvas: [
+            { type: 'line', x1: 0, y1: 5, x2: 515, y2: 5, lineWidth: 1.5, strokeColor: '#1a1a2e' },
+          ],
+        },
         { text: '\n' },
 
         // BAST Title
         { text: 'BERITA ACARA SERAH TERIMA BARANG', style: 'docTitle' },
-        { text: `Nomor: BAST/${draft.code}/${new Date(draft.finalized_at || new Date()).getFullYear()}`, style: 'docSub' },
+        {
+          text: `Nomor: BAST/${draft.code}/${new Date(draft.finalized_at || new Date()).getFullYear()}`,
+          style: 'docSub',
+        },
         { text: '\n' },
 
         // Intro Text
         {
           text: `Pada hari ini, ${new Date(draft.finalized_at || new Date()).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}, telah diserahterimakan sejumlah barang pengadaan laboratorium sesuai dengan pengajuan draf ${draft.title} (${draft.code}) yang telah disetujui dan difinalisasi oleh Ketua Program Studi:`,
-          style: 'bodyText'
+          style: 'bodyText',
         },
         { text: '\n' },
 
@@ -79,9 +89,9 @@ const generateBastPdf = async (req, res) => {
           table: {
             headerRows: 1,
             widths: [25, 180, 45, 55, 100, 100],
-            body: tableBody
+            body: tableBody,
           },
-          layout: 'lightHorizontalLines'
+          layout: 'lightHorizontalLines',
         },
         { text: '\n' },
 
@@ -92,9 +102,9 @@ const generateBastPdf = async (req, res) => {
             {
               text: `Total Nilai Barang: Rp ${totalValuation.toLocaleString('id-ID')}`,
               style: 'totalValuation',
-              width: 250
-            }
-          ]
+              width: 250,
+            },
+          ],
         },
         { text: '\n\n' },
 
@@ -107,9 +117,9 @@ const generateBastPdf = async (req, res) => {
                 { text: 'Kepala Laboratorium', style: 'signSubtitle' },
                 { text: '\n\n\n\n' },
                 { text: `( ${draft.creator?.name || 'Kepala Lab'} )`, style: 'signName' },
-                { text: 'NIP. 198203112005011002', style: 'signNip' }
+                { text: 'NIP. 198203112005011002', style: 'signNip' },
               ],
-              alignment: 'center'
+              alignment: 'center',
             },
             {
               stack: [
@@ -117,15 +127,15 @@ const generateBastPdf = async (req, res) => {
                 { text: 'Ketua Program Studi', style: 'signSubtitle' },
                 { text: '\n\n\n\n' },
                 { text: `( ${draft.finalizer?.name || 'Ketua Prodi'} )`, style: 'signName' },
-                { text: 'NIP. 197805122001032001', style: 'signNip' }
+                { text: 'NIP. 197805122001032001', style: 'signNip' },
               ],
-              alignment: 'center'
-            }
-          ]
-        }
+              alignment: 'center',
+            },
+          ],
+        },
       ],
       defaultStyle: {
-        font: 'Helvetica'
+        font: 'Helvetica',
       },
       styles: {
         kopHeader: { fontSize: 14, bold: true, alignment: 'center', color: '#1a1a2e' },
@@ -142,15 +152,15 @@ const generateBastPdf = async (req, res) => {
         signTitle: { fontSize: 10, bold: true },
         signSubtitle: { fontSize: 9, italics: true },
         signName: { fontSize: 10, bold: true, decoration: 'underline' },
-        signNip: { fontSize: 8, color: '#555555' }
-      }
+        signNip: { fontSize: 8, color: '#555555' },
+      },
     };
 
     const pdfDoc = await printer.createPdfKitDocument(docDefinition);
-    
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=BAST-${draft.code}.pdf`);
-    
+
     pdfDoc.pipe(res);
     pdfDoc.end();
   } catch (err) {

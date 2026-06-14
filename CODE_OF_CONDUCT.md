@@ -12,19 +12,19 @@ Kami berjanji untuk bertindak dan berinteraksi dengan cara-cara yang berkontribu
 
 Contoh perilaku yang berkontribusi pada penciptaan lingkungan yang positif bagi komunitas kami meliputi:
 
-* Menggunakan bahasa yang ramah dan inklusif.
-* Menghormati sudut pandang dan pengalaman yang berbeda.
-* Menerima kritik yang membangun secara lapang dada.
-* Fokus pada apa yang terbaik bagi komunitas secara keseluruhan.
-* Menunjukkan empati dan kebaikan terhadap anggota komunitas lainnya.
+- Menggunakan bahasa yang ramah dan inklusif.
+- Menghormati sudut pandang dan pengalaman yang berbeda.
+- Menerima kritik yang membangun secara lapang dada.
+- Fokus pada apa yang terbaik bagi komunitas secara keseluruhan.
+- Menunjukkan empati dan kebaikan terhadap anggota komunitas lainnya.
 
 Contoh perilaku yang tidak dapat diterima meliputi:
 
-* Penggunaan bahasa atau citra seksual serta perhatian seksual yang tidak diinginkan dalam bentuk apa pun.
-* Komentar yang bersifat menyerang, merendahkan, atau melakukan serangan pribadi (*ad hominem*).
-* Pelecehan publik atau privat.
-* Memublikasikan informasi pribadi orang lain tanpa izin eksplisit (seperti alamat rumah atau email fisik/digital).
-* Perilaku lain yang secara wajar dapat dianggap tidak pantas dalam lingkungan profesional.
+- Penggunaan bahasa atau citra seksual serta perhatian seksual yang tidak diinginkan dalam bentuk apa pun.
+- Komentar yang bersifat menyerang, merendahkan, atau melakukan serangan pribadi (_ad hominem_).
+- Pelecehan publik atau privat.
+- Memublikasikan informasi pribadi orang lain tanpa izin eksplisit (seperti alamat rumah atau email fisik/digital).
+- Perilaku lain yang secara wajar dapat dianggap tidak pantas dalam lingkungan profesional.
 
 ---
 
@@ -32,7 +32,7 @@ Contoh perilaku yang tidak dapat diterima meliputi:
 
 Pengelola proyek bertanggung jawab untuk memperjelas standar perilaku yang dapat diterima dan diharapkan mengambil tindakan korektif yang adil sebagai tanggapan atas setiap insiden perilaku yang tidak dapat diterima.
 
-Pengelola proyek memiliki hak dan tanggung jawab untuk menghapus, mengedit, atau menolak komentar, komitmen (*commits*), kode, suntingan wiki, isu (*issues*), dan kontribusi lainnya yang tidak selaras dengan Kode Etik ini, serta untuk membatasi atau memblokir sementara/permanen kontributor mana pun atas perilaku lain yang mereka anggap tidak pantas, mengancam, atau ofensif.
+Pengelola proyek memiliki hak dan tanggung jawab untuk menghapus, mengedit, atau menolak komentar, komitmen (_commits_), kode, suntingan wiki, isu (_issues_), dan kontribusi lainnya yang tidak selaras dengan Kode Etik ini, serta untuk membatasi atau memblokir sementara/permanen kontributor mana pun atas perilaku lain yang mereka anggap tidak pantas, mengancam, atau ofensif.
 
 ---
 

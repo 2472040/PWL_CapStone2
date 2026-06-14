@@ -1,10 +1,19 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { 
-  User, Room, Inventory, Bhp, Draft, DraftItem, 
-  DraftApproval, MaintenanceLog, MaintenanceBhp, 
-  Receiving, Label, AuditLog 
+const {
+  User,
+  Room,
+  Inventory,
+  Bhp,
+  Draft,
+  DraftItem,
+  DraftApproval,
+  MaintenanceLog,
+  MaintenanceBhp,
+  Receiving,
+  Label,
+  AuditLog,
 } = require('../models');
 
 const ALGORITHM = 'aes-256-gcm';
@@ -26,7 +35,7 @@ const getEncryptionKey = (saltHex) => {
 const runAutoBackup = async () => {
   try {
     console.log('⏰ [SCHEDULER] Starting automated daily AES-256-GCM database backup...');
-    
+
     // Ensure backup folder exists
     if (!fs.existsSync(BACKUP_DIR)) {
       fs.mkdirSync(BACKUP_DIR, { recursive: true });
@@ -45,7 +54,7 @@ const runAutoBackup = async () => {
       maintenanceBhp: await MaintenanceBhp.findAll(),
       receivings: await Receiving.findAll(),
       labels: await Label.findAll(),
-      auditLogs: await AuditLog.findAll()
+      auditLogs: await AuditLog.findAll(),
     };
 
     const rawJson = JSON.stringify(dbPayload);
@@ -55,7 +64,7 @@ const runAutoBackup = async () => {
     const salt = crypto.randomBytes(16).toString('hex');
     const key = getEncryptionKey(salt);
     const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
-    
+
     let encrypted = cipher.update(rawJson, 'utf8', 'hex');
     encrypted += cipher.final('hex');
     const tag = cipher.getAuthTag().toString('hex');
@@ -67,12 +76,12 @@ const runAutoBackup = async () => {
       tag,
       checksum,
       timestamp: new Date().toISOString(),
-      version: '3.0.0'
+      version: '3.0.0',
     };
 
     const dateStr = new Date().toISOString().substring(0, 10);
     const filePath = path.join(BACKUP_DIR, `auto-backup-${dateStr}.loka`);
-    
+
     fs.writeFileSync(filePath, JSON.stringify(backupFile, null, 2));
     console.log(`✅ [SCHEDULER] Auto backup saved successfully: ${filePath}`);
 
@@ -82,7 +91,7 @@ const runAutoBackup = async () => {
       action: 'backup.auto',
       target: `auto-backup-${dateStr}`,
       ip_address: '127.0.0.1',
-      details: 'Automated scheduled daily backup (AES-256-GCM)'
+      details: 'Automated scheduled daily backup (AES-256-GCM)',
     });
 
     // Prune old backups older than 7 days
@@ -98,13 +107,13 @@ const pruneOldBackups = () => {
     if (!fs.existsSync(BACKUP_DIR)) return;
     const files = fs.readdirSync(BACKUP_DIR);
     const now = new Date();
-    
-    files.forEach(file => {
+
+    files.forEach((file) => {
       if (file.startsWith('auto-backup-') && file.endsWith('.loka')) {
         const filePath = path.join(BACKUP_DIR, file);
         const stats = fs.statSync(filePath);
         const ageDays = (now - stats.mtime) / (1000 * 60 * 60 * 24);
-        
+
         if (ageDays > 7) {
           fs.unlinkSync(filePath);
           console.log(`🗑️ [SCHEDULER] Pruned old automatic backup: ${file}`);
@@ -126,7 +135,9 @@ const initializeScheduler = () => {
   nextMidnight.setHours(24, 0, 0, 0); // Next midnight
   const msToMidnight = nextMidnight - now;
 
-  console.log(`⏰ [SCHEDULER] Next backup scheduled in ${Number((msToMidnight / (1000 * 60 * 60)).toFixed(2))} hours (at 00:00)`);
+  console.log(
+    `⏰ [SCHEDULER] Next backup scheduled in ${Number((msToMidnight / (1000 * 60 * 60)).toFixed(2))} hours (at 00:00)`
+  );
 
   // Timeout until midnight
   setTimeout(() => {

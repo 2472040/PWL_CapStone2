@@ -1,4 +1,4 @@
-const API_BASE = "/api";
+const API_BASE = '/api';
 
 // In-memory JWT storage (fallback when cookie doesn't work through Vite proxy)
 let _memoryToken = null;
@@ -20,20 +20,20 @@ if (typeof window !== 'undefined') {
 export const setToken = (token) => {
   _memoryToken = token;
 
-  localStorage.setItem("token", token);
-  localStorage.setItem("loka_logged_in", "true");
+  localStorage.setItem('token', token);
+  localStorage.setItem('loka_logged_in', 'true');
 };
 
 // check if user is logged in using a non-sensitive flag
 export const getToken = () => {
-  return _memoryToken || localStorage.getItem("token");
+  return _memoryToken || localStorage.getItem('token');
 };
 
 // clear login flag and memory token
 export const removeToken = () => {
   _memoryToken = null;
-  localStorage.removeItem("token");
-  localStorage.removeItem("loka_logged_in");
+  localStorage.removeItem('token');
+  localStorage.removeItem('loka_logged_in');
 };
 
 // helper to extract a cookie value on frontend
@@ -51,9 +51,9 @@ export const authHeaders = () => {
   const token = getToken();
 
   return {
-    "Content-Type": "application/json",
-    "X-CSRF-Token": getCookie("csrfToken") || "",
-    "X-Requested-With": "XMLHttpRequest",
+    'Content-Type': 'application/json',
+    'X-CSRF-Token': getCookie('csrfToken') || '',
+    'X-Requested-With': 'XMLHttpRequest',
     ...(token && {
       Authorization: `Bearer ${token}`,
     }),
@@ -69,7 +69,7 @@ async function attemptTokenRefresh() {
 
   _refreshPromise = (async () => {
     try {
-      const csrfCookie = getCookie("csrfToken");
+      const csrfCookie = getCookie('csrfToken');
       const res = await fetch(`${API_BASE}/auth/refresh`, {
         method: 'POST',
         credentials: 'include',
@@ -77,7 +77,7 @@ async function attemptTokenRefresh() {
           'Content-Type': 'application/json',
           'X-Requested-With': 'XMLHttpRequest',
           ...(csrfCookie && { 'X-CSRF-Token': csrfCookie }),
-        }
+        },
       });
 
       if (!res.ok) {
@@ -119,7 +119,7 @@ export async function apiFetch(endpoint, options = {}) {
   if (method === 'GET') {
     const cached = _apiCache.get(cacheKey);
     const now = Date.now();
-    if (cached && (now - cached.timestamp < CACHE_TTL)) {
+    if (cached && now - cached.timestamp < CACHE_TTL) {
       console.log(`⚡ [API Cache] Cache hit for ${endpoint}`);
       return cached.data;
     }
@@ -128,7 +128,7 @@ export async function apiFetch(endpoint, options = {}) {
   try {
     let response = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
-      credentials: "include", // Ensure HttpOnly cookies are attached
+      credentials: 'include', // Ensure HttpOnly cookies are attached
       headers: {
         ...authHeaders(),
         ...(options.headers || {}),
@@ -138,25 +138,27 @@ export async function apiFetch(endpoint, options = {}) {
     // Intercept 401 Unauthorized for Access Token Expiration
     if (response.status === 401 && endpoint !== '/auth/login' && endpoint !== '/auth/refresh') {
       try {
-        console.log(`🔑 [API Session] Access token expired, attempting silent refresh for ${endpoint}...`);
+        console.log(
+          `🔑 [API Session] Access token expired, attempting silent refresh for ${endpoint}...`
+        );
         await attemptTokenRefresh();
         // Retry the original request with the new tokens
         response = await fetch(`${API_BASE}${endpoint}`, {
           ...options,
-          credentials: "include",
+          credentials: 'include',
           headers: {
             ...authHeaders(),
             ...(options.headers || {}),
           },
         });
       } catch (refreshErr) {
-        throw new Error("Sesi Anda telah berakhir. Silakan login kembali.");
+        throw new Error('Sesi Anda telah berakhir. Silakan login kembali.');
       }
     }
 
     let result;
-    const contentType = response.headers.get("content-type");
-    if (contentType && contentType.includes("application/json")) {
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
       result = await response.json();
     } else {
       const text = await response.text();
@@ -168,7 +170,9 @@ export async function apiFetch(endpoint, options = {}) {
         if (window.__lokaLogout) window.__lokaLogout();
         else window.location.reload();
       }
-      throw new Error(`Server error: ${response.status}. Pastikan backend sudah dijalankan (npm run server).`);
+      throw new Error(
+        `Server error: ${response.status}. Pastikan backend sudah dijalankan (npm run server).`
+      );
     }
 
     if (!response.ok) {
@@ -179,21 +183,26 @@ export async function apiFetch(endpoint, options = {}) {
         if (window.__lokaLogout) window.__lokaLogout();
         else window.location.reload();
       }
-      throw new Error(result.error || result.message || "API Error");
+      throw new Error(result.error || result.message || 'API Error');
     }
 
     // Cache successful GET results
     if (method === 'GET' && response.ok) {
       _apiCache.set(cacheKey, {
         data: result,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
 
     return result;
   } catch (err) {
-    if (err.message.includes('Unexpected end of JSON input') || err.message.includes('Failed to fetch')) {
-      throw new Error("Gagal terhubung ke server. Pastikan backend sudah dijalankan (npm run server atau npm run dev:all).");
+    if (
+      err.message.includes('Unexpected end of JSON input') ||
+      err.message.includes('Failed to fetch')
+    ) {
+      throw new Error(
+        'Gagal terhubung ke server. Pastikan backend sudah dijalankan (npm run server atau npm run dev:all).'
+      );
     }
     throw err;
   }

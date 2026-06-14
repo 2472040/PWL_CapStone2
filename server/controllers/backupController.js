@@ -1,8 +1,18 @@
 const crypto = require('crypto');
-const { 
-  User, Room, Inventory, Bhp, Draft, DraftItem, 
-  DraftApproval, MaintenanceLog, MaintenanceBhp, 
-  Receiving, Label, AuditLog, sequelize 
+const {
+  User,
+  Room,
+  Inventory,
+  Bhp,
+  Draft,
+  DraftItem,
+  DraftApproval,
+  MaintenanceLog,
+  MaintenanceBhp,
+  Receiving,
+  Label,
+  AuditLog,
+  sequelize,
 } = require('../models');
 const { logAudit } = require('../middleware/audit');
 
@@ -45,7 +55,7 @@ const exportBackup = async (req, res) => {
       maintenanceBhp: await MaintenanceBhp.findAll(),
       receivings: await Receiving.findAll(),
       labels: await Label.findAll(),
-      auditLogs: await AuditLog.findAll()
+      auditLogs: await AuditLog.findAll(),
     };
 
     const rawJson = JSON.stringify(dbPayload);
@@ -58,7 +68,7 @@ const exportBackup = async (req, res) => {
     const salt = crypto.randomBytes(16).toString('hex'); // 16-byte dynamic salt
     const key = getEncryptionKey(salt);
     const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
-    
+
     let encrypted = cipher.update(rawJson, 'utf8', 'hex');
     encrypted += cipher.final('hex');
 
@@ -72,7 +82,7 @@ const exportBackup = async (req, res) => {
       tag,
       checksum,
       timestamp: new Date().toISOString(),
-      version: '3.0.0'
+      version: '3.0.0',
     };
 
     await logAudit(req.user.id, 'backup.export', 'database_backup', req.ip);
@@ -99,7 +109,12 @@ const restoreBackup = async (req, res) => {
     }
 
     if (!backupFile.tag) {
-      return res.status(400).json({ error: 'Integritas backup gagal: File tidak memiliki authentication tag (format tidak didukung).' });
+      return res
+        .status(400)
+        .json({
+          error:
+            'Integritas backup gagal: File tidak memiliki authentication tag (format tidak didukung).',
+        });
     }
 
     // Decrypt data using the stored salt (falls back to legacy static salt if undefined)
@@ -114,14 +129,20 @@ const restoreBackup = async (req, res) => {
       decrypted = decipher.update(backupFile.encrypted, 'hex', 'utf8');
       decrypted += decipher.final('utf8');
     } catch (decryptErr) {
-      return res.status(400).json({ error: 'Integritas backup gagal: File backup telah dimanipulasi atau kunci salah.' });
+      return res
+        .status(400)
+        .json({
+          error: 'Integritas backup gagal: File backup telah dimanipulasi atau kunci salah.',
+        });
     }
 
     // Verify SHA-256 Checksum Integrity if present
     if (backupFile.checksum) {
       const currentChecksum = crypto.createHash('sha256').update(decrypted).digest('hex');
       if (currentChecksum !== backupFile.checksum) {
-        return res.status(400).json({ error: 'Integritas backup gagal: Checksum SHA-256 tidak cocok.' });
+        return res
+          .status(400)
+          .json({ error: 'Integritas backup gagal: Checksum SHA-256 tidak cocok.' });
       }
     }
 
@@ -135,27 +156,47 @@ const restoreBackup = async (req, res) => {
 
       // Truncate tables
       const modelsList = [
-        User, Room, Inventory, Bhp, Draft, DraftItem, 
-        DraftApproval, MaintenanceLog, MaintenanceBhp, 
-        Receiving, Label, AuditLog
+        User,
+        Room,
+        Inventory,
+        Bhp,
+        Draft,
+        DraftItem,
+        DraftApproval,
+        MaintenanceLog,
+        MaintenanceBhp,
+        Receiving,
+        Label,
+        AuditLog,
       ];
       for (const model of modelsList) {
         await model.destroy({ truncate: true, force: true, transaction });
       }
 
       // Restore tables in safe order
-      if (payload.users && payload.users.length) await User.bulkCreate(payload.users, { transaction });
-      if (payload.rooms && payload.rooms.length) await Room.bulkCreate(payload.rooms, { transaction });
-      if (payload.inventory && payload.inventory.length) await Inventory.bulkCreate(payload.inventory, { transaction });
+      if (payload.users && payload.users.length)
+        await User.bulkCreate(payload.users, { transaction });
+      if (payload.rooms && payload.rooms.length)
+        await Room.bulkCreate(payload.rooms, { transaction });
+      if (payload.inventory && payload.inventory.length)
+        await Inventory.bulkCreate(payload.inventory, { transaction });
       if (payload.bhp && payload.bhp.length) await Bhp.bulkCreate(payload.bhp, { transaction });
-      if (payload.drafts && payload.drafts.length) await Draft.bulkCreate(payload.drafts, { transaction });
-      if (payload.draftItems && payload.draftItems.length) await DraftItem.bulkCreate(payload.draftItems, { transaction });
-      if (payload.draftApprovals && payload.draftApprovals.length) await DraftApproval.bulkCreate(payload.draftApprovals, { transaction });
-      if (payload.maintenanceLogs && payload.maintenanceLogs.length) await MaintenanceLog.bulkCreate(payload.maintenanceLogs, { transaction });
-      if (payload.maintenanceBhp && payload.maintenanceBhp.length) await MaintenanceBhp.bulkCreate(payload.maintenanceBhp, { transaction });
-      if (payload.receivings && payload.receivings.length) await Receiving.bulkCreate(payload.receivings, { transaction });
-      if (payload.labels && payload.labels.length) await Label.bulkCreate(payload.labels, { transaction });
-      if (payload.auditLogs && payload.auditLogs.length) await AuditLog.bulkCreate(payload.auditLogs, { transaction });
+      if (payload.drafts && payload.drafts.length)
+        await Draft.bulkCreate(payload.drafts, { transaction });
+      if (payload.draftItems && payload.draftItems.length)
+        await DraftItem.bulkCreate(payload.draftItems, { transaction });
+      if (payload.draftApprovals && payload.draftApprovals.length)
+        await DraftApproval.bulkCreate(payload.draftApprovals, { transaction });
+      if (payload.maintenanceLogs && payload.maintenanceLogs.length)
+        await MaintenanceLog.bulkCreate(payload.maintenanceLogs, { transaction });
+      if (payload.maintenanceBhp && payload.maintenanceBhp.length)
+        await MaintenanceBhp.bulkCreate(payload.maintenanceBhp, { transaction });
+      if (payload.receivings && payload.receivings.length)
+        await Receiving.bulkCreate(payload.receivings, { transaction });
+      if (payload.labels && payload.labels.length)
+        await Label.bulkCreate(payload.labels, { transaction });
+      if (payload.auditLogs && payload.auditLogs.length)
+        await AuditLog.bulkCreate(payload.auditLogs, { transaction });
 
       // Enable foreign keys back
       await sequelize.query('SET FOREIGN_KEY_CHECKS = 1', { transaction });
@@ -171,7 +212,9 @@ const restoreBackup = async (req, res) => {
     }
   } catch (err) {
     console.error('[Backup Restore Error]', err);
-    res.status(500).json({ error: 'Gagal merestore backup. File mungkin tidak kompatibel atau rusak.' });
+    res
+      .status(500)
+      .json({ error: 'Gagal merestore backup. File mungkin tidak kompatibel atau rusak.' });
   }
 };
 

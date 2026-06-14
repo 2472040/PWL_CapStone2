@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useStore, useToast, D, Icon, StatTile, useSearch } from '../../../components/app-shell.jsx';
+import {
+  useStore,
+  useToast,
+  D,
+  Icon,
+  StatTile,
+  useSearch,
+} from '../../../components/app-shell.jsx';
 import { apiFetch } from '../../../services/api.js';
 
 export function Users() {
   const { state, dispatch } = useStore();
   const { query } = useSearch();
   const toast = useToast();
-  const role = D.roles.find(r => r.id === 'sysadmin');
+  const role = D.roles.find((r) => r.id === 'sysadmin');
 
   useEffect(() => {
     async function loadUsers() {
@@ -22,10 +29,14 @@ export function Users() {
     loadUsers();
   }, [dispatch]);
 
-  const filteredUsers = state.users.filter(u => {
+  const filteredUsers = state.users.filter((u) => {
     if (!query) return true;
     const q = query.toLowerCase();
-    return u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || u.role.toLowerCase().includes(q);
+    return (
+      u.name.toLowerCase().includes(q) ||
+      u.email.toLowerCase().includes(q) ||
+      u.role.toLowerCase().includes(q)
+    );
   });
 
   async function toggleStatus(user) {
@@ -33,7 +44,7 @@ export function Users() {
     try {
       const res = await apiFetch(`/users/${user.id}`, {
         method: 'PUT',
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({ status: newStatus }),
       });
       if (res.data) {
         dispatch({ type: 'TOGGLE_USER', id: user.id });
@@ -46,10 +57,10 @@ export function Users() {
 
   async function handleDeleteUser(user) {
     const neverLoggedIn = !user.last_login && !user.lastLogin;
-    const msg = neverLoggedIn 
+    const msg = neverLoggedIn
       ? `Apakah Anda yakin ingin menghapus permanen pengguna "${user.name}" yang belum pernah login ini?`
       : `Apakah Anda yakin ingin menonaktifkan pengguna "${user.name}"? Sesi aktif pengguna akan dicabut.`;
-      
+
     if (!confirm(msg)) return;
     try {
       const res = await apiFetch(`/users/${user.id}`, { method: 'DELETE' });
@@ -68,11 +79,20 @@ export function Users() {
       toast('Tidak ada data pengguna untuk diekspor.', 'warn');
       return;
     }
-    
+
     try {
       // CSV headers
-      const headers = ['ID', 'Nama', 'Email', 'Role', 'Status', 'Initials', 'Login Terakhir', 'Dibuat Pada'];
-      
+      const headers = [
+        'ID',
+        'Nama',
+        'Email',
+        'Role',
+        'Status',
+        'Initials',
+        'Login Terakhir',
+        'Dibuat Pada',
+      ];
+
       const parseDate = (d) => {
         if (!d) return '';
         const date = new Date(d);
@@ -80,13 +100,13 @@ export function Users() {
       };
 
       // CSV rows
-      const rows = state.users.map(u => {
+      const rows = state.users.map((u) => {
         const nameStr = u.name ? String(u.name).replace(/"/g, '""') : '';
         const emailStr = u.email ? String(u.email).replace(/"/g, '""') : '';
         const roleStr = u.role ? String(u.role).replace(/"/g, '""') : '';
         const statusStr = u.status ? String(u.status).replace(/"/g, '""') : '';
         const initialsStr = u.initials ? String(u.initials).replace(/"/g, '""') : '';
-        
+
         let lastLoginStr = 'belum pernah';
         if (u.last_login) {
           lastLoginStr = parseDate(u.last_login);
@@ -109,21 +129,24 @@ export function Users() {
           `"${statusStr}"`,
           `"${initialsStr}"`,
           `"${lastLoginStr}"`,
-          `"${createdAtStr}"`
+          `"${createdAtStr}"`,
         ];
       });
-      
-      const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+
+      const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.setAttribute('href', url);
-      link.setAttribute('download', `lokalab_users_${new Date().toISOString().substring(0, 10)}.csv`);
+      link.setAttribute(
+        'download',
+        `lokalab_users_${new Date().toISOString().substring(0, 10)}.csv`
+      );
       link.style.visibility = 'hidden';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       toast('Data pengguna berhasil diekspor ke CSV!', 'ok');
     } catch (err) {
       console.error(err);
@@ -132,15 +155,23 @@ export function Users() {
   }
 
   return (
-    <div className="page" style={{'--role-accent': role.accent}}>
+    <div className="page" style={{ '--role-accent': role.accent }}>
       <div className="page-head" data-reveal>
         <div>
           <h1 className="page-title">Pengguna</h1>
-          <p className="page-sub">{state.users.filter(u => u.status === 'active').length} aktif · {state.users.filter(u => u.status === 'paused').length} di-pause</p>
+          <p className="page-sub">
+            {state.users.filter((u) => u.status === 'active').length} aktif ·{' '}
+            {state.users.filter((u) => u.status === 'paused').length} di-pause
+          </p>
         </div>
-        <div className="flex gap-2" >
-          <button className="btn" onClick={exportToCSV} title="Export ke CSV"><Icon name="download" size={13} /> Export CSV</button>
-          <button className="btn primary" onClick={() => dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'newUser' } })}>
+        <div className="flex gap-2">
+          <button className="btn" onClick={exportToCSV} title="Export ke CSV">
+            <Icon name="download" size={13} /> Export CSV
+          </button>
+          <button
+            className="btn primary"
+            onClick={() => dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'newUser' } })}
+          >
             <Icon name="plus" size={13} strokeWidth={2.4} /> Tambah pengguna
           </button>
         </div>
@@ -148,13 +179,22 @@ export function Users() {
 
       <div className="stats">
         {D.roles.map((r, i) => (
-          <StatTile key={r.id} label={r.title} value={state.users.filter(u => u.role === r.id).length} fmt="int" icon="users" accent={i === 0 ? role.accent : undefined} />
+          <StatTile
+            key={r.id}
+            label={r.title}
+            value={state.users.filter((u) => u.role === r.id).length}
+            fmt="int"
+            icon="users"
+            accent={i === 0 ? role.accent : undefined}
+          />
         ))}
       </div>
 
       {query && filteredUsers.length === 0 && (
         <div className="empty" data-reveal>
-          <div className="ico"><Icon name="search" size={20} /></div>
+          <div className="ico">
+            <Icon name="search" size={20} />
+          </div>
           <h4>Tidak ada pengguna cocok</h4>
           <div>Coba kata kunci lain.</div>
         </div>
@@ -162,27 +202,89 @@ export function Users() {
 
       <div className="table-wrap" data-reveal>
         <table className="tbl">
-          <thead><tr><th>Nama</th><th>Email</th><th>Role</th><th>Status</th><th>Login terakhir</th><th>Aksi</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Nama</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Login terakhir</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
           <tbody>
-            {filteredUsers.map(u => {
-              const r = D.roles.find(x => x.id === u.role) || { short: u.role, accent: 'var(--color-primary)' };
+            {filteredUsers.map((u) => {
+              const r = D.roles.find((x) => x.id === u.role) || {
+                short: u.role,
+                accent: 'var(--color-primary)',
+              };
               return (
                 <tr key={u.id}>
                   <td>
-                    <div className="flex gap-2.5 items-center" >
-                      <div className="avatar sm" style={{'--av-c': r.accent}}>{u.name.split(' ').map(w => w[0]).slice(0, 2).join('')}</div>
+                    <div className="flex gap-2.5 items-center">
+                      <div className="avatar sm" style={{ '--av-c': r.accent }}>
+                        {u.name
+                          .split(' ')
+                          .map((w) => w[0])
+                          .slice(0, 2)
+                          .join('')}
+                      </div>
                       <b>{u.name}</b>
                     </div>
                   </td>
                   <td className="mono text-xs">{u.email}</td>
-                  <td><span className="chip" style={{color: r.accent, borderColor: r.accent + '55'}}>{r.short}</span></td>
-                  <td>{u.status === 'active' ? <span className="chip ok"><span className="dot" /> Aktif</span> : <span className="chip warn"><span className="dot" /> Paused</span>}</td>
-                  <td className="text-xs">{u.last_login ? new Date(u.last_login).toLocaleString('id-ID') : (u.lastLogin || 'belum pernah')}</td>
                   <td>
-                    <div className="flex gap-1 justify-end" >
-                      <button className="act-btn" onClick={() => toggleStatus(u)} title="Aktif/Pause Pengguna" aria-label={`Toggle status ${u.name}`}><Icon name="swap" size={12} /></button>
-                      <button className="act-btn" onClick={() => dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'newUser', payload: u } })} title="Ubah Pengguna" aria-label={`Edit ${u.name}`}><Icon name="edit" size={12} /></button>
-                      <button className="act-btn danger" onClick={() => handleDeleteUser(u)} title="Hapus (Nonaktifkan)" aria-label={`Hapus ${u.name}`}><Icon name="trash" size={12} /></button>
+                    <span
+                      className="chip"
+                      style={{ color: r.accent, borderColor: r.accent + '55' }}
+                    >
+                      {r.short}
+                    </span>
+                  </td>
+                  <td>
+                    {u.status === 'active' ? (
+                      <span className="chip ok">
+                        <span className="dot" /> Aktif
+                      </span>
+                    ) : (
+                      <span className="chip warn">
+                        <span className="dot" /> Paused
+                      </span>
+                    )}
+                  </td>
+                  <td className="text-xs">
+                    {u.last_login
+                      ? new Date(u.last_login).toLocaleString('id-ID')
+                      : u.lastLogin || 'belum pernah'}
+                  </td>
+                  <td>
+                    <div className="flex gap-1 justify-end">
+                      <button
+                        className="act-btn"
+                        onClick={() => toggleStatus(u)}
+                        title="Aktif/Pause Pengguna"
+                        aria-label={`Toggle status ${u.name}`}
+                      >
+                        <Icon name="swap" size={12} />
+                      </button>
+                      <button
+                        className="act-btn"
+                        onClick={() =>
+                          dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'newUser', payload: u } })
+                        }
+                        title="Ubah Pengguna"
+                        aria-label={`Edit ${u.name}`}
+                      >
+                        <Icon name="edit" size={12} />
+                      </button>
+                      <button
+                        className="act-btn danger"
+                        onClick={() => handleDeleteUser(u)}
+                        title="Hapus (Nonaktifkan)"
+                        aria-label={`Hapus ${u.name}`}
+                      >
+                        <Icon name="trash" size={12} />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -208,28 +310,37 @@ export function NewUserForm({ payload, close }) {
   const [loading, setLoading] = useState(false);
 
   async function save() {
-    if (!name || !email) { toast('Isi nama dan email', 'warn'); return; }
-    if (!isEdit && !password) { toast('Password wajib diisi untuk pengguna baru', 'warn'); return; }
-    if (password && password !== confirmPassword) { toast('Password dan konfirmasi tidak cocok', 'warn'); return; }
-    
+    if (!name || !email) {
+      toast('Isi nama dan email', 'warn');
+      return;
+    }
+    if (!isEdit && !password) {
+      toast('Password wajib diisi untuk pengguna baru', 'warn');
+      return;
+    }
+    if (password && password !== confirmPassword) {
+      toast('Password dan konfirmasi tidak cocok', 'warn');
+      return;
+    }
+
     setLoading(true);
     try {
       const endpoint = isEdit ? `/users/${payload.id}` : '/users';
       const method = isEdit ? 'PUT' : 'POST';
-      
+
       const body = {
         name,
         email,
-        role
+        role,
       };
-      
+
       if (password) {
         body.password = password;
       }
 
       const res = await apiFetch(endpoint, {
         method: method,
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
       });
       if (res.data) {
         const refreshRes = await apiFetch('/users');
@@ -250,41 +361,94 @@ export function NewUserForm({ payload, close }) {
     <>
       <div className="drawer-bar">
         <div className="drawer-title">{isEdit ? 'Ubah pengguna' : 'Tambah pengguna'}</div>
-        <button className="x-btn" onClick={close} disabled={loading}><Icon name="x" size={14} /></button>
+        <button className="x-btn" onClick={close} disabled={loading}>
+          <Icon name="x" size={14} />
+        </button>
       </div>
       <div className="drawer-body">
         <div className="field">
-          <div className="field-lbl">Nama lengkap <span className="req">*</span></div>
-          <input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="Misal: Tirta Halim" disabled={loading} />
+          <div className="field-lbl">
+            Nama lengkap <span className="req">*</span>
+          </div>
+          <input
+            className="input"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Misal: Tirta Halim"
+            disabled={loading}
+          />
         </div>
         <div className="field">
-          <div className="field-lbl">Email <span className="req">*</span></div>
-          <input className="input" value={email} onChange={e => setEmail(e.target.value)} placeholder="tirta@kampus.id" disabled={loading} />
+          <div className="field-lbl">
+            Email <span className="req">*</span>
+          </div>
+          <input
+            className="input"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="tirta@kampus.id"
+            disabled={loading}
+          />
         </div>
         <div className="field">
           <div className="field-lbl">Role</div>
-          <select className="select" value={role} onChange={e => setRole(e.target.value)} disabled={loading}>
-            {D.roles.map(r => <option key={r.id} value={r.id}>{r.title}</option>)}
+          <select
+            className="select"
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            disabled={loading}
+          >
+            {D.roles.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.title}
+              </option>
+            ))}
           </select>
         </div>
         <div className="field">
-          <div className="field-lbl">{isEdit ? 'Ubah Password (kosongkan jika tidak ingin diubah)' : 'Password'} <span className={!isEdit ? 'req' : 'hidden'}>*</span></div>
-          <input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={isEdit ? "Masukkan password baru jika ingin diubah" : "Wajib diisi untuk akun baru"} disabled={loading} />
+          <div className="field-lbl">
+            {isEdit ? 'Ubah Password (kosongkan jika tidak ingin diubah)' : 'Password'}{' '}
+            <span className={!isEdit ? 'req' : 'hidden'}>*</span>
+          </div>
+          <input
+            className="input"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder={
+              isEdit ? 'Masukkan password baru jika ingin diubah' : 'Wajib diisi untuk akun baru'
+            }
+            disabled={loading}
+          />
         </div>
         {password && (
           <div className="field">
-            <div className="field-lbl">Konfirmasi Password <span className="req">*</span></div>
-            <input className="input" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Ketik ulang password" disabled={loading} />
+            <div className="field-lbl">
+              Konfirmasi Password <span className="req">*</span>
+            </div>
+            <input
+              className="input"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Ketik ulang password"
+              disabled={loading}
+            />
           </div>
         )}
-        <div className="card compact text-xs text-3 mt-4" >
-          <Icon name="info" size={11} /> {isEdit ? 'Perubahan role akan segera mencabut sesi aktif pengguna tersebut.' : 'Password tidak boleh dikosongkan untuk pendaftaran pengguna baru.'}
+        <div className="card compact text-xs text-3 mt-4">
+          <Icon name="info" size={11} />{' '}
+          {isEdit
+            ? 'Perubahan role akan segera mencabut sesi aktif pengguna tersebut.'
+            : 'Password tidak boleh dikosongkan untuk pendaftaran pengguna baru.'}
         </div>
       </div>
       <div className="drawer-foot">
-        <button className="btn" onClick={close} disabled={loading}>Batal</button>
+        <button className="btn" onClick={close} disabled={loading}>
+          Batal
+        </button>
         <button className="btn primary" onClick={save} disabled={loading}>
-          {loading ? 'Memproses...' : (isEdit ? 'Simpan Perubahan' : 'Buat Akun')}
+          {loading ? 'Memproses...' : isEdit ? 'Simpan Perubahan' : 'Buat Akun'}
         </button>
       </div>
     </>

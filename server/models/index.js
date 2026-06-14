@@ -40,7 +40,11 @@ Draft.hasMany(DraftItem, { as: 'items', foreignKey: 'draft_id', onDelete: 'CASCA
 DraftItem.belongsTo(Draft, { as: 'draft', foreignKey: 'draft_id' });
 
 // DraftItem ↔ DraftApproval
-DraftItem.hasOne(DraftApproval, { as: 'approval', foreignKey: 'draft_item_id', onDelete: 'CASCADE' });
+DraftItem.hasOne(DraftApproval, {
+  as: 'approval',
+  foreignKey: 'draft_item_id',
+  onDelete: 'CASCADE',
+});
 DraftApproval.belongsTo(DraftItem, { foreignKey: 'draft_item_id' });
 
 // DraftApproval ↔ User (approver)
@@ -54,7 +58,11 @@ Inventory.hasMany(MaintenanceLog, { as: 'maintenanceLogs', foreignKey: 'inventor
 MaintenanceLog.belongsTo(User, { as: 'technician', foreignKey: 'tech_user_id' });
 
 // MaintenanceLog ↔ MaintenanceBhp
-MaintenanceLog.hasMany(MaintenanceBhp, { as: 'bhpUsed', foreignKey: 'maintenance_log_id', onDelete: 'CASCADE' });
+MaintenanceLog.hasMany(MaintenanceBhp, {
+  as: 'bhpUsed',
+  foreignKey: 'maintenance_log_id',
+  onDelete: 'CASCADE',
+});
 MaintenanceBhp.belongsTo(MaintenanceLog, { foreignKey: 'maintenance_log_id' });
 
 // MaintenanceBhp ↔ Bhp

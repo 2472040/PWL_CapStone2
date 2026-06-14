@@ -17,7 +17,11 @@ export function PageBar({ breadcrumbs, rightContent }) {
       <div className="crumb" aria-label="Breadcrumb">
         {breadcrumbs.map((b, i) => (
           <React.Fragment key={i}>
-            {i > 0 && <span className="sep" aria-hidden="true">/</span>}
+            {i > 0 && (
+              <span className="sep" aria-hidden="true">
+                /
+              </span>
+            )}
             <span className={i === breadcrumbs.length - 1 ? 'cur' : ''}>{b}</span>
           </React.Fragment>
         ))}
@@ -29,21 +33,27 @@ export function PageBar({ breadcrumbs, rightContent }) {
             ref={inputRef}
             placeholder="Cari aset, draf, ruangan…"
             value={query}
-            onChange={e => setQuery(e.target.value)}
+            onChange={(e) => setQuery(e.target.value)}
             aria-label="Cari"
           />
           <kbd aria-hidden="true">⌘K</kbd>
         </div>
         {rightContent}
-        <button 
-          className="btn icon" 
-          title="Pindai QR Aset" 
+        <button
+          className="btn icon"
+          title="Pindai QR Aset"
           onClick={() => dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'qrScanner' } })}
-          style={{ background: 'rgba(183,148,255,0.15)', color: '#b794ff', border: '1px solid rgba(183,148,255,0.2)' }}
+          style={{
+            background: 'rgba(183,148,255,0.15)',
+            color: '#b794ff',
+            border: '1px solid rgba(183,148,255,0.2)',
+          }}
         >
           <Icon name="qr" size={14} />
         </button>
-        <button className="btn icon" title="Notifikasi" aria-label="Notifikasi"><Icon name="bell" size={14} /></button>
+        <button className="btn icon" title="Notifikasi" aria-label="Notifikasi">
+          <Icon name="bell" size={14} />
+        </button>
       </div>
     </div>
   );
@@ -66,9 +76,9 @@ export function PageHost({ children, role, screen }) {
         if (Number.isNaN(target)) return;
         const obj = { v: 0 };
         window.gsap.to(obj, {
-          v: target, 
-          duration: 1.2, 
-          delay: index * 0.05 + 0.05, 
+          v: target,
+          duration: 1.2,
+          delay: index * 0.05 + 0.05,
           ease: 'power3.out',
           onUpdate: () => {
             const fmt = c.dataset.fmt;
@@ -82,21 +92,33 @@ export function PageHost({ children, role, screen }) {
     return () => ctx.revert();
   }, [role, screen]);
 
-  return <div ref={ref} className="page-enter in">{children}</div>;
+  return (
+    <div ref={ref} className="page-enter in">
+      {children}
+    </div>
+  );
 }
 
 // =========================================================
 // Stat tile with GSAP counter
 // =========================================================
 export function StatTile({ label, value, fmt = 'int', icon, delta, accent }) {
-  const initial = fmt === 'rp' ? window.fmtRpShort(value || 0) : (value || 0).toLocaleString('id-ID');
+  const initial =
+    fmt === 'rp' ? window.fmtRpShort(value || 0) : (value || 0).toLocaleString('id-ID');
   return (
     <div className="stat-tile" data-reveal>
       <div className="stat-tile-lbl">
         {icon && <Icon name={icon} size={13} strokeWidth={1.8} />}
         {label}
       </div>
-      <div className="stat-tile-val mono" style={{color: accent}} data-counter={value} data-fmt={fmt}>{initial}</div>
+      <div
+        className="stat-tile-val mono"
+        style={{ color: accent }}
+        data-counter={value}
+        data-fmt={fmt}
+      >
+        {initial}
+      </div>
       {delta && <div className={`stat-tile-delta ${delta.dir}`}>{delta.text}</div>}
     </div>
   );
@@ -116,11 +138,23 @@ export function MobileSidebarToggle() {
         aria-controls="main-sidebar"
         onClick={() => dispatch({ type: 'TOGGLE_MOBILE_SIDEBAR' })}
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        >
           {state.mobileSidebarOpen ? (
-            <><path d="M18 6L6 18M6 6l12 12"/></>
+            <>
+              <path d="M18 6L6 18M6 6l12 12" />
+            </>
           ) : (
-            <><path d="M3 12h18M3 6h18M3 18h18"/></>
+            <>
+              <path d="M3 12h18M3 6h18M3 18h18" />
+            </>
           )}
         </svg>
       </button>

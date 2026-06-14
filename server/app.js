@@ -11,18 +11,22 @@ const app = express();
 // Middleware
 // =============================================
 // Security Hardening with Helmet
-app.use(helmet({
-  contentSecurityPolicy: false,
-  crossOriginEmbedderPolicy: false
-}));
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+  })
+);
 
 app.use(requestLogger);
 
 // Strict CORS configuration supporting HTTP credentials (cookies)
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    credentials: true,
+  })
+);
 
 const csrfProtection = require('./middleware/csrf');
 
@@ -30,19 +34,19 @@ const csrfProtection = require('./middleware/csrf');
 app.use((req, res, next) => {
   const isProd = process.env.NODE_ENV === 'production';
   const scriptSrc = isProd ? "'self'" : "'self' 'unsafe-inline' 'unsafe-eval'";
-  const connectSrc = isProd 
-    ? "'self'" 
+  const connectSrc = isProd
+    ? "'self'"
     : "'self' ws://localhost:5173 http://localhost:3000 http://localhost:5173 ws://localhost:*";
 
   res.setHeader(
     'Content-Security-Policy',
     `default-src 'self'; ` +
-    `script-src ${scriptSrc}; ` +
-    `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; ` +
-    `font-src 'self' data: https://fonts.gstatic.com; ` +
-    `img-src 'self' data: blob:; ` +
-    `connect-src ${connectSrc}; ` +
-    `frame-ancestors 'none';`
+      `script-src ${scriptSrc}; ` +
+      `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; ` +
+      `font-src 'self' data: https://fonts.gstatic.com; ` +
+      `img-src 'self' data: blob:; ` +
+      `connect-src ${connectSrc}; ` +
+      `frame-ancestors 'none';`
   );
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -97,8 +101,15 @@ app.get('/print/label/:id', async (req, res) => {
     const label = await Label.findByPk(req.params.id, {
       include: [{ model: Inventory, attributes: ['id', 'code', 'name', 'category', 'serial'] }],
     });
-    if (!label) return res.status(404).render('error', { title: 'Not Found', message: 'Label tidak ditemukan.' });
-    res.render('print-label', { title: `Label ${label.Inventory.code}`, label, item: label.Inventory });
+    if (!label)
+      return res
+        .status(404)
+        .render('error', { title: 'Not Found', message: 'Label tidak ditemukan.' });
+    res.render('print-label', {
+      title: `Label ${label.Inventory.code}`,
+      label,
+      item: label.Inventory,
+    });
   } catch (err) {
     res.status(500).render('error', { title: 'Error', message: 'Terjadi kesalahan.' });
   }

@@ -18,14 +18,14 @@ const storage = multer.diskStorage({
     const sanitized = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, `${uniqueSuffix}-${sanitized}`);
-  }
+  },
 });
 
 // File Filter for extensions and MIME types
 const fileFilter = (req, file, cb) => {
   const allowedExts = ['.png', '.jpg', '.jpeg'];
   const ext = path.extname(file.originalname).toLowerCase();
-  
+
   if (!allowedExts.includes(ext)) {
     return cb(new Error('Ekstensi file tidak didukung. Hanya menerima .png, .jpg, .jpeg'), false);
   }
@@ -42,8 +42,8 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 2 * 1024 * 1024 // 2MB strict size limit
-  }
+    fileSize: 2 * 1024 * 1024, // 2MB strict size limit
+  },
 });
 
 /**
@@ -57,7 +57,7 @@ const validateMagicBytes = (req, res, next) => {
   }
 
   const filePath = req.file.path;
-  
+
   fs.open(filePath, 'r', (err, fd) => {
     if (err) {
       return res.status(500).json({ error: 'Gagal memvalidasi integritas file.' });
@@ -86,9 +86,12 @@ const validateMagicBytes = (req, res, next) => {
       if (!isValid) {
         // Clean up malicious file
         fs.unlink(filePath, () => {});
-        console.error(`⚠️🚨 [SECURITY WARNING] DETEKSI FILE PALSU! File "${req.file.originalname}" dengan hex "${hex}" ditolak.`);
+        console.error(
+          `⚠️🚨 [SECURITY WARNING] DETEKSI FILE PALSU! File "${req.file.originalname}" dengan hex "${hex}" ditolak.`
+        );
         return res.status(400).json({
-          error: 'Proteksi Unggah: File terdeteksi palsu (Magic Bytes tidak cocok dengan ekstensi). File telah dihapus secara aman.'
+          error:
+            'Proteksi Unggah: File terdeteksi palsu (Magic Bytes tidak cocok dengan ekstensi). File telah dihapus secara aman.',
         });
       }
 
@@ -99,5 +102,5 @@ const validateMagicBytes = (req, res, next) => {
 
 module.exports = {
   uploadImage: upload.single('image'),
-  validateMagicBytes
+  validateMagicBytes,
 };

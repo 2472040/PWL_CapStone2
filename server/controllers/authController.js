@@ -6,7 +6,13 @@ const { logAudit } = require('../middleware/audit');
 const { tokenBlacklist } = require('../middleware/auth');
 const { clearLoginAttempts } = require('../middleware/rateLimiter');
 const asyncHandler = require('../utils/asyncHandler');
-const { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError } = require('../utils/errors');
+const {
+  BadRequestError,
+  UnauthorizedError,
+  ForbiddenError,
+  NotFoundError,
+  ConflictError,
+} = require('../utils/errors');
 
 /**
  * POST /api/auth/login
@@ -43,11 +49,11 @@ const login = asyncHandler(async (req, res) => {
   // Generate Access Token (15m)
   const jti = crypto.randomUUID();
   const token = jwt.sign(
-    { 
-      id: user.id, 
+    {
+      id: user.id,
       role: user.role,
       tokenVersion: user.token_version,
-      jti
+      jti,
     },
     process.env.JWT_SECRET,
     { expiresIn: '15m' }
@@ -59,7 +65,7 @@ const login = asyncHandler(async (req, res) => {
     {
       id: user.id,
       jti: refreshJti,
-      type: 'refresh'
+      type: 'refresh',
     },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
@@ -71,7 +77,7 @@ const login = asyncHandler(async (req, res) => {
     token: hashedRefreshToken,
     user_id: user.id,
     jti: refreshJti,
-    expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
   });
 
   // Set Access Token HttpOnly Cookie (15 minutes)
@@ -79,7 +85,7 @@ const login = asyncHandler(async (req, res) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: 15 * 60 * 1000 // 15 minutes
+    maxAge: 15 * 60 * 1000, // 15 minutes
   });
 
   // Set Refresh Token HttpOnly Cookie (7 days) - restricted to refresh path
@@ -88,7 +94,7 @@ const login = asyncHandler(async (req, res) => {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    path: '/api/auth/refresh'
+    path: '/api/auth/refresh',
   });
 
   // Set CSRF Cookie (Double Submit Cookie Pattern - must be accessible via JS)
@@ -97,7 +103,7 @@ const login = asyncHandler(async (req, res) => {
     httpOnly: false, // Read by frontend React
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000 // Match refresh token duration
+    maxAge: 7 * 24 * 60 * 60 * 1000, // Match refresh token duration
   });
 
   clearLoginAttempts(req.ip, email);
@@ -145,7 +151,12 @@ const updateProfile = asyncHandler(async (req, res) => {
   if (name) {
     user.name = name;
     // Re-generate initials
-    user.initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+    user.initials = name
+      .split(' ')
+      .map((w) => w[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
   }
 
   if (password) {
@@ -163,7 +174,7 @@ const updateProfile = asyncHandler(async (req, res) => {
       email: user.email,
       role: user.role,
       initials: user.initials,
-    }
+    },
   });
 });
 
@@ -183,7 +194,7 @@ const logout = asyncHandler(async (req, res) => {
 
   if (req.headers.cookie) {
     const cookies = {};
-    req.headers.cookie.split(';').forEach(c => {
+    req.headers.cookie.split(';').forEach((c) => {
       const parts = c.split('=');
       cookies[parts.shift().trim()] = decodeURI(parts.join('='));
     });
@@ -224,7 +235,7 @@ const logout = asyncHandler(async (req, res) => {
   res.clearCookie('token', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax'
+    sameSite: 'lax',
   });
 
   // Clear HttpOnly Refresh Cookie
@@ -232,14 +243,14 @@ const logout = asyncHandler(async (req, res) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    path: '/api/auth/refresh'
+    path: '/api/auth/refresh',
   });
 
   // Clear CSRF Cookie
   res.clearCookie('csrfToken', {
     httpOnly: false,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax'
+    sameSite: 'lax',
   });
 
   await logAudit(userId, 'auth.logout', req.user.email, req.ip);
@@ -256,7 +267,7 @@ const refresh = asyncHandler(async (req, res) => {
 
   if (req.headers.cookie) {
     const cookies = {};
-    req.headers.cookie.split(';').forEach(c => {
+    req.headers.cookie.split(';').forEach((c) => {
       const parts = c.split('=');
       cookies[parts.shift().trim()] = decodeURI(parts.join('='));
     });
@@ -294,9 +305,16 @@ const refresh = asyncHandler(async (req, res) => {
       await user.save();
       // Delete all active refresh tokens for this user
       await RefreshToken.destroy({ where: { user_id: user.id } });
-      await logAudit(user.id, 'auth.security_violation', `Deteksi penggunaan ulang refresh token (kemungkinan serangan). Sesi di-invalidate.`, req.ip);
+      await logAudit(
+        user.id,
+        'auth.security_violation',
+        `Deteksi penggunaan ulang refresh token (kemungkinan serangan). Sesi di-invalidate.`,
+        req.ip
+      );
     }
-    throw new UnauthorizedError('Peringatan keamanan: Deteksi manipulasi sesi. Silakan login kembali.');
+    throw new UnauthorizedError(
+      'Peringatan keamanan: Deteksi manipulasi sesi. Silakan login kembali.'
+    );
   }
 
   // Check if the token is expired in database
@@ -317,11 +335,11 @@ const refresh = asyncHandler(async (req, res) => {
   // Generate new Access Token (15m)
   const newJti = crypto.randomUUID();
   const newAccessToken = jwt.sign(
-    { 
-      id: user.id, 
+    {
+      id: user.id,
       role: user.role,
       tokenVersion: user.token_version,
-      jti: newJti
+      jti: newJti,
     },
     process.env.JWT_SECRET,
     { expiresIn: '15m' }
@@ -333,7 +351,7 @@ const refresh = asyncHandler(async (req, res) => {
     {
       id: user.id,
       jti: newRefreshJti,
-      type: 'refresh'
+      type: 'refresh',
     },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
@@ -345,7 +363,7 @@ const refresh = asyncHandler(async (req, res) => {
     token: hashedNewRefreshToken,
     user_id: user.id,
     jti: newRefreshJti,
-    expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
   });
 
   // Set new Access Token HttpOnly Cookie
@@ -353,7 +371,7 @@ const refresh = asyncHandler(async (req, res) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: 15 * 60 * 1000 // 15 minutes
+    maxAge: 15 * 60 * 1000, // 15 minutes
   });
 
   // Set new Refresh Token HttpOnly Cookie
@@ -362,7 +380,7 @@ const refresh = asyncHandler(async (req, res) => {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000,
-    path: '/api/auth/refresh'
+    path: '/api/auth/refresh',
   });
 
   // Optional: Clean up expired tokens for this user in background
@@ -370,9 +388,9 @@ const refresh = asyncHandler(async (req, res) => {
   RefreshToken.destroy({
     where: {
       user_id: user.id,
-      expires_at: { [Op.lt]: new Date() }
-    }
-  }).catch(e => console.error('[Expired Token Cleanup Error]', e.message));
+      expires_at: { [Op.lt]: new Date() },
+    },
+  }).catch((e) => console.error('[Expired Token Cleanup Error]', e.message));
 
   res.json({
     data: {
@@ -383,10 +401,9 @@ const refresh = asyncHandler(async (req, res) => {
         email: user.email,
         role: user.role,
         initials: user.initials,
-      }
-    }
+      },
+    },
   });
 });
 
 module.exports = { login, me, updateProfile, logout, refresh };
-

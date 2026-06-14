@@ -152,4 +152,3 @@ router.get('/me', authenticate, me);
 router.put('/profile', authenticate, updateProfile);
 
 module.exports = router;
-

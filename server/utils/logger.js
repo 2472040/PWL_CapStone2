@@ -52,8 +52,8 @@ const logger = winston.createLogger({
       maxSize: '20m',
       maxFiles: '14d',
       level: 'error',
-    })
-  ]
+    }),
+  ],
 });
 
 // Middleware for Express request logging
@@ -77,5 +77,5 @@ const requestLogger = (req, res, next) => {
 
 module.exports = {
   logger,
-  requestLogger
+  requestLogger,
 };

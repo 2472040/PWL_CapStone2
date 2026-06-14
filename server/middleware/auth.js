@@ -8,7 +8,10 @@ const tokenBlacklist = {
       const found = await RevokedToken.findOne({ where: { jti } });
       return !!found;
     } catch (e) {
-      console.error('[Blacklist Has Error] Database error - treating as revoked (fail-closed):', e.message);
+      console.error(
+        '[Blacklist Has Error] Database error - treating as revoked (fail-closed):',
+        e.message
+      );
       return true; // Fail-closed: block access if JTI check fails
     }
   },
@@ -22,7 +25,7 @@ const tokenBlacklist = {
       }
       await RevokedToken.create({
         jti,
-        expires_at: expiry
+        expires_at: expiry,
       });
     } catch (e) {
       if (e.name !== 'SequelizeUniqueConstraintError') {
@@ -36,9 +39,9 @@ const tokenBlacklist = {
       const deletedCount = await RevokedToken.destroy({
         where: {
           expires_at: {
-            [Op.lt]: new Date()
-          }
-        }
+            [Op.lt]: new Date(),
+          },
+        },
       });
       if (deletedCount > 0) {
         console.log(`🧹 [Blacklist Cleanup] Berhasil menghapus ${deletedCount} token kedaluwarsa.`);
@@ -46,7 +49,7 @@ const tokenBlacklist = {
     } catch (e) {
       console.error('[Blacklist Cleanup Error]', e.message);
     }
-  }
+  },
 };
 
 /**
@@ -55,7 +58,7 @@ const tokenBlacklist = {
 const parseCookies = (cookieHeader) => {
   const list = {};
   if (!cookieHeader) return list;
-  cookieHeader.split(';').forEach(cookie => {
+  cookieHeader.split(';').forEach((cookie) => {
     const parts = cookie.split('=');
     list[parts.shift().trim()] = decodeURI(parts.join('='));
   });
@@ -95,7 +98,7 @@ const authenticate = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Validate blacklist (JTI revocation)
-    if (decoded.jti && await tokenBlacklist.has(decoded.jti)) {
+    if (decoded.jti && (await tokenBlacklist.has(decoded.jti))) {
       return res.status(401).json({ error: 'Sesi Anda telah berakhir. Silakan login kembali.' });
     }
 
@@ -111,8 +114,9 @@ const authenticate = async (req, res, next) => {
 
     // Validate token version (revokes token on password change, role update, or deactivation)
     if (decoded.tokenVersion === undefined || decoded.tokenVersion !== user.token_version) {
-      return res.status(401).json({ 
-        error: 'Sesi Anda tidak valid (sandi/peran berubah atau telah keluar). Silakan login ulang.' 
+      return res.status(401).json({
+        error:
+          'Sesi Anda tidak valid (sandi/peran berubah atau telah keluar). Silakan login ulang.',
       });
     }
 
@@ -136,8 +140,8 @@ const authorize = (...roles) => {
       return res.status(401).json({ error: 'Tidak terautentikasi.' });
     }
     if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ 
-        error: `Akses ditolak. Role "${req.user.role}" tidak memiliki izin untuk aksi ini.` 
+      return res.status(403).json({
+        error: `Akses ditolak. Role "${req.user.role}" tidak memiliki izin untuk aksi ini.`,
       });
     }
     next();

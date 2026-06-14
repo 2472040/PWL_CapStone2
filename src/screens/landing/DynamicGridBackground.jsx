@@ -7,7 +7,7 @@ export default function DynamicGridBackground() {
       <div className="absolute inset-0 bg-[#0B0A10]" />
 
       {/* 2. Animated Grid SVG Pattern */}
-      <div 
+      <div
         className="absolute inset-0 opacity-[0.15]"
         style={{
           backgroundImage: `
@@ -21,18 +21,18 @@ export default function DynamicGridBackground() {
       />
 
       {/* 3. Glowing Orbs/Aurora Effects */}
-      <div 
+      <div
         className="absolute left-[20%] top-[10%] w-[600px] h-[600px] rounded-full opacity-20 blur-[120px] mix-blend-screen"
         style={{
           background: 'radial-gradient(circle, #8A2BE2 0%, rgba(138,43,226,0) 70%)',
-          animation: 'pulse-slow 8s infinite alternate'
+          animation: 'pulse-slow 8s infinite alternate',
         }}
       />
-      <div 
+      <div
         className="absolute right-[20%] bottom-[10%] w-[500px] h-[500px] rounded-full opacity-20 blur-[100px] mix-blend-screen"
         style={{
           background: 'radial-gradient(circle, #00BFFF 0%, rgba(0,191,255,0) 70%)',
-          animation: 'pulse-slow 10s infinite alternate-reverse'
+          animation: 'pulse-slow 10s infinite alternate-reverse',
         }}
       />
 

@@ -7,7 +7,8 @@ const options = {
     info: {
       title: 'LokaLab Suite API Docs',
       version: '3.0.0',
-      description: 'Dokumentasi interaktif API LokaLab Suite - Sistem Manajemen Inventaris & Pengadaan Laboratorium Terintegrasi',
+      description:
+        'Dokumentasi interaktif API LokaLab Suite - Sistem Manajemen Inventaris & Pengadaan Laboratorium Terintegrasi',
       contact: {
         name: 'Maranatha Lab Support',
         email: '2472901@maranatha.ac.id',

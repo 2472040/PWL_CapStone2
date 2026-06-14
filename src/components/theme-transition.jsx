@@ -26,10 +26,13 @@ export function themeTransition(dispatch, newTheme, e) {
   }
 
   // Calculate radius needed to cover the entire viewport
-  const maxRadius = Math.ceil(Math.hypot(
-    Math.max(originX, window.innerWidth - originX),
-    Math.max(originY, window.innerHeight - originY)
-  )) + 20;
+  const maxRadius =
+    Math.ceil(
+      Math.hypot(
+        Math.max(originX, window.innerWidth - originX),
+        Math.max(originY, window.innerHeight - originY)
+      )
+    ) + 20;
 
   if (document.startViewTransition) {
     _themeTransitioning = true;
@@ -83,7 +86,10 @@ export function themeTransition(dispatch, newTheme, e) {
         overlay.style.clipPath = `circle(${maxRadius}px at ${originX}px ${originY}px)`;
       });
       setTimeout(() => dispatch({ type: 'SET_THEME', theme: newTheme }), 200);
-      setTimeout(() => { overlay.remove(); _themeTransitioning = false; }, 600);
+      setTimeout(() => {
+        overlay.remove();
+        _themeTransitioning = false;
+      }, 600);
     }
   }
 }

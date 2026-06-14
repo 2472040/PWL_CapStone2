@@ -15,26 +15,32 @@ const PORT = process.env.PORT || 3000;
  */
 function ensureProductionSecrets() {
   const criticalSecrets = ['JWT_SECRET', 'BACKUP_ENCRYPTION_SECRET', 'AUDIT_LOG_SECRET'];
-  const missing = criticalSecrets.filter(secret => !process.env[secret]);
+  const missing = criticalSecrets.filter((secret) => !process.env[secret]);
 
   if (missing.length > 0) {
     if (process.env.NODE_ENV === 'production') {
-      console.log(`\n⚙️  [AUTO-CONFIG] Mendeteksi variabel lingkungan keamanan yang hilang di produksi: ${missing.join(', ')}`);
+      console.log(
+        `\n⚙️  [AUTO-CONFIG] Mendeteksi variabel lingkungan keamanan yang hilang di produksi: ${missing.join(', ')}`
+      );
       console.log('⚙️  Membuat rahasia kriptografi aman secara otomatis...');
 
       const envPath = path.join(__dirname, '.env');
       const parentEnvPath = path.join(__dirname, '../.env');
-      const targetEnvPath = fs.existsSync(parentEnvPath) ? parentEnvPath : (fs.existsSync(envPath) ? envPath : parentEnvPath);
+      const targetEnvPath = fs.existsSync(parentEnvPath)
+        ? parentEnvPath
+        : fs.existsSync(envPath)
+          ? envPath
+          : parentEnvPath;
 
       let envContent = '';
       if (fs.existsSync(targetEnvPath)) {
         envContent = fs.readFileSync(targetEnvPath, 'utf8');
       }
 
-      missing.forEach(secret => {
+      missing.forEach((secret) => {
         const secureVal = crypto.randomBytes(32).toString('hex');
         process.env[secret] = secureVal;
-        
+
         if (envContent && !envContent.endsWith('\n')) {
           envContent += '\n';
         }
@@ -43,10 +49,14 @@ function ensureProductionSecrets() {
 
       try {
         fs.writeFileSync(targetEnvPath, envContent, 'utf8');
-        console.log(`✅ [AUTO-CONFIG] Variabel keamanan berhasil disimpan secara permanen di: ${targetEnvPath}\n`);
+        console.log(
+          `✅ [AUTO-CONFIG] Variabel keamanan berhasil disimpan secara permanen di: ${targetEnvPath}\n`
+        );
       } catch (err) {
         console.error(`⚠️  [AUTO-CONFIG ERROR] Gagal menulis ke file .env:`, err.message);
-        console.warn('Aplikasi akan tetap berjalan menggunakan rahasia memori sementara untuk sesi ini.\n');
+        console.warn(
+          'Aplikasi akan tetap berjalan menggunakan rahasia memori sementara untuk sesi ini.\n'
+        );
       }
     } else {
       // Development warning
@@ -70,9 +80,11 @@ async function start() {
     if (process.env.NODE_ENV === 'production') {
       try {
         const tables = await sequelize.getQueryInterface().showAllTables();
-        const hasUsersTable = tables.some(t => t.toLowerCase() === 'users');
+        const hasUsersTable = tables.some((t) => t.toLowerCase() === 'users');
         if (hasUsersTable) {
-          console.log('✅ Tabel database sudah ada, melewati sequelize.sync() untuk stabilitas produksi');
+          console.log(
+            '✅ Tabel database sudah ada, melewati sequelize.sync() untuk stabilitas produksi'
+          );
         } else {
           console.log('⚙️  Database kosong di produksi. Melakukan sinkronisasi tabel awal...');
           await sequelize.sync();
@@ -92,9 +104,12 @@ async function start() {
     const { tokenBlacklist } = require('./middleware/auth');
     await tokenBlacklist.cleanup();
     // Run cleanup every 6 hours
-    setInterval(async () => {
-      await tokenBlacklist.cleanup();
-    }, 6 * 60 * 60 * 1000);
+    setInterval(
+      async () => {
+        await tokenBlacklist.cleanup();
+      },
+      6 * 60 * 60 * 1000
+    );
 
     // Initialize Automated Scheduled Backups (Daily Cron)
     const { initializeScheduler } = require('./utils/scheduler');
@@ -105,8 +120,8 @@ async function start() {
     const io = new Server(server, {
       cors: {
         origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
-        credentials: true
-      }
+        credentials: true,
+      },
     });
 
     app.set('io', io);

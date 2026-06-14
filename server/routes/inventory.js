@@ -1,8 +1,12 @@
 const router = require('express').Router();
 const { authenticate, authorize } = require('../middleware/auth');
 const {
-  getInventory, getInventoryDetail, createInventory, updateInventory,
-  updateLabel, getLabels
+  getInventory,
+  getInventoryDetail,
+  createInventory,
+  updateInventory,
+  updateLabel,
+  getLabels,
 } = require('../controllers/inventoryController');
 
 /**

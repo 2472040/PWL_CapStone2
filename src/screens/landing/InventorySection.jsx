@@ -5,9 +5,16 @@ export default function InventorySection() {
   return (
     <section className="au-section" id="inv-section">
       <AuRise>
-        <div className="au-section-tag"><ScrambleText text="— Inventaris" /></div>
-        <h2 className="au-section-h2">Cari satu aset, tahu segalanya — di mana, <em>kondisinya apa</em>, kapan terakhir dipakai.</h2>
-        <p className="au-section-sub">Setiap aset punya kartu sendiri dengan QR fisik, riwayat maintenance, dan riwayat pemakaian per praktikum. Tidak perlu lagi cari di spreadsheet.</p>
+        <div className="au-section-tag">
+          <ScrambleText text="— Inventaris" />
+        </div>
+        <h2 className="au-section-h2">
+          Cari satu aset, tahu segalanya — di mana, <em>kondisinya apa</em>, kapan terakhir dipakai.
+        </h2>
+        <p className="au-section-sub">
+          Setiap aset punya kartu sendiri dengan QR fisik, riwayat maintenance, dan riwayat
+          pemakaian per praktikum. Tidak perlu lagi cari di spreadsheet.
+        </p>
       </AuRise>
 
       <AuStagger className="au-inv-grid">
@@ -28,11 +35,17 @@ export default function InventorySection() {
               </div>
               <div className="au-inv-meta-row">
                 <span className="k">Kondisi</span>
-                <span><span className={`au-cond ${it.cond.toLowerCase().replace(' ', '-')}`}>{it.cond}</span></span>
+                <span>
+                  <span className={`au-cond ${it.cond.toLowerCase().replace(' ', '-')}`}>
+                    {it.cond}
+                  </span>
+                </span>
               </div>
               <div className="au-inv-meta-row">
                 <span className="k">Terakhir digunakan</span>
-                <span className="v au-mono" style={{ fontSize: 11 }}>{it.last}</span>
+                <span className="v au-mono" style={{ fontSize: 11 }}>
+                  {it.last}
+                </span>
               </div>
             </div>
           </div>

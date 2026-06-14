@@ -12,7 +12,11 @@ const getMaintenanceLogs = async (req, res) => {
       include: [
         { model: Inventory, attributes: ['id', 'code', 'name'] },
         { model: User, as: 'technician', attributes: ['id', 'name'] },
-        { model: MaintenanceBhp, as: 'bhpUsed', include: [{ model: Bhp, attributes: ['id', 'code', 'name', 'unit'] }] },
+        {
+          model: MaintenanceBhp,
+          as: 'bhpUsed',
+          include: [{ model: Bhp, attributes: ['id', 'code', 'name', 'unit'] }],
+        },
       ],
       order: [['date', 'DESC']],
     });
@@ -34,10 +38,10 @@ const createMaintenance = async (req, res) => {
 
     const logsCreated = [];
     const inventoryCodes = [];
-    
+
     // Initial count for code generation
     const year = new Date().getFullYear();
-    const startCount = await MaintenanceLog.count({ transaction: t }) + 1;
+    const startCount = (await MaintenanceLog.count({ transaction: t })) + 1;
 
     for (let i = 0; i < inventory_ids.length; i++) {
       const inv_id = inventory_ids[i];
@@ -49,10 +53,17 @@ const createMaintenance = async (req, res) => {
       // Auto-generate code for each log
       const code = `M-${year}-${String(startCount + logsCreated.length).padStart(3, '0')}`;
 
-      const log = await MaintenanceLog.create({
-        code, inventory_id: inv_id, tech_user_id: req.user.id,
-        action, condition_after, date,
-      }, { transaction: t });
+      const log = await MaintenanceLog.create(
+        {
+          code,
+          inventory_id: inv_id,
+          tech_user_id: req.user.id,
+          action,
+          condition_after,
+          date,
+        },
+        { transaction: t }
+      );
 
       logsCreated.push(log);
 
@@ -74,18 +85,21 @@ const createMaintenance = async (req, res) => {
 
       for (const item of bhp_used) {
         // item: { asset_code, bhp_id, qty }
-        const log = logsCreated.find(l => {
+        const log = logsCreated.find((l) => {
           // Find the inventory code for this log
           const invCode = inventoryCodes[logsCreated.indexOf(l)];
           return invCode === item.asset_code;
         });
 
         if (log && item.qty > 0) {
-          await MaintenanceBhp.create({
-            maintenance_log_id: log.id,
-            bhp_id: item.bhp_id,
-            qty_used: parseFloat(item.qty),
-          }, { transaction: t });
+          await MaintenanceBhp.create(
+            {
+              maintenance_log_id: log.id,
+              bhp_id: item.bhp_id,
+              qty_used: parseFloat(item.qty),
+            },
+            { transaction: t }
+          );
 
           if (!totalBhpUsage[item.bhp_id]) totalBhpUsage[item.bhp_id] = 0;
           totalBhpUsage[item.bhp_id] += parseFloat(item.qty);
@@ -103,7 +117,12 @@ const createMaintenance = async (req, res) => {
     }
 
     await t.commit();
-    await logAudit(req.user.id, 'maintenance.create', `${inventoryCodes.join(', ')} — ${action}`, req.ip);
+    await logAudit(
+      req.user.id,
+      'maintenance.create',
+      `${inventoryCodes.join(', ')} — ${action}`,
+      req.ip
+    );
 
     const io = req.app.get('io');
     if (io) {
@@ -113,13 +132,13 @@ const createMaintenance = async (req, res) => {
       io.emit('notification', {
         message: `Log pemeliharaan baru dibuat untuk ${logsCreated.length} aset dengan kondisi akhir: ${condition_after}.`,
         roles: ['kalab', 'admin'],
-        kind: 'info'
+        kind: 'info',
       });
     }
 
     // Return the newly created logs
     const result = await MaintenanceLog.findAll({
-      where: { id: logsCreated.map(l => l.id) },
+      where: { id: logsCreated.map((l) => l.id) },
       include: [
         { model: Inventory, attributes: ['id', 'code', 'name'] },
         { model: MaintenanceBhp, as: 'bhpUsed', include: [{ model: Bhp }] },
@@ -196,7 +215,15 @@ const createBhp = async (req, res) => {
       return res.status(400).json({ error: 'Code, name, dan unit wajib diisi.' });
     }
 
-    const bhp = await Bhp.create({ code, name, unit, stock: stock || 0, min_stock: min_stock || 0, last_in, category });
+    const bhp = await Bhp.create({
+      code,
+      name,
+      unit,
+      stock: stock || 0,
+      min_stock: min_stock || 0,
+      last_in,
+      category,
+    });
     await logAudit(req.user.id, 'bhp.create', bhp.code, req.ip);
 
     const io = req.app.get('io');
@@ -216,22 +243,24 @@ const getBhpPrediction = async (req, res) => {
     // Fetch all maintenance logs that used this BHP
     const usages = await MaintenanceBhp.findAll({
       where: { bhp_id: req.params.id },
-      include: [{
-        model: MaintenanceLog,
-        attributes: ['date']
-      }],
-      order: [['id', 'ASC']]
+      include: [
+        {
+          model: MaintenanceLog,
+          attributes: ['date'],
+        },
+      ],
+      order: [['id', 'ASC']],
     });
 
     const currentStock = parseFloat(bhp.stock) || 0;
-    
+
     // 1. Math Calculation: avgQtyUsed & avgIntervalDays
     let totalQtyUsed = 0;
-    usages.forEach(u => {
+    usages.forEach((u) => {
       totalQtyUsed += parseFloat(u.qty_used) || 0;
     });
     const usagesCount = usages.length;
-    const avgQtyUsed = usagesCount > 0 ? (totalQtyUsed / usagesCount) : 1.0;
+    const avgQtyUsed = usagesCount > 0 ? totalQtyUsed / usagesCount : 1.0;
 
     let avgIntervalDays = 30; // Default fallback to once a month
     if (usagesCount >= 2) {
@@ -240,8 +269,13 @@ const getBhpPrediction = async (req, res) => {
         const dateB = new Date(b.MaintenanceLog?.date || b.created_at);
         return dateA - dateB;
       });
-      const firstDate = new Date(sortedUsages[0].MaintenanceLog?.date || sortedUsages[0].created_at);
-      const lastDate = new Date(sortedUsages[sortedUsages.length - 1].MaintenanceLog?.date || sortedUsages[sortedUsages.length - 1].created_at);
+      const firstDate = new Date(
+        sortedUsages[0].MaintenanceLog?.date || sortedUsages[0].created_at
+      );
+      const lastDate = new Date(
+        sortedUsages[sortedUsages.length - 1].MaintenanceLog?.date ||
+          sortedUsages[sortedUsages.length - 1].created_at
+      );
       const diffDays = Math.max(1, Math.round((lastDate - firstDate) / (1000 * 60 * 60 * 24)));
       avgIntervalDays = diffDays / (usagesCount - 1);
     }
@@ -249,8 +283,8 @@ const getBhpPrediction = async (req, res) => {
     // Construct coordinates: x = days since first use, y = cumulative quantity used
     let coordinates = [];
     let dailyBurnRate = 0.05; // Default fallback daily burn rate
-    let r2Score = 0.95;       // Simulated high accuracy R2 fallback
-    let lossMse = 0.042;      // Simulated low MSE fallback
+    let r2Score = 0.95; // Simulated high accuracy R2 fallback
+    let lossMse = 0.042; // Simulated low MSE fallback
     const epochsTrained = 50;
 
     // Advanced diagnostics defaults
@@ -267,10 +301,12 @@ const getBhpPrediction = async (req, res) => {
         return dateA - dateB;
       });
 
-      const firstDate = new Date(sortedUsages[0].MaintenanceLog?.date || sortedUsages[0].created_at);
-      
+      const firstDate = new Date(
+        sortedUsages[0].MaintenanceLog?.date || sortedUsages[0].created_at
+      );
+
       let cumulative = 0;
-      const dataPoints = sortedUsages.map(u => {
+      const dataPoints = sortedUsages.map((u) => {
         const uDate = new Date(u.MaintenanceLog?.date || u.created_at);
         const diffDays = Math.max(0, Math.round((uDate - firstDate) / (1000 * 60 * 60 * 24)));
         cumulative += parseFloat(u.qty_used) || 0;
@@ -279,20 +315,25 @@ const getBhpPrediction = async (req, res) => {
 
       // Remove duplicate x coordinates by keeping the latest cumulative value
       const uniquePointsMap = {};
-      dataPoints.forEach(p => {
+      dataPoints.forEach((p) => {
         uniquePointsMap[p.x] = p.y;
       });
-      
-      coordinates = Object.keys(uniquePointsMap).map(xStr => ({
-        x: parseInt(xStr),
-        y: uniquePointsMap[xStr]
-      })).sort((a, b) => a.x - b.x);
+
+      coordinates = Object.keys(uniquePointsMap)
+        .map((xStr) => ({
+          x: parseInt(xStr),
+          y: uniquePointsMap[xStr],
+        }))
+        .sort((a, b) => a.x - b.x);
 
       if (coordinates.length >= 2) {
         // Run Ordinary Least Squares Linear Regression
         const N = coordinates.length;
-        let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
-        coordinates.forEach(p => {
+        let sumX = 0,
+          sumY = 0,
+          sumXY = 0,
+          sumXX = 0;
+        coordinates.forEach((p) => {
           sumX += p.x;
           sumY += p.y;
           sumXY += p.x * p.y;
@@ -320,7 +361,7 @@ const getBhpPrediction = async (req, res) => {
         let tss = 0;
         let rss = 0;
         let ssxx = 0;
-        coordinates.forEach(p => {
+        coordinates.forEach((p) => {
           const predY = m * p.x + c;
           tss += Math.pow(p.y - meanY, 2);
           rss += Math.pow(p.y - predY, 2);
@@ -328,19 +369,19 @@ const getBhpPrediction = async (req, res) => {
         });
 
         lossMse = rss / N;
-        r2Score = tss > 0 ? (1 - (rss / tss)) : 1.0;
+        r2Score = tss > 0 ? 1 - rss / tss : 1.0;
         r2Score = Math.max(0, Math.min(1, r2Score)); // bound 0 to 1
 
         // Advanced diagnostics (borrowing standard statistical library architectures like scikit-learn & statsmodels)
         const df = Math.max(1, N - 2);
         const rse = Math.sqrt(rss / df); // Residual Standard Error
-        const seM = ssxx > 0 ? (rse / Math.sqrt(ssxx)) : 0; // Standard error of the slope
-        const tStat = seM > 0 ? (m / seM) : 0; // t-statistic
-        
+        const seM = ssxx > 0 ? rse / Math.sqrt(ssxx) : 0; // Standard error of the slope
+        const tStat = seM > 0 ? m / seM : 0; // t-statistic
+
         // Approximate p-value (Normal distribution CDF approximation)
         const z = Math.abs(tStat);
-        const pValue = 2 * (1 - (1 / (1 + Math.exp(-0.07056 * Math.pow(z, 3) - 1.5976 * z))));
-        
+        const pValue = 2 * (1 - 1 / (1 + Math.exp(-0.07056 * Math.pow(z, 3) - 1.5976 * z)));
+
         // 95% Confidence interval bounds for slope m
         const marginOfError = 1.96 * seM;
         const mMin = Math.max(0.0001, m - marginOfError);
@@ -371,8 +412,8 @@ const getBhpPrediction = async (req, res) => {
     lossMse = Number(lossMse.toFixed(4));
 
     // 2. Hybrid OLS-Interval Self-Correcting Logic
-    let rawPredictedDays = dailyBurnRate > 0 ? (currentStock / dailyBurnRate) : 999;
-    
+    let rawPredictedDays = dailyBurnRate > 0 ? currentStock / dailyBurnRate : 999;
+
     // Apply safety boundary: bound the prediction days based on frequency of usage
     const maxPredictedDays = (currentStock / (avgQtyUsed || 1)) * avgIntervalDays;
     let predictedDays = Math.min(rawPredictedDays, maxPredictedDays);
@@ -382,7 +423,7 @@ const getBhpPrediction = async (req, res) => {
     if (currentStock > 0 && currentStock < avgQtyUsed * 1.5) {
       predictedDays = Math.min(predictedDays, avgIntervalDays);
     }
-    
+
     predictedDays = Number(predictedDays.toFixed(1));
 
     // Estimate predicted date of depletion
@@ -421,8 +462,8 @@ const getBhpPrediction = async (req, res) => {
     // Add diagnostics paragraph to the narrative
     if (usagesCount >= 2) {
       const isSignificant = pValueScore < 0.05;
-      const sigStatus = isSignificant 
-        ? `<span style="color: #22c55e; font-weight: bold;">SANGAT SIGNIFIKAN secara statistik (p-value: ${pValueScore.toFixed(4)} &lt; 0.05)</span>` 
+      const sigStatus = isSignificant
+        ? `<span style="color: #22c55e; font-weight: bold;">SANGAT SIGNIFIKAN secara statistik (p-value: ${pValueScore.toFixed(4)} &lt; 0.05)</span>`
         : `<span style="color: #eab308; font-weight: bold;">KURANG SIGNIFIKAN secara statistik (p-value: ${pValueScore.toFixed(4)} &ge; 0.05)</span>`;
 
       aiAnalysis += `
@@ -454,7 +495,10 @@ const getBhpPrediction = async (req, res) => {
         unit: bhp.unit,
         dailyBurnRate,
         predictedDays: predictedDays > 0 ? predictedDays : 0,
-        predictedDate: predictedDays > 0 && predictedDays < 365 ? predictedDate.toISOString().substring(0, 10) : 'Aman (>1 tahun)',
+        predictedDate:
+          predictedDays > 0 && predictedDays < 365
+            ? predictedDate.toISOString().substring(0, 10)
+            : 'Aman (>1 tahun)',
         r2Score,
         lossMse,
         epochsTrained,
@@ -470,8 +514,8 @@ const getBhpPrediction = async (req, res) => {
         mLowerBound,
         mUpperBound,
         confLowerDays,
-        confUpperDays
-      }
+        confUpperDays,
+      },
     });
   } catch (err) {
     console.error('[AI Predict Error]', err);
@@ -483,7 +527,7 @@ const updateMaintenance = async (req, res) => {
   let t;
   try {
     const log = await MaintenanceLog.findByPk(req.params.id, {
-      include: [{ model: Inventory, attributes: ['id', 'code', 'name'] }]
+      include: [{ model: Inventory, attributes: ['id', 'code', 'name'] }],
     });
     if (!log) return res.status(404).json({ error: 'Log maintenance tidak ditemukan.' });
 
@@ -498,7 +542,7 @@ const updateMaintenance = async (req, res) => {
     if (condition_after && condition_after !== log.condition_after) {
       diffs.push(`Kondisi setelahnya: ${log.condition_after} ➔ ${condition_after}`);
       log.condition_after = condition_after;
-      
+
       const inventory = await Inventory.findByPk(log.inventory_id, { transaction: t });
       if (inventory) {
         inventory.condition = condition_after;
@@ -524,15 +568,15 @@ const updateMaintenance = async (req, res) => {
       io.emit('notification', {
         message: `Log pemeliharaan ${log.code} untuk aset ${log.Inventory?.name || 'Aset'} telah diperbarui oleh Staf Lab.`,
         roles: ['kalab', 'admin'],
-        kind: 'info'
+        kind: 'info',
       });
     }
 
     const result = await MaintenanceLog.findByPk(log.id, {
       include: [
         { model: Inventory, attributes: ['id', 'code', 'name'] },
-        { model: MaintenanceBhp, as: 'bhpUsed', include: [{ model: Bhp }] }
-      ]
+        { model: MaintenanceBhp, as: 'bhpUsed', include: [{ model: Bhp }] },
+      ],
     });
 
     res.json({ data: result });
@@ -549,4 +593,12 @@ const updateMaintenance = async (req, res) => {
   }
 };
 
-module.exports = { getMaintenanceLogs, createMaintenance, getBhp, updateBhp, createBhp, getBhpPrediction, updateMaintenance };
+module.exports = {
+  getMaintenanceLogs,
+  createMaintenance,
+  getBhp,
+  updateBhp,
+  createBhp,
+  getBhpPrediction,
+  updateMaintenance,
+};

@@ -52,8 +52,11 @@ export default function StatsCounter() {
 }
 
 function StatItem({ stat, index }) {
-  const { count, ref } = useCountUp(stat.decimal ? Math.floor(stat.value) : stat.value, 2000 + index * 200);
-  
+  const { count, ref } = useCountUp(
+    stat.decimal ? Math.floor(stat.value) : stat.value,
+    2000 + index * 200
+  );
+
   return (
     <div className="au-stat-item" ref={ref}>
       <div className="au-stat-number" style={{ color: stat.color }}>
@@ -61,7 +64,10 @@ function StatItem({ stat, index }) {
         <span className="au-stat-suffix">{stat.suffix}</span>
       </div>
       <div className="au-stat-label">{stat.label}</div>
-      <div className="au-stat-bar" style={{ background: `linear-gradient(90deg, ${stat.color}, transparent)` }} />
+      <div
+        className="au-stat-bar"
+        style={{ background: `linear-gradient(90deg, ${stat.color}, transparent)` }}
+      />
     </div>
   );
 }

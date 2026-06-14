@@ -34,7 +34,7 @@ const logAudit = async (userId, action, target, ip, details = '') => {
           throw new Error('AUDIT_LOG_SECRET wajib diatur di lingkungan produksi.');
         }
         const activeSecret = secret || 'lokalab-default-audit-secret-key-2026';
-        
+
         // Retrieve cached or database last hash
         const previousHash = await getLastHash();
 
@@ -88,8 +88,9 @@ const auditMiddleware = (actionPrefix) => {
         else if (method === 'put' || method === 'patch') action += '.update';
         else if (method === 'delete') action += '.delete';
 
-        const target = data?.data?.code || data?.data?.name || data?.data?.id || req.params.id || '';
-        
+        const target =
+          data?.data?.code || data?.data?.name || data?.data?.id || req.params.id || '';
+
         let details = '';
         if (req.body && (method === 'post' || method === 'put' || method === 'patch')) {
           const bodyCopy = { ...req.body };

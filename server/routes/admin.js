@@ -1,9 +1,16 @@
 const router = require('express').Router();
 const { authenticate, authorize } = require('../middleware/auth');
 const {
-  getUsers, createUser, updateUser, deleteUser,
-  getRooms, createRoom, updateRoom, deleteRoom,
-  getAuditLogs, verifyAuditChain,
+  getUsers,
+  createUser,
+  updateUser,
+  deleteUser,
+  getRooms,
+  createRoom,
+  updateRoom,
+  deleteRoom,
+  getAuditLogs,
+  verifyAuditChain,
 } = require('../controllers/adminController');
 
 // All admin routes require authentication
@@ -32,23 +39,29 @@ router.post('/backup/restore', authorize('sysadmin'), restoreBackup);
 
 // Secure File Upload Validation API
 const { uploadImage, validateMagicBytes } = require('../middleware/upload');
-router.post('/validate-qr-file', authorize('sysadmin', 'admin', 'staflab'), (req, res, next) => {
-  uploadImage(req, res, (err) => {
-    if (err) {
-      return res.status(400).json({ error: err.message });
-    }
-    next();
-  });
-}, validateMagicBytes, (req, res) => {
-  res.json({
-    message: 'File valid: Lolos verifikasi ukuran, tipe MIME, ekstensi, dan kecocokan Magic Bytes!',
-    file: {
-      name: req.file.originalname,
-      size: req.file.size,
-      path: req.file.path
-    }
-  });
-});
+router.post(
+  '/validate-qr-file',
+  authorize('sysadmin', 'admin', 'staflab'),
+  (req, res, next) => {
+    uploadImage(req, res, (err) => {
+      if (err) {
+        return res.status(400).json({ error: err.message });
+      }
+      next();
+    });
+  },
+  validateMagicBytes,
+  (req, res) => {
+    res.json({
+      message:
+        'File valid: Lolos verifikasi ukuran, tipe MIME, ekstensi, dan kecocokan Magic Bytes!',
+      file: {
+        name: req.file.originalname,
+        size: req.file.size,
+        path: req.file.path,
+      },
+    });
+  }
+);
 
 module.exports = router;
-

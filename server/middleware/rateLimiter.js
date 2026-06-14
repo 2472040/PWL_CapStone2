@@ -18,13 +18,13 @@ const loginRateLimiter = async (req, res, next) => {
   if (!ipAttempts.has(ip)) {
     ipAttempts.set(ip, []);
   }
-  const ipHistory = ipAttempts.get(ip).filter(t => now - t < timeframe);
+  const ipHistory = ipAttempts.get(ip).filter((t) => now - t < timeframe);
   ipAttempts.set(ip, ipHistory);
 
   if (ipHistory.length >= maxAttempts) {
     const minutesLeft = Math.ceil((ipHistory[0] + timeframe - now) / 60000);
     return res.status(429).json({
-      error: `Terlalu banyak percobaan login dari IP ini. Silakan coba lagi dalam ${minutesLeft} menit.`
+      error: `Terlalu banyak percobaan login dari IP ini. Silakan coba lagi dalam ${minutesLeft} menit.`,
     });
   }
 
@@ -34,13 +34,13 @@ const loginRateLimiter = async (req, res, next) => {
     if (!userAttempts.has(cleanEmail)) {
       userAttempts.set(cleanEmail, []);
     }
-    const userHistory = userAttempts.get(cleanEmail).filter(t => now - t < timeframe);
+    const userHistory = userAttempts.get(cleanEmail).filter((t) => now - t < timeframe);
     userAttempts.set(cleanEmail, userHistory);
 
     if (userHistory.length >= maxAttempts) {
       const minutesLeft = Math.ceil((userHistory[0] + timeframe - now) / 60000);
       return res.status(429).json({
-        error: `Terlalu banyak percobaan login untuk akun ini. Silakan coba lagi dalam ${minutesLeft} menit.`
+        error: `Terlalu banyak percobaan login untuk akun ini. Silakan coba lagi dalam ${minutesLeft} menit.`,
       });
     }
 
@@ -49,8 +49,10 @@ const loginRateLimiter = async (req, res, next) => {
     const recentAttemptsCount = Math.max(ipHistory.length, userHistory.length);
     if (recentAttemptsCount > 0) {
       const delayMs = Math.min(recentAttemptsCount * 1000, 5000);
-      console.log(`[Rate Limiter] Introducing progressive delay of ${delayMs}ms for ${cleanEmail} from ${ip}`);
-      await new Promise(resolve => setTimeout(resolve, delayMs));
+      console.log(
+        `[Rate Limiter] Introducing progressive delay of ${delayMs}ms for ${cleanEmail} from ${ip}`
+      );
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
   }
 

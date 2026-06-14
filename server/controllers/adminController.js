@@ -35,8 +35,18 @@ const createUser = async (req, res) => {
 
     const hashed = await bcrypt.hash(password, 10);
     const user = await User.create({
-      name, email, password: hashed, role,
-      initials: initials || name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2),
+      name,
+      email,
+      password: hashed,
+      role,
+      initials:
+        initials ||
+        name
+          .split(' ')
+          .map((w) => w[0])
+          .join('')
+          .toUpperCase()
+          .slice(0, 2),
     });
 
     await logAudit(req.user.id, 'user.create', `${user.name} (${user.role})`, req.ip);
@@ -94,7 +104,7 @@ const updateUser = async (req, res) => {
     }
 
     await user.save();
-    
+
     // Log detailed audit diffs
     const details = diffs.length > 0 ? diffs.join(', ') : 'Tidak ada perubahan field';
     await logAudit(req.user.id, 'user.update', user.name, req.ip, details);
@@ -117,12 +127,12 @@ const deleteUser = async (req, res) => {
     if (!user) return res.status(404).json({ error: 'Pengguna tidak ditemukan.' });
 
     const userName = user.name;
-    
+
     // Hard delete if never logged in
     if (!user.last_login) {
       await logAudit(req.user.id, 'user.delete', userName, req.ip);
       await user.destroy();
-      
+
       const io = req.app.get('io');
       if (io) io.emit('data_changed', { type: 'user' });
 
@@ -158,10 +168,12 @@ const getRooms = async (req, res) => {
 
     // Count assets per room
     const { Inventory } = require('../models');
-    const data = await Promise.all(rooms.map(async (room) => {
-      const assetCount = await Inventory.count({ where: { room_id: room.id } });
-      return { ...room.toJSON(), assets: assetCount };
-    }));
+    const data = await Promise.all(
+      rooms.map(async (room) => {
+        const assetCount = await Inventory.count({ where: { room_id: room.id } });
+        return { ...room.toJSON(), assets: assetCount };
+      })
+    );
 
     res.json({ data });
   } catch (err) {
@@ -218,7 +230,7 @@ const updateRoom = async (req, res) => {
     }
 
     await room.save();
-    
+
     const details = diffs.length > 0 ? diffs.join(', ') : 'Tidak ada perubahan field';
     await logAudit(req.user.id, 'room.update', room.code, req.ip, details);
 
@@ -266,7 +278,12 @@ const getAuditLogs = async (req, res) => {
 
     res.json({
       data: rows,
-      pagination: { total: count, page: parseInt(page), limit: parseInt(limit), pages: Math.ceil(count / limit) },
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(count / limit),
+      },
     });
   } catch (err) {
     console.error(err);
@@ -291,18 +308,23 @@ const verifyAuditChain = async (req, res) => {
     for (let i = 0; i < logs.length; i++) {
       const log = logs[i];
       // Convert DATETIME to unix seconds string to avoid TZ / millisecond formatting issues
-      const timeSecs = Math.floor(new Date(log.created_at || log.createdAt).getTime() / 1000).toString();
+      const timeSecs = Math.floor(
+        new Date(log.created_at || log.createdAt).getTime() / 1000
+      ).toString();
 
       // Compute expected HMAC hash including details
       const dataToHash = `${previousHash}|${timeSecs}|${log.user_id || ''}|${log.action}|${log.target || ''}|${log.ip || ''}|${log.details || ''}`;
-      const computedHash = crypto.createHmac('sha256', activeSecret).update(dataToHash).digest('hex');
+      const computedHash = crypto
+        .createHmac('sha256', activeSecret)
+        .update(dataToHash)
+        .digest('hex');
 
       // 1. Verify previous_hash link (except for genesis log if it has null previous_hash)
       if (log.previous_hash && log.previous_hash !== previousHash) {
         issues.push({
           id: log.id,
           action: log.action,
-          error: `previous_hash mismatch. Expected link to "${previousHash.substring(0, 10)}...", Got link to "${log.previous_hash.substring(0, 10)}..."`
+          error: `previous_hash mismatch. Expected link to "${previousHash.substring(0, 10)}...", Got link to "${log.previous_hash.substring(0, 10)}..."`,
         });
       }
 
@@ -311,7 +333,7 @@ const verifyAuditChain = async (req, res) => {
         issues.push({
           id: log.id,
           action: log.action,
-          error: `Tampering detected: Log data has been modified. Calculated hash: "${computedHash.substring(0, 10)}...", Stored hash: "${log.hash.substring(0, 10)}..."`
+          error: `Tampering detected: Log data has been modified. Calculated hash: "${computedHash.substring(0, 10)}...", Stored hash: "${log.hash.substring(0, 10)}..."`,
         });
       }
 
@@ -322,7 +344,7 @@ const verifyAuditChain = async (req, res) => {
     if (issues.length > 0) {
       console.error('\n⚠️🚨 [SECURITY WARNING] DETEKSI MANIPULASI AUDIT LOG! 🚨⚠️');
       console.error(`Ditemukan ${issues.length} masalah integritas data pada audit log.`);
-      issues.forEach(issue => {
+      issues.forEach((issue) => {
         console.error(`  - Log ID ${issue.id} [${issue.action}]: ${issue.error}`);
       });
       console.error('======================================================\n');
@@ -330,13 +352,14 @@ const verifyAuditChain = async (req, res) => {
       return res.json({
         valid: false,
         issuesCount: issues.length,
-        issues
+        issues,
       });
     }
 
     res.json({
       valid: true,
-      message: 'Rantai audit log utuh dan terverifikasi secara kriptografis (tidak ada manipulasi data).'
+      message:
+        'Rantai audit log utuh dan terverifikasi secara kriptografis (tidak ada manipulasi data).',
     });
   } catch (err) {
     console.error('[Verify Audit Chain Error]', err);
@@ -345,7 +368,14 @@ const verifyAuditChain = async (req, res) => {
 };
 
 module.exports = {
-  getUsers, createUser, updateUser, deleteUser,
-  getRooms, createRoom, updateRoom, deleteRoom,
-  getAuditLogs, verifyAuditChain
+  getUsers,
+  createUser,
+  updateUser,
+  deleteUser,
+  getRooms,
+  createRoom,
+  updateRoom,
+  deleteRoom,
+  getAuditLogs,
+  verifyAuditChain,
 };

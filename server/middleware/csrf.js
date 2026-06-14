@@ -1,7 +1,7 @@
 const parseCookies = (cookieHeader) => {
   const list = {};
   if (!cookieHeader) return list;
-  cookieHeader.split(';').forEach(cookie => {
+  cookieHeader.split(';').forEach((cookie) => {
     const parts = cookie.split('=');
     list[parts.shift().trim()] = decodeURI(parts.join('='));
   });
@@ -21,8 +21,8 @@ const csrfProtection = (req, res, next) => {
   const cleanOriginalUrl = req.originalUrl.split('?')[0].replace(/\/$/, '');
 
   if (
-    safeMethods.includes(method) || 
-    cleanPath === '/api/auth/login' || 
+    safeMethods.includes(method) ||
+    cleanPath === '/api/auth/login' ||
     cleanPath === '/auth/login' ||
     cleanOriginalUrl === '/api/auth/login' ||
     cleanOriginalUrl === '/auth/login'
@@ -38,7 +38,8 @@ const csrfProtection = (req, res, next) => {
   // Check for presence and exact match
   if (!cookieCsrfToken || !headerCsrfToken || cookieCsrfToken !== headerCsrfToken) {
     return res.status(403).json({
-      error: 'CSRF Protection: Permintaan ditolak karena CSRF token tidak ditemukan atau tidak cocok.'
+      error:
+        'CSRF Protection: Permintaan ditolak karena CSRF token tidak ditemukan atau tidak cocok.',
     });
   }
 

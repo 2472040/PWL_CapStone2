@@ -19,7 +19,7 @@ describe('Procurement Workflow Integration Test', () => {
     const resKalab = await request(app)
       .post('/api/auth/login')
       .send({ email: 'pradipta@kampus.id', password: 'password123' });
-    
+
     expect(resKalab.status).toBe(200);
     kalabToken = resKalab.body.data.token;
 
@@ -27,7 +27,7 @@ describe('Procurement Workflow Integration Test', () => {
     const resKaprodi = await request(app)
       .post('/api/auth/login')
       .send({ email: 'hendra@kampus.id', password: 'password123' });
-    
+
     expect(resKaprodi.status).toBe(200);
     kaprodiToken = resKaprodi.body.data.token;
 
@@ -35,7 +35,7 @@ describe('Procurement Workflow Integration Test', () => {
     const resAdmin = await request(app)
       .post('/api/auth/login')
       .send({ email: 'faqih@kampus.id', password: 'password123' });
-    
+
     expect(resAdmin.status).toBe(200);
     adminToken = resAdmin.body.data.token;
   });
@@ -45,9 +45,23 @@ describe('Procurement Workflow Integration Test', () => {
     const draftPayload = {
       title: 'Draf Pengadaan Integrasi Vitest',
       items: [
-        { kind: 'Inventaris', name: 'Alat Test Vitest Premium', qty: 2, unit: 'unit', price: 5000000, link: 'http://test.com' },
-        { kind: 'BHP', name: 'Bahan Habis Pakai Vitest', qty: 10, unit: 'pcs', price: 150000, link: 'http://test.com' }
-      ]
+        {
+          kind: 'Inventaris',
+          name: 'Alat Test Vitest Premium',
+          qty: 2,
+          unit: 'unit',
+          price: 5000000,
+          link: 'http://test.com',
+        },
+        {
+          kind: 'BHP',
+          name: 'Bahan Habis Pakai Vitest',
+          qty: 10,
+          unit: 'pcs',
+          price: 150000,
+          link: 'http://test.com',
+        },
+      ],
     };
 
     const resCreate = await request(app)
@@ -79,18 +93,18 @@ describe('Procurement Workflow Integration Test', () => {
       .set('Authorization', `Bearer ${kaprodiToken}`);
 
     expect(resPending.status).toBe(200);
-    const found = resPending.body.data.find(d => d.id === createdDraftId);
+    const found = resPending.body.data.find((d) => d.id === createdDraftId);
     expect(found).toBeDefined();
 
     // D. Kaprodi reviews the items (approving them)
     const draftWithItems = await Draft.findByPk(createdDraftId, {
-      include: [{ model: DraftItem, as: 'items' }]
+      include: [{ model: DraftItem, as: 'items' }],
     });
 
-    const decisions = draftWithItems.items.map(it => ({
+    const decisions = draftWithItems.items.map((it) => ({
       item_id: it.id,
       status: 'approved',
-      notes: 'Disetujui via pengujian Vitest'
+      notes: 'Disetujui via pengujian Vitest',
     }));
 
     const resReview = await request(app)
@@ -135,8 +149,8 @@ describe('Procurement Workflow Integration Test', () => {
     const invalidPayload = {
       title: 'Short', // Kurang dari 5 karakter
       items: [
-        { kind: 'InvalidKind', name: 'Ab', qty: -5, unit: '', price: 0 } // invalid kind, short name, negative qty, empty unit, zero price
-      ]
+        { kind: 'InvalidKind', name: 'Ab', qty: -5, unit: '', price: 0 }, // invalid kind, short name, negative qty, empty unit, zero price
+      ],
     };
 
     const res = await request(app)
@@ -156,8 +170,8 @@ describe('Procurement Workflow Integration Test', () => {
     const draftPayload = {
       title: 'Draf Pengadaan Uji Revisi Otomatis',
       items: [
-        { kind: 'Inventaris', name: 'Alat Revisi Premium', qty: 1, unit: 'unit', price: 1000000 }
-      ]
+        { kind: 'Inventaris', name: 'Alat Revisi Premium', qty: 1, unit: 'unit', price: 1000000 },
+      ],
     };
 
     const resCreate = await request(app)

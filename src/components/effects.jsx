@@ -7,12 +7,15 @@ import { useStore } from './store-context.jsx';
 export function useRevealFallback() {
   useEffect(() => {
     if (window.gsap) return; // GSAP handles reveals
-    const obs = new IntersectionObserver((entries) => {
-      entries.forEach(e => {
-        if (e.isIntersecting) e.target.classList.add('revealed');
-      });
-    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
-    document.querySelectorAll('[data-reveal]').forEach(el => obs.observe(el));
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) e.target.classList.add('revealed');
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+    );
+    document.querySelectorAll('[data-reveal]').forEach((el) => obs.observe(el));
     return () => obs.disconnect();
   }, []);
 }
@@ -54,7 +57,9 @@ export function SoundIntegration() {
       if (el) snd.click();
     };
     const onMouseEnter = (e) => {
-      const el = e.target.closest('button, [role="button"], a, .card, .draft-card, .inv-card, .sb-item');
+      const el = e.target.closest(
+        'button, [role="button"], a, .card, .draft-card, .inv-card, .sb-item'
+      );
       if (el) snd.hover();
     };
     const onToggle = (e) => {
@@ -82,8 +87,8 @@ export function MouseTracker() {
       const btn = e.target.closest('.btn');
       if (!btn) return;
       const rect = btn.getBoundingClientRect();
-      btn.style.setProperty('--mx', ((e.clientX - rect.left) / rect.width * 100) + '%');
-      btn.style.setProperty('--my', ((e.clientY - rect.top) / rect.height * 100) + '%');
+      btn.style.setProperty('--mx', ((e.clientX - rect.left) / rect.width) * 100 + '%');
+      btn.style.setProperty('--my', ((e.clientY - rect.top) / rect.height) * 100 + '%');
     };
     document.addEventListener('mousemove', handler, { passive: true });
     return () => document.removeEventListener('mousemove', handler);
@@ -119,7 +124,7 @@ export function TiltEngine() {
     const onMove = (e) => {
       const card = e.target.closest('.tilt-card');
       if (!card) {
-        document.querySelectorAll('.tilt-card').forEach(c => {
+        document.querySelectorAll('.tilt-card').forEach((c) => {
           c.style.transform = '';
           const shine = c.querySelector('.tilt-shine');
           if (shine) shine.style.background = '';
@@ -171,7 +176,7 @@ export function TiltEngine() {
 // =========================================================
 export function CardHoverEngine() {
   const { state } = useStore();
-  
+
   useEffect(() => {
     if (!window.gsap) return;
 
@@ -189,12 +194,13 @@ export function CardHoverEngine() {
           boxShadow: '',
           duration: 0.2,
           ease: 'power2.out',
-          overwrite: 'auto'
+          overwrite: 'auto',
         });
         return;
       }
 
-      const roleAccent = document.documentElement.style.getPropertyValue('--role-accent') || '#a78bfa';
+      const roleAccent =
+        document.documentElement.style.getPropertyValue('--role-accent') || '#a78bfa';
 
       window.gsap.to(card, {
         y: -2,
@@ -203,7 +209,7 @@ export function CardHoverEngine() {
         boxShadow: `0 16px 36px -12px rgba(0,0,0,0.6), 0 0 24px -6px ${roleAccent}18`,
         duration: 0.35,
         ease: 'power2.out',
-        overwrite: 'auto'
+        overwrite: 'auto',
       });
     };
 
@@ -219,7 +225,7 @@ export function CardHoverEngine() {
         boxShadow: '',
         duration: 0.3,
         ease: 'power2.out',
-        overwrite: 'auto'
+        overwrite: 'auto',
       });
     };
 
@@ -233,4 +239,3 @@ export function CardHoverEngine() {
 
   return null;
 }
-

@@ -1,4 +1,14 @@
-const { User, Room, Inventory, Bhp, Draft, DraftItem, DraftApproval, MaintenanceLog, AuditLog } = require('../models');
+const {
+  User,
+  Room,
+  Inventory,
+  Bhp,
+  Draft,
+  DraftItem,
+  DraftApproval,
+  MaintenanceLog,
+  AuditLog,
+} = require('../models');
 const { Op } = require('sequelize');
 const sequelize = require('../config/database');
 
@@ -26,11 +36,7 @@ const getDashboardStats = async (req, res) => {
 
     // BHP low stock alerts
     const lowStockBhp = await Bhp.findAll({
-      where: sequelize.where(
-        sequelize.col('stock'),
-        Op.lte,
-        sequelize.col('min_stock')
-      ),
+      where: sequelize.where(sequelize.col('stock'), Op.lte, sequelize.col('min_stock')),
     });
     stats.lowStockAlerts = lowStockBhp.length;
 
@@ -39,8 +45,8 @@ const getDashboardStats = async (req, res) => {
       where: {
         status: { [Op.in]: ['finalized', 'completed'] },
         submitted_at: { [Op.ne]: null },
-        finalized_at: { [Op.ne]: null }
-      }
+        finalized_at: { [Op.ne]: null },
+      },
     });
     let avgApprovalTimeHours = 0;
     if (finalizedDrafts.length > 0) {
@@ -49,23 +55,17 @@ const getDashboardStats = async (req, res) => {
         const end = new Date(d.finalized_at);
         return sum + (end - start);
       }, 0);
-      avgApprovalTimeHours = (totalMs / (1000 * 60 * 60)) / finalizedDrafts.length;
+      avgApprovalTimeHours = totalMs / (1000 * 60 * 60) / finalizedDrafts.length;
     }
     stats.avgApprovalTimeHours = Number(avgApprovalTimeHours.toFixed(1));
 
     // 2. Top 3 Lowest / Critical Stock BHP items
     const top3LowBhp = await Bhp.findAll({
-      where: sequelize.where(
-        sequelize.col('stock'),
-        Op.lte,
-        sequelize.col('min_stock')
-      ),
-      order: [
-        [sequelize.literal('stock / min_stock'), 'ASC']
-      ],
-      limit: 3
+      where: sequelize.where(sequelize.col('stock'), Op.lte, sequelize.col('min_stock')),
+      order: [[sequelize.literal('stock / min_stock'), 'ASC']],
+      limit: 3,
     });
-    stats.top3LowBhp = top3LowBhp.map(b => {
+    stats.top3LowBhp = top3LowBhp.map((b) => {
       const pct = b.min_stock > 0 ? Math.round((b.stock / b.min_stock) * 100) : 100;
       return {
         id: b.id,
@@ -75,23 +75,27 @@ const getDashboardStats = async (req, res) => {
         stock: b.stock,
         min_stock: b.min_stock,
         unit: b.unit,
-        pct
+        pct,
       };
     });
 
     // 3. Maintenance Incident Count / Load per Room (Top 5)
     const maintLogs = await MaintenanceLog.findAll({
-      include: [{
-        model: Inventory,
-        attributes: ['room_id'],
-        include: [{
-          model: Room,
-          attributes: ['id', 'code', 'name']
-        }]
-      }]
+      include: [
+        {
+          model: Inventory,
+          attributes: ['room_id'],
+          include: [
+            {
+              model: Room,
+              attributes: ['id', 'code', 'name'],
+            },
+          ],
+        },
+      ],
     });
     const roomMaintMap = {};
-    maintLogs.forEach(log => {
+    maintLogs.forEach((log) => {
       const room = log.Inventory?.Room;
       if (room) {
         if (!roomMaintMap[room.code]) {
@@ -99,7 +103,7 @@ const getDashboardStats = async (req, res) => {
             id: room.id,
             code: room.code,
             name: room.name,
-            count: 0
+            count: 0,
           };
         }
         roomMaintMap[room.code].count += 1;
@@ -111,8 +115,21 @@ const getDashboardStats = async (req, res) => {
 
     // 4. Monthly Financial Analytics (Requested vs Approved vs Savings)
     const last6Months = [];
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-    
+    const monthNames = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
+    ];
+
     for (let i = 5; i >= 0; i--) {
       const d = new Date();
       d.setMonth(d.getMonth() - i);
@@ -121,29 +138,31 @@ const getDashboardStats = async (req, res) => {
         name: monthNames[d.getMonth()],
         requested: 0,
         approved: 0,
-        saved: 0
+        saved: 0,
       });
     }
 
     const allDraftsForChart = await Draft.findAll({
-      include: [{
-        model: DraftItem,
-        as: 'items',
-        include: [{ model: DraftApproval, as: 'approval' }]
-      }],
-      order: [['created_at', 'ASC']]
+      include: [
+        {
+          model: DraftItem,
+          as: 'items',
+          include: [{ model: DraftApproval, as: 'approval' }],
+        },
+      ],
+      order: [['created_at', 'ASC']],
     });
 
-    allDraftsForChart.forEach(d => {
+    allDraftsForChart.forEach((d) => {
       const date = new Date(d.finalized_at || d.submitted_at || d.created_at);
       const mKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const bucket = last6Months.find(m => m.monthKey === mKey);
-      
+      const bucket = last6Months.find((m) => m.monthKey === mKey);
+
       if (bucket) {
-        d.items.forEach(it => {
+        d.items.forEach((it) => {
           const subtotal = (parseFloat(it.qty) || 0) * (parseFloat(it.price) || 0);
           bucket.requested += subtotal;
-          
+
           if (!it.approval || it.approval.status === 'approved') {
             bucket.approved += subtotal;
           }
@@ -152,15 +171,15 @@ const getDashboardStats = async (req, res) => {
     });
 
     // Calculate savings
-    last6Months.forEach(b => {
+    last6Months.forEach((b) => {
       b.saved = Math.max(0, b.requested - b.approved);
     });
 
-    stats.financialAnalytics = last6Months.map(b => ({
+    stats.financialAnalytics = last6Months.map((b) => ({
       month: b.name,
       requested: b.requested,
       approved: b.approved,
-      saved: b.saved
+      saved: b.saved,
     }));
 
     // Role-specific stats

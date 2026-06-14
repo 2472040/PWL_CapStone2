@@ -1,0 +1,12 @@
+node_modules/
+dist/
+build/
+server/backups/
+server/logs/
+logs/
+package-lock.json
+*.png
+*.jpg
+*.jpeg
+*.loka
+*.sqlite

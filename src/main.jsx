@@ -2,42 +2,72 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import { removeToken, getToken } from './services/api.js';
-import { 
-  DrawerContent, 
-  ModalContent, 
-  Sidebar, 
-  ToastProvider, 
-  StoreProvider, 
-  useStore, 
-  Drawer, 
-  Modal, 
-  SearchProvider, 
-  MobileSidebarToggle, 
-  MouseTracker, 
-  useKeyboardShortcuts, 
-  useRevealFallback, 
-  ScrollProgress, 
-  SoundIntegration, 
-  CursorEnabler, 
-  TiltEngine, 
+import {
+  DrawerContent,
+  ModalContent,
+  Sidebar,
+  ToastProvider,
+  StoreProvider,
+  useStore,
+  Drawer,
+  Modal,
+  SearchProvider,
+  MobileSidebarToggle,
+  MouseTracker,
+  useKeyboardShortcuts,
+  useRevealFallback,
+  ScrollProgress,
+  SoundIntegration,
+  CursorEnabler,
+  TiltEngine,
   CardHoverEngine,
-  D 
+  D,
 } from './components/app-shell.jsx';
 import { CustomCursor } from './components/app-cursor.jsx';
 // Lazy loaded drawers and modals for extreme performance & code splitting
-const NewUserForm = React.lazy(() => import('./screens/dashboard/admin/Users.jsx').then(m => ({ default: m.NewUserForm })));
-const NewRoomForm = React.lazy(() => import('./screens/dashboard/admin/Rooms.jsx').then(m => ({ default: m.NewRoomForm })));
-const NewDraftForm = React.lazy(() => import('./screens/dashboard/procurement/NewDraftForm.jsx').then(m => ({ default: m.NewDraftForm })));
-const QRScanner = React.lazy(() => import('./screens/dashboard/admin/QRScanner.jsx').then(m => ({ default: m.QRScanner })));
+const NewUserForm = React.lazy(() =>
+  import('./screens/dashboard/admin/Users.jsx').then((m) => ({ default: m.NewUserForm }))
+);
+const NewRoomForm = React.lazy(() =>
+  import('./screens/dashboard/admin/Rooms.jsx').then((m) => ({ default: m.NewRoomForm }))
+);
+const NewDraftForm = React.lazy(() =>
+  import('./screens/dashboard/procurement/NewDraftForm.jsx').then((m) => ({
+    default: m.NewDraftForm,
+  }))
+);
+const QRScanner = React.lazy(() =>
+  import('./screens/dashboard/admin/QRScanner.jsx').then((m) => ({ default: m.QRScanner }))
+);
 
-const InventoryDetail = React.lazy(() => import('./screens/dashboard/inventory/InventoryDetail.jsx').then(m => ({ default: m.InventoryDetail })));
-const NewInventoryForm = React.lazy(() => import('./screens/dashboard/inventory/NewInventoryForm.jsx').then(m => ({ default: m.NewInventoryForm })));
+const InventoryDetail = React.lazy(() =>
+  import('./screens/dashboard/inventory/InventoryDetail.jsx').then((m) => ({
+    default: m.InventoryDetail,
+  }))
+);
+const NewInventoryForm = React.lazy(() =>
+  import('./screens/dashboard/inventory/NewInventoryForm.jsx').then((m) => ({
+    default: m.NewInventoryForm,
+  }))
+);
 
-const MaintenanceForm = React.lazy(() => import('./screens/dashboard/maintenance/MaintenanceForm.jsx').then(m => ({ default: m.MaintenanceForm })));
-const NewBhpForm = React.lazy(() => import('./screens/dashboard/maintenance/BHP.jsx').then(m => ({ default: m.NewBhpForm })));
+const MaintenanceForm = React.lazy(() =>
+  import('./screens/dashboard/maintenance/MaintenanceForm.jsx').then((m) => ({
+    default: m.MaintenanceForm,
+  }))
+);
+const NewBhpForm = React.lazy(() =>
+  import('./screens/dashboard/maintenance/BHP.jsx').then((m) => ({ default: m.NewBhpForm }))
+);
 
-const LogoutModal = React.lazy(() => import('./screens/dashboard/settings/LogoutModal.jsx').then(m => ({ default: m.LogoutModal })));
-const ChangePasswordModal = React.lazy(() => import('./screens/dashboard/settings/ChangePasswordModal.jsx').then(m => ({ default: m.ChangePasswordModal })));
+const LogoutModal = React.lazy(() =>
+  import('./screens/dashboard/settings/LogoutModal.jsx').then((m) => ({ default: m.LogoutModal }))
+);
+const ChangePasswordModal = React.lazy(() =>
+  import('./screens/dashboard/settings/ChangePasswordModal.jsx').then((m) => ({
+    default: m.ChangePasswordModal,
+  }))
+);
 
 import LandingPage from './screens/landing/index.jsx';
 
@@ -47,7 +77,9 @@ import { Router } from './components/Router.jsx';
 import { AuthInitializer } from './components/AuthInitializer.jsx';
 import { LoginScreen } from './screens/auth/LoginScreen.jsx';
 
-const AiPredictiveModal = React.lazy(() => import('./components/AiPredictiveModal.jsx').then(m => ({ default: m.AiPredictiveModal })));
+const AiPredictiveModal = React.lazy(() =>
+  import('./components/AiPredictiveModal.jsx').then((m) => ({ default: m.AiPredictiveModal }))
+);
 
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -87,7 +119,6 @@ Object.assign(ModalContent, {
   aiPredictive: AiPredictiveModal,
 });
 
-
 function Shell({ onLogout }) {
   const { state, dispatch } = useStore();
   useKeyboardShortcuts(dispatch);
@@ -123,13 +154,13 @@ function Shell({ onLogout }) {
     }
 
     const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
-    events.forEach(evt => window.addEventListener(evt, resetTimers));
+    events.forEach((evt) => window.addEventListener(evt, resetTimers));
     resetTimers();
 
     return () => {
       clearTimeout(idleTimer);
       clearTimeout(warningTimer);
-      events.forEach(evt => window.removeEventListener(evt, resetTimers));
+      events.forEach((evt) => window.removeEventListener(evt, resetTimers));
     };
   }, [onLogout]);
 
@@ -146,26 +177,31 @@ function Shell({ onLogout }) {
     const main = document.querySelector('.main');
     const content = document.querySelector('.scroll-content');
     if (!main || !content) return;
-    
+
     main.scrollTop = 0;
-    
+
     const lenis = new window.Lenis({
       wrapper: main,
       content: content,
-      lerp: 0.08, smoothWheel: true, wheelMultiplier: 1.2,
+      lerp: 0.08,
+      smoothWheel: true,
+      wheelMultiplier: 1.2,
     });
-    
-    function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+
+    function raf(time) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
     requestAnimationFrame(raf);
-    
+
     if (window.gsap && window.ScrollTrigger) lenis.on('scroll', window.ScrollTrigger.update);
-    
+
     const resizeObserver = new ResizeObserver(() => {
       lenis.resize();
     });
     resizeObserver.observe(main);
     resizeObserver.observe(content); // Observe content size changes
-    
+
     return () => {
       lenis.destroy();
       resizeObserver.disconnect();
@@ -173,7 +209,16 @@ function Shell({ onLogout }) {
   }, [state.screen, state.role]);
 
   return (
-    <div className="app" data-screen-label={D.roles.find(r => r.id === state.role).short + ' · ' + (state.screen === 'settings' ? 'Pengaturan' : (D.nav[state.role].find(n => n.id === state.screen)?.label || 'Dashboard'))}>
+    <div
+      className="app"
+      data-screen-label={
+        D.roles.find((r) => r.id === state.role).short +
+        ' · ' +
+        (state.screen === 'settings'
+          ? 'Pengaturan'
+          : D.nav[state.role].find((n) => n.id === state.screen)?.label || 'Dashboard')
+      }
+    >
       <CursorEnabler />
       <CustomCursor />
       <ScrollProgress />
@@ -201,14 +246,18 @@ function App() {
         return localStorage.getItem('loka-view') || 'app';
       }
       return 'landing';
-    } catch (e) { return 'landing'; }
+    } catch (e) {
+      return 'landing';
+    }
   });
   const [pendingRole, setPendingRole] = useState(null);
 
   useEffect(() => {
     if (view === 'app' && !getToken()) {
       setView('landing');
-      try { localStorage.removeItem('loka-view'); } catch (e) {}
+      try {
+        localStorage.removeItem('loka-view');
+      } catch (e) {}
     }
   }, [view]);
 
@@ -219,10 +268,14 @@ function App() {
   function handleLogin(user) {
     if (user && user.role) {
       setPendingRole(user.role);
-      try { localStorage.setItem('loka-role', user.role); } catch (e) {}
+      try {
+        localStorage.setItem('loka-role', user.role);
+      } catch (e) {}
     }
     setView('app');
-    try { localStorage.setItem('loka-view', 'app'); } catch (e) {}
+    try {
+      localStorage.setItem('loka-view', 'app');
+    } catch (e) {}
   }
 
   function goToLanding() {
@@ -244,15 +297,11 @@ function App() {
           <ToastProvider>
             <AuthInitializer pendingRole={pendingRole} />
 
-            {view === 'landing' && (
-              <LandingPage onEnterApp={showLogin} />
-            )}
+            {view === 'landing' && <LandingPage onEnterApp={showLogin} />}
             {view === 'login' && (
               <LoginScreen onLogin={handleLogin} onBack={() => setView('landing')} />
             )}
-            {view === 'app' && (
-              <Shell onLogout={goToLanding} />
-            )}
+            {view === 'app' && <Shell onLogout={goToLanding} />}
           </ToastProvider>
         </SearchProvider>
       </StoreProvider>

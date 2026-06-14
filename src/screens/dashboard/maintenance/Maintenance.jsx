@@ -13,7 +13,7 @@ try {
 export function Maintenance() {
   const { state, dispatch } = useStore();
   const { query, setQuery } = useSearch();
-  const role = D.roles.find(r => r.id === 'staflab');
+  const role = D.roles.find((r) => r.id === 'staflab');
   const [activeModal, setActiveModal] = useState(null);
 
   useEffect(() => {
@@ -21,21 +21,26 @@ export function Maintenance() {
       try {
         const res = await apiFetch('/maintenance');
         if (res.data) {
-          const formatted = res.data.map(l => ({
+          const formatted = res.data.map((l) => ({
             id: l.code || l.id,
             dbId: l.id,
-            date: new Date(l.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+            date: new Date(l.date).toLocaleDateString('id-ID', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            }),
             rawDate: l.date,
             asset: l.Inventory?.code,
             name: l.Inventory?.name,
             action: l.action,
             tech: l.technician?.name || 'Teknisi',
             cond: l.condition_after,
-            bhp: l.bhpUsed?.map(bu => ({
-              id: bu.Bhp?.code || bu.bhp_id,
-              qty: parseFloat(bu.qty_used) || 0,
-              unit: bu.Bhp?.unit || 'pcs'
-            })) || []
+            bhp:
+              l.bhpUsed?.map((bu) => ({
+                id: bu.Bhp?.code || bu.bhp_id,
+                qty: parseFloat(bu.qty_used) || 0,
+                unit: bu.Bhp?.unit || 'pcs',
+              })) || [],
           }));
           dispatch({ type: 'SET_MAINT_LOGS', logs: formatted });
         }
@@ -48,7 +53,7 @@ export function Maintenance() {
       try {
         const res = await apiFetch('/bhp');
         if (res.data) {
-          const formatted = res.data.map(b => ({
+          const formatted = res.data.map((b) => ({
             id: b.code || b.id.toString(),
             dbId: b.id,
             name: b.name,
@@ -56,7 +61,7 @@ export function Maintenance() {
             stock: parseFloat(b.stock) || 0,
             min: parseFloat(b.min_stock) || 0,
             lastIn: b.last_in || '-',
-            cat: b.category || 'General'
+            cat: b.category || 'General',
           }));
           dispatch({ type: 'SET_BHP', bhp: formatted });
         }
@@ -70,8 +75,11 @@ export function Maintenance() {
   }, [dispatch]);
 
   async function handleQuickResolve(inventoryId, code, condition, actionText) {
-    if (!confirm(`Apakah Anda yakin ingin memperbarui kondisi aset ${code} menjadi "${condition}"?`)) return;
-    
+    if (
+      !confirm(`Apakah Anda yakin ingin memperbarui kondisi aset ${code} menjadi "${condition}"?`)
+    )
+      return;
+
     try {
       const res = await apiFetch('/maintenance', {
         method: 'POST',
@@ -80,36 +88,41 @@ export function Maintenance() {
           action: actionText,
           condition_after: condition,
           date: new Date().toISOString().substring(0, 10),
-          bhp_used: []
-        })
+          bhp_used: [],
+        }),
       });
       if (res.data) {
         // Reload maintenance logs
         const resLogs = await apiFetch('/maintenance');
         if (resLogs.data) {
-          const formattedLogs = resLogs.data.map(l => ({
+          const formattedLogs = resLogs.data.map((l) => ({
             id: l.code || l.id,
             dbId: l.id,
-            date: new Date(l.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+            date: new Date(l.date).toLocaleDateString('id-ID', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            }),
             rawDate: l.date,
             asset: l.Inventory?.code,
             name: l.Inventory?.name,
             action: l.action,
             tech: l.technician?.name || 'Teknisi',
             cond: l.condition_after,
-            bhp: l.bhpUsed?.map(bu => ({
-              id: bu.Bhp?.code || bu.bhp_id,
-              qty: parseFloat(bu.qty_used) || 0,
-              unit: bu.Bhp?.unit || 'pcs'
-            })) || []
+            bhp:
+              l.bhpUsed?.map((bu) => ({
+                id: bu.Bhp?.code || bu.bhp_id,
+                qty: parseFloat(bu.qty_used) || 0,
+                unit: bu.Bhp?.unit || 'pcs',
+              })) || [],
           }));
           dispatch({ type: 'SET_MAINT_LOGS', logs: formattedLogs });
         }
-        
+
         // Reload inventory condition in store
         const resInv = await apiFetch('/inventory');
         if (resInv.data) {
-          const formattedInv = resInv.data.map(i => ({
+          const formattedInv = resInv.data.map((i) => ({
             id: i.id,
             code: i.code,
             name: i.name,
@@ -117,15 +130,17 @@ export function Maintenance() {
             room: i.Room?.name || 'Gudang',
             roomId: i.room_id || (i.Room ? i.Room.id : null),
             cond: i.condition || 'Baik',
-            last: i.last_checked ? new Date(i.last_checked).toLocaleDateString('id-ID') : 'Baru saja',
+            last: i.last_checked
+              ? new Date(i.last_checked).toLocaleDateString('id-ID')
+              : 'Baru saja',
             acquired: i.acquired_date ? i.acquired_date.substring(0, 7) : '2025-01',
             value: i.value || 0,
             serial: i.serial || '-',
-            specs: i.specs || '-'
+            specs: i.specs || '-',
           }));
           dispatch({ type: 'SET_INVENTORY', inventory: formattedInv });
         }
-        
+
         alert(`Kondisi aset ${code} berhasil diperbarui menjadi "${condition}"!`);
       }
     } catch (err) {
@@ -133,10 +148,16 @@ export function Maintenance() {
     }
   }
 
-  const filteredLogs = state.maintLog.filter(l => {
+  const filteredLogs = state.maintLog.filter((l) => {
     if (!query) return true;
     const q = query.toLowerCase();
-    return (l.name || '').toLowerCase().includes(q) || (l.asset || '').toLowerCase().includes(q) || (l.action || '').toLowerCase().includes(q) || (l.tech || '').toLowerCase().includes(q) || (l.id || '').toLowerCase().includes(q);
+    return (
+      (l.name || '').toLowerCase().includes(q) ||
+      (l.asset || '').toLowerCase().includes(q) ||
+      (l.action || '').toLowerCase().includes(q) ||
+      (l.tech || '').toLowerCase().includes(q) ||
+      (l.id || '').toLowerCase().includes(q)
+    );
   });
 
   const generateMaintenancePDF = () => {
@@ -150,8 +171,8 @@ export function Maintenance() {
         { text: 'NAMA ASET', style: 'tableHeader' },
         { text: 'TINDAKAN', style: 'tableHeader' },
         { text: 'TEKNISI', style: 'tableHeader' },
-        { text: 'KONDISI AKHIR', style: 'tableHeader' }
-      ]
+        { text: 'KONDISI AKHIR', style: 'tableHeader' },
+      ],
     ];
 
     filteredLogs.forEach((l, idx) => {
@@ -162,7 +183,7 @@ export function Maintenance() {
         { text: `${l.name}\n(${l.asset})`, style: 'tableCellBold' },
         { text: l.action, style: 'tableCell' },
         { text: l.tech, style: 'tableCellCenter' },
-        { text: l.cond, style: 'tableCellCenter' }
+        { text: l.cond, style: 'tableCellCenter' },
       ]);
     });
 
@@ -171,19 +192,29 @@ export function Maintenance() {
         // Kop Surat Resmi
         { text: 'LOKALAB SUITE — LAPORAN MAINTENANCE', style: 'kopHeader' },
         { text: 'Fakultas Teknologi Informasi · Universitas Loka Kampus', style: 'kopSub' },
-        { text: 'Bandung, Jawa Barat · Email: support@lokalab.id · Telp: (022) 123456', style: 'kopContact' },
-        { canvas: [{ type: 'line', x1: 0, y1: 5, x2: 515, y2: 5, lineWidth: 1.5, strokeColor: '#1a1a2e' }] },
+        {
+          text: 'Bandung, Jawa Barat · Email: support@lokalab.id · Telp: (022) 123456',
+          style: 'kopContact',
+        },
+        {
+          canvas: [
+            { type: 'line', x1: 0, y1: 5, x2: 515, y2: 5, lineWidth: 1.5, strokeColor: '#1a1a2e' },
+          ],
+        },
         { text: '\n' },
 
         // Title
         { text: 'LAPORAN KEGIATAN PEMELIHARAAN & PERBAIKAN ASET', style: 'docTitle' },
-        { text: `Tanggal Cetak: ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`, style: 'docSub' },
+        {
+          text: `Tanggal Cetak: ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`,
+          style: 'docSub',
+        },
         { text: '\n' },
 
         // Description
         {
           text: `Laporan ini memuat riwayat log tindakan pemeliharaan (maintenance) dan perbaikan peralatan laboratorium yang telah dilaksanakan oleh tim teknisi.`,
-          style: 'bodyText'
+          style: 'bodyText',
         },
         { text: '\n' },
 
@@ -192,17 +223,21 @@ export function Maintenance() {
           table: {
             headerRows: 1,
             widths: [20, 65, 60, 110, 140, 60, 60],
-            body: tableBody
+            body: tableBody,
           },
-          layout: 'lightHorizontalLines'
+          layout: 'lightHorizontalLines',
         },
         { text: '\n' },
 
         // Totals
         {
           columns: [
-            { text: `Total Kegiatan Pemeliharaan: ${filteredLogs.length} kejadian`, style: 'totalText', width: '*' }
-          ]
+            {
+              text: `Total Kegiatan Pemeliharaan: ${filteredLogs.length} kejadian`,
+              style: 'totalText',
+              width: '*',
+            },
+          ],
         },
         { text: '\n\n' },
 
@@ -216,16 +251,16 @@ export function Maintenance() {
                 { text: 'Kepala Laboratorium', style: 'signSubtitle' },
                 { text: '\n\n\n\n' },
                 { text: `( ${state.user?.name || 'Kepala Lab'} )`, style: 'signName' },
-                { text: 'NIP. 198203112005011002', style: 'signNip' }
+                { text: 'NIP. 198203112005011002', style: 'signNip' },
               ],
               alignment: 'center',
-              width: 200
-            }
-          ]
-        }
+              width: 200,
+            },
+          ],
+        },
       ],
       defaultStyle: {
-        font: 'Helvetica'
+        font: 'Helvetica',
       },
       styles: {
         kopHeader: { fontSize: 13, bold: true, alignment: 'center', color: '#1a1a2e' },
@@ -243,18 +278,30 @@ export function Maintenance() {
         signTitle: { fontSize: 9, bold: true },
         signSubtitle: { fontSize: 9, italics: true },
         signName: { fontSize: 9, bold: true, decoration: 'underline' },
-        signNip: { fontSize: 8, color: '#555555' }
-      }
+        signNip: { fontSize: 8, color: '#555555' },
+      },
     };
 
-    pdfMake.createPdf(docDefinition).download(`Laporan_Maintenance_${new Date().toISOString().substring(0, 10)}.pdf`);
+    pdfMake
+      .createPdf(docDefinition)
+      .download(`Laporan_Maintenance_${new Date().toISOString().substring(0, 10)}.pdf`);
     if (window.showToast) window.showToast('Laporan PDF berhasil diunduh!', 'ok');
   };
 
   const exportMaintenanceCSV = () => {
     if (window.showToast) window.showToast('Mengekspor data ke CSV…', 'info', 'download');
 
-    const headers = ['NO', 'LOG ID', 'TANGGAL', 'KODE ASET', 'NAMA ASET', 'TINDAKAN', 'TEKNISI', 'KONDISI AKHIR', 'BHP DIGUNAKAN'];
+    const headers = [
+      'NO',
+      'LOG ID',
+      'TANGGAL',
+      'KODE ASET',
+      'NAMA ASET',
+      'TINDAKAN',
+      'TEKNISI',
+      'KONDISI AKHIR',
+      'BHP DIGUNAKAN',
+    ];
     const data = filteredLogs.map((l, idx) => [
       idx + 1,
       l.id,
@@ -264,22 +311,29 @@ export function Maintenance() {
       l.action,
       l.tech,
       l.cond,
-      l.bhp.map(b => `${b.id}:${b.qty}${b.unit}`).join('; ')
+      l.bhp.map((b) => `${b.id}:${b.qty}${b.unit}`).join('; '),
     ]);
 
     const csvRows = [
       headers.join(','),
-      ...data.map(row => row.map(val => {
-        const escaped = String(val).replace(/"/g, '""');
-        return `"${escaped}"`;
-      }).join(','))
+      ...data.map((row) =>
+        row
+          .map((val) => {
+            const escaped = String(val).replace(/"/g, '""');
+            return `"${escaped}"`;
+          })
+          .join(',')
+      ),
     ];
-    const csvContent = "\uFEFF" + csvRows.join('\n'); // Add BOM for Excel UTF-8 support
+    const csvContent = '\uFEFF' + csvRows.join('\n'); // Add BOM for Excel UTF-8 support
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `Laporan_Maintenance_${new Date().toISOString().substring(0, 10)}.csv`);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute(
+      'download',
+      `Laporan_Maintenance_${new Date().toISOString().substring(0, 10)}.csv`
+    );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -287,16 +341,37 @@ export function Maintenance() {
   };
 
   return (
-    <div className="page" style={{'--role-accent': role.accent}}>
+    <div className="page" style={{ '--role-accent': role.accent }}>
       <div className="page-head" data-reveal>
         <div>
-          <h1 className="page-title">Log <em>maintenance</em></h1>
-          <p className="page-sub">Catat pemeliharaan, update kondisi aset. BHP yang dipakai otomatis berkurang dari stok.</p>
+          <h1 className="page-title">
+            Log <em>maintenance</em>
+          </h1>
+          <p className="page-sub">
+            Catat pemeliharaan, update kondisi aset. BHP yang dipakai otomatis berkurang dari stok.
+          </p>
         </div>
         <div className="flex gap-2">
-          <button className="btn border border-line" onClick={generateMaintenancePDF} title="Cetak Laporan PDF"><Icon name="log" size={13} /> PDF</button>
-          <button className="btn border border-line" onClick={exportMaintenanceCSV} title="Ekspor Laporan Excel/CSV"><Icon name="download" size={13} /> CSV</button>
-          <button className="btn primary" onClick={() => dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'maintenance', payload: {} } })}>
+          <button
+            className="btn border border-line"
+            onClick={generateMaintenancePDF}
+            title="Cetak Laporan PDF"
+          >
+            <Icon name="log" size={13} /> PDF
+          </button>
+          <button
+            className="btn border border-line"
+            onClick={exportMaintenanceCSV}
+            title="Ekspor Laporan Excel/CSV"
+          >
+            <Icon name="download" size={13} /> CSV
+          </button>
+          <button
+            className="btn primary"
+            onClick={() =>
+              dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'maintenance', payload: {} } })
+            }
+          >
             <Icon name="plus" size={13} strokeWidth={2.4} /> Log baru
           </button>
         </div>
@@ -306,20 +381,47 @@ export function Maintenance() {
         <div onClick={() => setActiveModal('log')} style={{ cursor: 'pointer' }} className="flex-1">
           <StatTile label="Log bulan ini" value={state.maintLog.length} icon="log" fmt="int" />
         </div>
-        <div onClick={() => setActiveModal('maint')} style={{ cursor: 'pointer' }} className="flex-1">
-          <StatTile label="Aset di-maintain" value={state.inventory.filter(i => i.cond === 'Maintenance').length} icon="wrench" fmt="int" />
+        <div
+          onClick={() => setActiveModal('maint')}
+          style={{ cursor: 'pointer' }}
+          className="flex-1"
+        >
+          <StatTile
+            label="Aset di-maintain"
+            value={state.inventory.filter((i) => i.cond === 'Maintenance').length}
+            icon="wrench"
+            fmt="int"
+          />
         </div>
-        <div onClick={() => setActiveModal('check')} style={{ cursor: 'pointer' }} className="flex-1">
-          <StatTile label="Aset perlu cek" value={state.inventory.filter(i => i.cond === 'Perlu cek').length} icon="alert" fmt="int" accent="var(--gold)" />
+        <div
+          onClick={() => setActiveModal('check')}
+          style={{ cursor: 'pointer' }}
+          className="flex-1"
+        >
+          <StatTile
+            label="Aset perlu cek"
+            value={state.inventory.filter((i) => i.cond === 'Perlu cek').length}
+            icon="alert"
+            fmt="int"
+            accent="var(--gold)"
+          />
         </div>
         <div onClick={() => setActiveModal('bhp')} style={{ cursor: 'pointer' }} className="flex-1">
-          <StatTile label="BHP rendah" value={state.bhp.filter(b => b.stock <= b.min).length} icon="flask" fmt="int" accent="var(--rose)" />
+          <StatTile
+            label="BHP rendah"
+            value={state.bhp.filter((b) => b.stock <= b.min).length}
+            icon="flask"
+            fmt="int"
+            accent="var(--rose)"
+          />
         </div>
       </div>
 
       {query && filteredLogs.length === 0 && (
         <div className="empty" data-reveal>
-          <div className="ico"><Icon name="search" size={20} /></div>
+          <div className="ico">
+            <Icon name="search" size={20} />
+          </div>
           <h4>Tidak ada log cocok</h4>
           <div>Coba kata kunci lain.</div>
         </div>
@@ -340,21 +442,42 @@ export function Maintenance() {
             </tr>
           </thead>
           <tbody>
-            {filteredLogs.map(l => (
+            {filteredLogs.map((l) => (
               <tr key={l.id}>
                 <td className="mono">{l.id}</td>
                 <td>{l.date}</td>
-                <td><b>{l.name}</b><div className="mono text-xs">{l.asset}</div></td>
+                <td>
+                  <b>{l.name}</b>
+                  <div className="mono text-xs">{l.asset}</div>
+                </td>
                 <td className="text-2">{l.action}</td>
                 <td>{l.tech}</td>
-                <td><span className={`cond ${(l.cond || 'Baik').toLowerCase().replace(' ', '-')}`}>{l.cond}</span></td>
+                <td>
+                  <span className={`cond ${(l.cond || 'Baik').toLowerCase().replace(' ', '-')}`}>
+                    {l.cond}
+                  </span>
+                </td>
                 <td className="text-xs mono">
-                  {(!l.bhp || l.bhp.length === 0) ? <span className="text-3">—</span> : l.bhp.map((b, i) => (
-                    <div key={i}>{b.id}: −{b.qty}{b.unit}</div>
-                  ))}
+                  {!l.bhp || l.bhp.length === 0 ? (
+                    <span className="text-3">—</span>
+                  ) : (
+                    l.bhp.map((b, i) => (
+                      <div key={i}>
+                        {b.id}: −{b.qty}
+                        {b.unit}
+                      </div>
+                    ))
+                  )}
                 </td>
                 <td>
-                  <button className="act-btn" onClick={() => dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'maintenance', payload: l } })} title="Ubah Log" aria-label={`Ubah Log ${l.id}`}>
+                  <button
+                    className="act-btn"
+                    onClick={() =>
+                      dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'maintenance', payload: l } })
+                    }
+                    title="Ubah Log"
+                    aria-label={`Ubah Log ${l.id}`}
+                  >
                     <Icon name="edit" size={12} />
                   </button>
                 </td>
@@ -366,48 +489,81 @@ export function Maintenance() {
 
       {/* Dynamic Filter Modal */}
       {activeModal && (
-        <div className="modal-overlay" onClick={() => setActiveModal(null)} style={{
-          position: 'fixed',
-          top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(9, 9, 11, 0.85)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          backdropFilter: 'blur(8px)',
-        }}>
-          <div className="card max-w-4xl w-full mx-4 overflow-hidden flex flex-col" style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--color-line)',
-            borderRadius: '16px',
-            maxHeight: '85vh',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
-          }} onClick={e => e.stopPropagation()}>
+        <div
+          className="modal-overlay"
+          onClick={() => setActiveModal(null)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(9, 9, 11, 0.85)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            backdropFilter: 'blur(8px)',
+          }}
+        >
+          <div
+            className="card max-w-4xl w-full mx-4 overflow-hidden flex flex-col"
+            style={{
+              background: 'var(--surface)',
+              border: '1px solid var(--color-line)',
+              borderRadius: '16px',
+              maxHeight: '85vh',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Modal Head */}
             <div className="p-5 border-b border-[#27272A] flex between aic">
               <div>
                 <h3 className="text-xl fw-5 tracking-tight flex items-center gap-2">
-                  <Icon name={
-                    activeModal === 'log' ? 'log' :
-                    activeModal === 'maint' ? 'wrench' :
-                    activeModal === 'check' ? 'alert' : 'flask'
-                  } size={18} strokeWidth={1.8} style={{ color: activeModal === 'check' ? 'var(--gold)' : activeModal === 'bhp' ? 'var(--rose)' : 'var(--role-accent)' }} />
-                  {
-                    activeModal === 'log' ? 'Log Maintenance Bulan Ini' :
-                    activeModal === 'maint' ? 'Aset Sedang Maintenance' :
-                    activeModal === 'check' ? 'Aset Perlu Pengecekan' : 'Stok BHP Kritis / Rendah'
-                  }
+                  <Icon
+                    name={
+                      activeModal === 'log'
+                        ? 'log'
+                        : activeModal === 'maint'
+                          ? 'wrench'
+                          : activeModal === 'check'
+                            ? 'alert'
+                            : 'flask'
+                    }
+                    size={18}
+                    strokeWidth={1.8}
+                    style={{
+                      color:
+                        activeModal === 'check'
+                          ? 'var(--gold)'
+                          : activeModal === 'bhp'
+                            ? 'var(--rose)'
+                            : 'var(--role-accent)',
+                    }}
+                  />
+                  {activeModal === 'log'
+                    ? 'Log Maintenance Bulan Ini'
+                    : activeModal === 'maint'
+                      ? 'Aset Sedang Maintenance'
+                      : activeModal === 'check'
+                        ? 'Aset Perlu Pengecekan'
+                        : 'Stok BHP Kritis / Rendah'}
                 </h3>
                 <p className="text-xs text-ink-3 mt-1">
-                  {
-                    activeModal === 'log' ? 'Klik baris log untuk memfilter dan mengarahkannya di tabel utama secara otomatis.' :
-                    activeModal === 'maint' ? 'Daftar semua peralatan laboratorium yang saat ini berada dalam kondisi perbaikan/maintenance.' :
-                    activeModal === 'check' ? 'Daftar semua peralatan laboratorium yang dilaporkan mengalami kendala atau membutuhkan pengecekan.' :
-                    'Bahan habis pakai dengan jumlah stok di bawah batas minimal persediaan.'
-                  }
+                  {activeModal === 'log'
+                    ? 'Klik baris log untuk memfilter dan mengarahkannya di tabel utama secara otomatis.'
+                    : activeModal === 'maint'
+                      ? 'Daftar semua peralatan laboratorium yang saat ini berada dalam kondisi perbaikan/maintenance.'
+                      : activeModal === 'check'
+                        ? 'Daftar semua peralatan laboratorium yang dilaporkan mengalami kendala atau membutuhkan pengecekan.'
+                        : 'Bahan habis pakai dengan jumlah stok di bawah batas minimal persediaan.'}
                 </p>
               </div>
-              <button className="btn sm border-0 bg-transparent text-ink hover:text-white" onClick={() => setActiveModal(null)}>
+              <button
+                className="btn sm border-0 bg-transparent text-ink hover:text-white"
+                onClick={() => setActiveModal(null)}
+              >
                 <Icon name="x" size={16} />
               </button>
             </div>
@@ -427,21 +583,30 @@ export function Maintenance() {
                       </tr>
                     </thead>
                     <tbody>
-                      {state.maintLog.map(l => (
-                        <tr key={l.id} className="hover:bg-white/5 cursor-pointer" onClick={() => {
-                          setQuery(l.id);
-                          setActiveModal(null);
-                        }}>
+                      {state.maintLog.map((l) => (
+                        <tr
+                          key={l.id}
+                          className="hover:bg-white/5 cursor-pointer"
+                          onClick={() => {
+                            setQuery(l.id);
+                            setActiveModal(null);
+                          }}
+                        >
                           <td className="mono text-cyan">{l.id}</td>
                           <td>{l.date}</td>
-                          <td><b>{l.name}</b><div className="mono text-xs">{l.asset}</div></td>
+                          <td>
+                            <b>{l.name}</b>
+                            <div className="mono text-xs">{l.asset}</div>
+                          </td>
                           <td>{l.action}</td>
                           <td>{l.tech}</td>
                         </tr>
                       ))}
                       {state.maintLog.length === 0 && (
                         <tr>
-                          <td colSpan="5" className="text-center text-xs text-ink-3 py-6">Belum ada log terekam bulan ini.</td>
+                          <td colSpan="5" className="text-center text-xs text-ink-3 py-6">
+                            Belum ada log terekam bulan ini.
+                          </td>
                         </tr>
                       )}
                     </tbody>
@@ -462,40 +627,60 @@ export function Maintenance() {
                       </tr>
                     </thead>
                     <tbody>
-                      {state.inventory.filter(i => i.cond === 'Maintenance').map(i => (
-                        <tr key={i.id}>
-                          <td className="mono">{i.code}</td>
-                          <td><b>{i.name}</b><div className="text-xs text-3">{i.cat}</div></td>
-                          <td>{i.room}</td>
-                          <td className="text-xs max-w-xs truncate">{i.specs}</td>
-                          <td>
-                            <div className="flex gap-2">
-                              <button 
-                                className="btn sm ok" 
-                                title="Tandai Selesai (Langsung)" 
-                                onClick={() => handleQuickResolve(i.id, i.code, 'Baik', 'Perbaikan selesai (langsung via checklist). Kondisi aset kembali normal.')}
-                              >
-                                <Icon name="check" size={12} strokeWidth={2.4} /> Ceklis Selesai
-                              </button>
-                              <button 
-                                className="btn sm border border-line" 
-                                title="Log Detail & BHP" 
-                                onClick={() => {
-                                  setActiveModal(null);
-                                  setTimeout(() => {
-                                    dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'maintenance', payload: { asset: i.code, cond: 'Baik' } } });
-                                  }, 200);
-                                }}
-                              >
-                                <Icon name="edit" size={12} /> Log Detail
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                      {state.inventory.filter(i => i.cond === 'Maintenance').length === 0 && (
+                      {state.inventory
+                        .filter((i) => i.cond === 'Maintenance')
+                        .map((i) => (
+                          <tr key={i.id}>
+                            <td className="mono">{i.code}</td>
+                            <td>
+                              <b>{i.name}</b>
+                              <div className="text-xs text-3">{i.cat}</div>
+                            </td>
+                            <td>{i.room}</td>
+                            <td className="text-xs max-w-xs truncate">{i.specs}</td>
+                            <td>
+                              <div className="flex gap-2">
+                                <button
+                                  className="btn sm ok"
+                                  title="Tandai Selesai (Langsung)"
+                                  onClick={() =>
+                                    handleQuickResolve(
+                                      i.id,
+                                      i.code,
+                                      'Baik',
+                                      'Perbaikan selesai (langsung via checklist). Kondisi aset kembali normal.'
+                                    )
+                                  }
+                                >
+                                  <Icon name="check" size={12} strokeWidth={2.4} /> Ceklis Selesai
+                                </button>
+                                <button
+                                  className="btn sm border border-line"
+                                  title="Log Detail & BHP"
+                                  onClick={() => {
+                                    setActiveModal(null);
+                                    setTimeout(() => {
+                                      dispatch({
+                                        type: 'OPEN_DRAWER',
+                                        drawer: {
+                                          kind: 'maintenance',
+                                          payload: { asset: i.code, cond: 'Baik' },
+                                        },
+                                      });
+                                    }, 200);
+                                  }}
+                                >
+                                  <Icon name="edit" size={12} /> Log Detail
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      {state.inventory.filter((i) => i.cond === 'Maintenance').length === 0 && (
                         <tr>
-                          <td colSpan="5" className="text-center text-xs text-ink-3 py-6">Tidak ada aset yang sedang dalam maintenance! 🎉</td>
+                          <td colSpan="5" className="text-center text-xs text-ink-3 py-6">
+                            Tidak ada aset yang sedang dalam maintenance! 🎉
+                          </td>
                         </tr>
                       )}
                     </tbody>
@@ -516,47 +701,73 @@ export function Maintenance() {
                       </tr>
                     </thead>
                     <tbody>
-                      {state.inventory.filter(i => i.cond === 'Perlu cek').map(i => (
-                        <tr key={i.id}>
-                          <td className="mono">{i.code}</td>
-                          <td><b>{i.name}</b><div className="text-xs text-3">{i.cat}</div></td>
-                          <td>{i.room}</td>
-                          <td><span className="cond maintenance">{i.cond}</span></td>
-                          <td>
-                            <div className="flex gap-2">
-                              <button 
-                                className="btn sm ok" 
-                                title="Tandai Kondisi Baik" 
-                                onClick={() => handleQuickResolve(i.id, i.code, 'Baik', 'Pemeriksaan selesai (langsung via checklist). Kondisi aset terverifikasi Baik.')}
-                              >
-                                <Icon name="check" size={12} strokeWidth={2.4} /> Ceklis Baik
-                              </button>
-                              <button 
-                                className="btn sm warn" 
-                                title="Mulai Maintenance" 
-                                onClick={() => handleQuickResolve(i.id, i.code, 'Maintenance', 'Pemeriksaan menunjukkan perlu pemeliharaan/perbaikan lebih lanjut.')}
-                              >
-                                <Icon name="wrench" size={12} /> Maintain
-                              </button>
-                              <button 
-                                className="btn sm border border-line" 
-                                title="Log Detail & BHP" 
-                                onClick={() => {
-                                  setActiveModal(null);
-                                  setTimeout(() => {
-                                    dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'maintenance', payload: { asset: i.code } } });
-                                  }, 200);
-                                }}
-                              >
-                                <Icon name="edit" size={12} /> Log Detail
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                      {state.inventory.filter(i => i.cond === 'Perlu cek').length === 0 && (
+                      {state.inventory
+                        .filter((i) => i.cond === 'Perlu cek')
+                        .map((i) => (
+                          <tr key={i.id}>
+                            <td className="mono">{i.code}</td>
+                            <td>
+                              <b>{i.name}</b>
+                              <div className="text-xs text-3">{i.cat}</div>
+                            </td>
+                            <td>{i.room}</td>
+                            <td>
+                              <span className="cond maintenance">{i.cond}</span>
+                            </td>
+                            <td>
+                              <div className="flex gap-2">
+                                <button
+                                  className="btn sm ok"
+                                  title="Tandai Kondisi Baik"
+                                  onClick={() =>
+                                    handleQuickResolve(
+                                      i.id,
+                                      i.code,
+                                      'Baik',
+                                      'Pemeriksaan selesai (langsung via checklist). Kondisi aset terverifikasi Baik.'
+                                    )
+                                  }
+                                >
+                                  <Icon name="check" size={12} strokeWidth={2.4} /> Ceklis Baik
+                                </button>
+                                <button
+                                  className="btn sm warn"
+                                  title="Mulai Maintenance"
+                                  onClick={() =>
+                                    handleQuickResolve(
+                                      i.id,
+                                      i.code,
+                                      'Maintenance',
+                                      'Pemeriksaan menunjukkan perlu pemeliharaan/perbaikan lebih lanjut.'
+                                    )
+                                  }
+                                >
+                                  <Icon name="wrench" size={12} /> Maintain
+                                </button>
+                                <button
+                                  className="btn sm border border-line"
+                                  title="Log Detail & BHP"
+                                  onClick={() => {
+                                    setActiveModal(null);
+                                    setTimeout(() => {
+                                      dispatch({
+                                        type: 'OPEN_DRAWER',
+                                        drawer: { kind: 'maintenance', payload: { asset: i.code } },
+                                      });
+                                    }, 200);
+                                  }}
+                                >
+                                  <Icon name="edit" size={12} /> Log Detail
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      {state.inventory.filter((i) => i.cond === 'Perlu cek').length === 0 && (
                         <tr>
-                          <td colSpan="5" className="text-center text-xs text-ink-3 py-6">Tidak ada aset yang membutuhkan pengecekan.</td>
+                          <td colSpan="5" className="text-center text-xs text-ink-3 py-6">
+                            Tidak ada aset yang membutuhkan pengecekan.
+                          </td>
                         </tr>
                       )}
                     </tbody>
@@ -578,30 +789,40 @@ export function Maintenance() {
                       </tr>
                     </thead>
                     <tbody>
-                      {state.bhp.filter(b => b.stock <= b.min).map(b => (
-                        <tr key={b.id} className="hover:bg-white/5">
-                          <td className="mono text-rose">{b.id}</td>
-                          <td><b>{b.name}</b></td>
-                          <td>{b.cat}</td>
-                          <td className="mono text-rose fw-6">{b.stock} {b.unit}</td>
-                          <td className="mono text-3">{b.min} {b.unit}</td>
-                          <td>
-                            <button 
-                              className="btn sm ok" 
-                              title="Lakukan Restock" 
-                              onClick={() => {
-                                setActiveModal(null);
-                                dispatch({ type: 'SET_SCREEN', screen: 'bhp' });
-                              }}
-                            >
-                              <Icon name="plus" size={12} /> Restock
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                      {state.bhp.filter(b => b.stock <= b.min).length === 0 && (
+                      {state.bhp
+                        .filter((b) => b.stock <= b.min)
+                        .map((b) => (
+                          <tr key={b.id} className="hover:bg-white/5">
+                            <td className="mono text-rose">{b.id}</td>
+                            <td>
+                              <b>{b.name}</b>
+                            </td>
+                            <td>{b.cat}</td>
+                            <td className="mono text-rose fw-6">
+                              {b.stock} {b.unit}
+                            </td>
+                            <td className="mono text-3">
+                              {b.min} {b.unit}
+                            </td>
+                            <td>
+                              <button
+                                className="btn sm ok"
+                                title="Lakukan Restock"
+                                onClick={() => {
+                                  setActiveModal(null);
+                                  dispatch({ type: 'SET_SCREEN', screen: 'bhp' });
+                                }}
+                              >
+                                <Icon name="plus" size={12} /> Restock
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      {state.bhp.filter((b) => b.stock <= b.min).length === 0 && (
                         <tr>
-                          <td colSpan="6" className="text-center text-xs text-ink-3 py-6">Stok seluruh BHP dalam kondisi aman.</td>
+                          <td colSpan="6" className="text-center text-xs text-ink-3 py-6">
+                            Stok seluruh BHP dalam kondisi aman.
+                          </td>
                         </tr>
                       )}
                     </tbody>

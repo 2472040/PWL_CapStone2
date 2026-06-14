@@ -27,7 +27,7 @@ const globalErrorHandler = (err, req, res, next) => {
     statusCode = 400;
     status = 'fail';
     message = err.errors[0]?.message || 'Validasi basis data gagal.';
-    details = err.errors.map(e => ({ field: e.path, message: e.message }));
+    details = err.errors.map((e) => ({ field: e.path, message: e.message }));
   }
 
   // Handle Zod Validation Errors
@@ -44,14 +44,16 @@ const globalErrorHandler = (err, req, res, next) => {
     logger.error(`[500 Internal Error] ${req.method} ${req.originalUrl} - Stack:`, err);
   } else {
     // Log operational warnings
-    logger.warn(`[${statusCode} Operational Warning] ${req.method} ${req.originalUrl} - ${message}`);
+    logger.warn(
+      `[${statusCode} Operational Warning] ${req.method} ${req.originalUrl} - ${message}`
+    );
   }
 
   // Standar JSON response
   res.status(statusCode).json({
     status,
     error: message, // keep "error" key for backward compatibility with frontend
-    ...(details && { details })
+    ...(details && { details }),
   });
 };
 

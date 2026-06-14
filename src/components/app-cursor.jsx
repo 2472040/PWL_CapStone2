@@ -1,6 +1,6 @@
 // app-cursor.jsx — Custom cursor with role-accent glow, idle hide, magnetic on interactive
 // Pure frontend, no deps. Respects prefers-reduced-motion & touch devices.
-import React, {  useState, useEffect, useRef, useMemo  } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 
 function CustomCursor() {
   // Skip on touch devices and reduced-motion
@@ -71,10 +71,10 @@ function CustomCursor() {
         const rect = magneticEl.getBoundingClientRect();
         const cx = rect.left + rect.width / 2;
         const cy = rect.top + rect.height / 2;
-        
+
         pos.current.x += (cx - pos.current.x) * 0.2;
         pos.current.y += (cy - pos.current.y) * 0.2;
-        
+
         // Match size roughly
         ringRef.current.style.width = `${rect.width + 12}px`;
         ringRef.current.style.height = `${rect.height + 12}px`;
@@ -86,7 +86,7 @@ function CustomCursor() {
         // Normal follow
         pos.current.x += (target.current.x - pos.current.x) * 0.15;
         pos.current.y += (target.current.y - pos.current.y) * 0.15;
-        
+
         if (ringRef.current) {
           ringRef.current.style.width = hovering ? '48px' : '32px';
           ringRef.current.style.height = hovering ? '48px' : '32px';
@@ -136,13 +136,31 @@ function CustomCursor() {
       <div
         ref={ringRef}
         className={`cursor-ring ${clicking ? 'click' : ''}`}
-        style={{ pointerEvents: 'none', position: 'fixed', top: 0, left: 0, zIndex: 9999, transition: 'width 0.2s, height 0.2s, border-radius 0.2s, background 0.2s' }}
+        style={{
+          pointerEvents: 'none',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          zIndex: 9999,
+          transition: 'width 0.2s, height 0.2s, border-radius 0.2s, background 0.2s',
+        }}
         aria-hidden="true"
       />
       <div
         ref={dotRef}
         className={`cursor-dot ${clicking ? 'click' : ''}`}
-        style={{ pointerEvents: 'none', position: 'fixed', top: 0, left: 0, zIndex: 10000, width: '6px', height: '6px', background: 'white', borderRadius: '50%', transition: 'opacity 0.2s' }}
+        style={{
+          pointerEvents: 'none',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          zIndex: 10000,
+          width: '6px',
+          height: '6px',
+          background: 'white',
+          borderRadius: '50%',
+          transition: 'opacity 0.2s',
+        }}
         aria-hidden="true"
       />
     </>

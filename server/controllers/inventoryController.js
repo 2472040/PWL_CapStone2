@@ -38,9 +38,11 @@ const getInventoryDetail = async (req, res) => {
         { model: Room },
         { model: Label, as: 'label' },
         {
-          model: MaintenanceLog, as: 'maintenanceLogs',
+          model: MaintenanceLog,
+          as: 'maintenanceLogs',
           include: [{ model: User, as: 'technician', attributes: ['id', 'name'] }],
-          limit: 10, order: [['date', 'DESC']],
+          limit: 10,
+          order: [['date', 'DESC']],
         },
       ],
     });
@@ -54,15 +56,24 @@ const getInventoryDetail = async (req, res) => {
 
 const createInventory = async (req, res) => {
   try {
-    const { code, name, category, room_id, condition, acquired_date, value, serial, specs } = req.body;
+    const { code, name, category, room_id, condition, acquired_date, value, serial, specs } =
+      req.body;
     if (!code || !name || !category) {
       return res.status(400).json({ error: 'Code, name, category wajib diisi.' });
     }
     const item = await Inventory.create({
-      code, name, category, room_id, condition: condition || 'Baik',
-      acquired_date, value: value || 0, serial, specs, last_checked: new Date(),
+      code,
+      name,
+      category,
+      room_id,
+      condition: condition || 'Baik',
+      acquired_date,
+      value: value || 0,
+      serial,
+      specs,
+      last_checked: new Date(),
     });
-    
+
     await logAudit(req.user.id, 'inventory.create', item.code, req.ip);
 
     const io = req.app.get('io');
@@ -79,11 +90,20 @@ const updateInventory = async (req, res) => {
   try {
     const item = await Inventory.findByPk(req.params.id);
     if (!item) return res.status(404).json({ error: 'Item tidak ditemukan.' });
-    
-    const fields = ['name', 'category', 'room_id', 'condition', 'acquired_date', 'value', 'serial', 'specs'];
+
+    const fields = [
+      'name',
+      'category',
+      'room_id',
+      'condition',
+      'acquired_date',
+      'value',
+      'serial',
+      'specs',
+    ];
     const diffs = [];
 
-    fields.forEach(f => {
+    fields.forEach((f) => {
       if (req.body[f] !== undefined && req.body[f] !== item[f]) {
         diffs.push(`${f}: ${item[f]} ➔ ${req.body[f]}`);
         item[f] = req.body[f];
@@ -123,7 +143,13 @@ const updateLabel = async (req, res) => {
       isNew = true;
     }
 
-    await logAudit(req.user.id, isNew ? 'label.create' : 'label.update', item.code, req.ip, `Label: ${label_number || '-'}`);
+    await logAudit(
+      req.user.id,
+      isNew ? 'label.create' : 'label.update',
+      item.code,
+      req.ip,
+      `Label: ${label_number || '-'}`
+    );
 
     const io = req.app.get('io');
     if (io) io.emit('data_changed', { type: 'inventory' });
@@ -148,7 +174,11 @@ const getLabels = async (req, res) => {
   }
 };
 
-
-
-module.exports = { getInventory, getInventoryDetail, createInventory, updateInventory, updateLabel, getLabels };
-
+module.exports = {
+  getInventory,
+  getInventoryDetail,
+  createInventory,
+  updateInventory,
+  updateLabel,
+  getLabels,
+};

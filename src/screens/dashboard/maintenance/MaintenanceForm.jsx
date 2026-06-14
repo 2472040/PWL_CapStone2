@@ -5,23 +5,23 @@ import { apiFetch } from '../../../services/api.js';
 export function MaintenanceForm({ payload, close }) {
   const { state, dispatch } = useStore();
   const toast = useToast();
-  
+
   const isEdit = !!payload?.dbId;
   const [selectedRoomId, setSelectedRoomId] = useState('');
   const [selectedAssets, setSelectedAssets] = useState([]);
   const [action, setAction] = useState(payload?.action || '');
   const [cond, setCond] = useState(payload?.cond || 'Baik');
-  const [maintDate, setMaintDate] = useState(payload?.rawDate ? payload.rawDate.substring(0, 10) : new Date().toISOString().substring(0, 10));
+  const [maintDate, setMaintDate] = useState(
+    payload?.rawDate ? payload.rawDate.substring(0, 10) : new Date().toISOString().substring(0, 10)
+  );
   const [bhpRows, setBhpRows] = useState([]);
   const [loading, setLoading] = useState(false);
-  const filteredAssets = state.inventory.filter(i => String(i.roomId) === String(selectedRoomId))
-  const selectedAssetData = filteredAssets.filter(a => selectedAssets.includes(a.code));
+  const filteredAssets = state.inventory.filter((i) => String(i.roomId) === String(selectedRoomId));
+  const selectedAssetData = filteredAssets.filter((a) => selectedAssets.includes(a.code));
 
   useEffect(() => {
     if (isEdit && payload?.asset) {
-      const editAsset = state.inventory.find(
-        i => i.code === payload.asset
-      );
+      const editAsset = state.inventory.find((i) => i.code === payload.asset);
 
       if (editAsset) {
         setSelectedRoomId(editAsset.roomId || '');
@@ -32,29 +32,48 @@ export function MaintenanceForm({ payload, close }) {
 
   function addBhp() {
     const first = state.bhp[0];
-    if (!first) { toast('Tidak ada data BHP tersedia', 'warn'); return; }
-    setBhpRows(r => [...r, { id: first.id, qty: 1, assetCode: selectedAssets.length > 0 ? selectedAssets[0] : 'all' }]);
+    if (!first) {
+      toast('Tidak ada data BHP tersedia', 'warn');
+      return;
+    }
+    setBhpRows((r) => [
+      ...r,
+      { id: first.id, qty: 1, assetCode: selectedAssets.length > 0 ? selectedAssets[0] : 'all' },
+    ]);
   }
-  function updateBhp(idx, patch) { setBhpRows(r => r.map((x, i) => i === idx ? { ...x, ...patch } : x)); }
-  function removeBhp(idx) { setBhpRows(r => r.filter((_, i) => i !== idx)); }
+  function updateBhp(idx, patch) {
+    setBhpRows((r) => r.map((x, i) => (i === idx ? { ...x, ...patch } : x)));
+  }
+  function removeBhp(idx) {
+    setBhpRows((r) => r.filter((_, i) => i !== idx));
+  }
 
   async function save() {
-    if (selectedAssets.length === 0) { toast('Pilih aset dulu', 'warn'); return; }
-    if (!action) { toast('Isi tindakan maintenance', 'warn'); return; }
-    if (!maintDate) { toast('Pilih tanggal maintenance', 'warn'); return; }
-    
+    if (selectedAssets.length === 0) {
+      toast('Pilih aset dulu', 'warn');
+      return;
+    }
+    if (!action) {
+      toast('Isi tindakan maintenance', 'warn');
+      return;
+    }
+    if (!maintDate) {
+      toast('Pilih tanggal maintenance', 'warn');
+      return;
+    }
+
     setLoading(true);
     try {
       const endpoint = isEdit ? `/maintenance/${payload.dbId}` : '/maintenance';
       const method = isEdit ? 'PUT' : 'POST';
-      
+
       let bhpPayload = [];
       if (!isEdit) {
-        bhpRows.forEach(b => {
-          const bd = state.bhp.find(x => x.id === b.id);
+        bhpRows.forEach((b) => {
+          const bd = state.bhp.find((x) => x.id === b.id);
           if (!bd) return;
           if (b.assetCode === 'all') {
-            selectedAssets.forEach(ac => {
+            selectedAssets.forEach((ac) => {
               bhpPayload.push({ asset_code: ac, bhp_id: bd.dbId, qty: parseFloat(b.qty) });
             });
           } else {
@@ -63,47 +82,54 @@ export function MaintenanceForm({ payload, close }) {
         });
       }
 
-      const body = isEdit ? {
-        action,
-        condition_after: cond,
-        date: maintDate
-      } : {
-        inventory_ids: selectedAssetData.map(a => a.id),
-        action,
-        condition_after: cond,
-        date: maintDate,
-        bhp_used: bhpPayload
-      };
+      const body = isEdit
+        ? {
+            action,
+            condition_after: cond,
+            date: maintDate,
+          }
+        : {
+            inventory_ids: selectedAssetData.map((a) => a.id),
+            action,
+            condition_after: cond,
+            date: maintDate,
+            bhp_used: bhpPayload,
+          };
 
       const res = await apiFetch(endpoint, {
         method: method,
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
       });
 
       if (res.data) {
         const resLogs = await apiFetch('/maintenance');
         if (resLogs.data) {
-          const formattedLogs = resLogs.data.map(l => ({
+          const formattedLogs = resLogs.data.map((l) => ({
             id: l.code || l.id,
             dbId: l.id,
-            date: new Date(l.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+            date: new Date(l.date).toLocaleDateString('id-ID', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            }),
             rawDate: l.date,
             asset: l.Inventory?.code,
             name: l.Inventory?.name,
             action: l.action,
             tech: l.technician?.name || 'Teknisi',
             cond: l.condition_after,
-            bhp: l.bhpUsed?.map(bu => ({
-              id: bu.Bhp?.code || bu.bhp_id,
-              qty: parseFloat(bu.qty_used) || 0,
-              unit: bu.Bhp?.unit || 'pcs'
-            })) || []
+            bhp:
+              l.bhpUsed?.map((bu) => ({
+                id: bu.Bhp?.code || bu.bhp_id,
+                qty: parseFloat(bu.qty_used) || 0,
+                unit: bu.Bhp?.unit || 'pcs',
+              })) || [],
           }));
           dispatch({ type: 'SET_MAINT_LOGS', logs: formattedLogs });
         }
         const resBhp = await apiFetch('/bhp');
         if (resBhp.data) {
-          const formattedBhp = resBhp.data.map(b => ({
+          const formattedBhp = resBhp.data.map((b) => ({
             id: b.code || b.id.toString(),
             dbId: b.id,
             name: b.name,
@@ -111,14 +137,19 @@ export function MaintenanceForm({ payload, close }) {
             stock: parseFloat(b.stock) || 0,
             min: parseFloat(b.min_stock) || 0,
             lastIn: b.last_in || '-',
-            cat: b.category || 'General'
+            cat: b.category || 'General',
           }));
           dispatch({ type: 'SET_BHP', bhp: formattedBhp });
         }
-        const updatedInventory = state.inventory.map(x => !selectedAssets.includes(x.code) ? x : ({ ...x, cond: cond, last: 'baru saja' }));
+        const updatedInventory = state.inventory.map((x) =>
+          !selectedAssets.includes(x.code) ? x : { ...x, cond: cond, last: 'baru saja' }
+        );
         dispatch({ type: 'SET_INVENTORY', inventory: updatedInventory });
 
-        toast(isEdit ? 'Log maintenance berhasil diperbarui!' : 'Log maintenance disimpan ke database!', 'ok');
+        toast(
+          isEdit ? 'Log maintenance berhasil diperbarui!' : 'Log maintenance disimpan ke database!',
+          'ok'
+        );
         close();
       }
     } catch (err) {
@@ -131,21 +162,41 @@ export function MaintenanceForm({ payload, close }) {
   return (
     <>
       <div className="drawer-bar">
-        <div className="drawer-title">{isEdit ? 'Ubah log maintenance' : 'Log maintenance baru'}</div>
-        <button className="x-btn" onClick={close} disabled={loading}><Icon name="x" size={14} /></button>
+        <div className="drawer-title">
+          {isEdit ? 'Ubah log maintenance' : 'Log maintenance baru'}
+        </div>
+        <button className="x-btn" onClick={close} disabled={loading}>
+          <Icon name="x" size={14} />
+        </button>
       </div>
       <div className="drawer-body">
         <div className="field">
-          <div className="field-lbl">Ruangan <span className="req">*</span></div>
-          <select className="select" value={selectedRoomId} onChange={e => { setSelectedRoomId(e.target.value); setSelectedAssets([]); }} disabled={loading || isEdit}>
+          <div className="field-lbl">
+            Ruangan <span className="req">*</span>
+          </div>
+          <select
+            className="select"
+            value={selectedRoomId}
+            onChange={(e) => {
+              setSelectedRoomId(e.target.value);
+              setSelectedAssets([]);
+            }}
+            disabled={loading || isEdit}
+          >
             <option value="">Pilih ruangan…</option>
-            {state.rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+            {state.rooms.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name}
+              </option>
+            ))}
           </select>
         </div>
 
         <div className="field">
           <div className="flex between aic mb-2">
-            <div className="field-lbl mb-0">Aset yang dimaintenance <span className="req">*</span></div>
+            <div className="field-lbl mb-0">
+              Aset yang dimaintenance <span className="req">*</span>
+            </div>
             {filteredAssets.length > 0 && !isEdit && (
               <label className="text-xs flex aic gap-1.5 cursor-pointer">
                 <input
@@ -153,7 +204,7 @@ export function MaintenanceForm({ payload, close }) {
                   checked={selectedAssets.length === filteredAssets.length}
                   onChange={(e) => {
                     if (e.target.checked) {
-                      setSelectedAssets(filteredAssets.map(a => a.code));
+                      setSelectedAssets(filteredAssets.map((a) => a.code));
                     } else {
                       setSelectedAssets([]);
                     }
@@ -166,9 +217,7 @@ export function MaintenanceForm({ payload, close }) {
           </div>
 
           {!selectedRoomId ? (
-            <div className="text-xs text-3">
-              Pilih ruangan terlebih dahulu
-            </div>
+            <div className="text-xs text-3">Pilih ruangan terlebih dahulu</div>
           ) : (
             <div
               style={{
@@ -176,10 +225,10 @@ export function MaintenanceForm({ payload, close }) {
                 overflowY: 'auto',
                 border: '1px solid var(--line-2)',
                 borderRadius: 8,
-                padding: 8
+                padding: 8,
               }}
             >
-              {filteredAssets.map(asset => (
+              {filteredAssets.map((asset) => (
                 <label
                   key={asset.code}
                   style={{
@@ -187,7 +236,7 @@ export function MaintenanceForm({ payload, close }) {
                     alignItems: 'center',
                     gap: 8,
                     padding: '6px 4px',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
                   }}
                 >
                   <input
@@ -196,11 +245,9 @@ export function MaintenanceForm({ payload, close }) {
                     disabled={loading || isEdit}
                     onChange={(e) => {
                       if (e.target.checked) {
-                        setSelectedAssets(prev => [...prev, asset.code]);
+                        setSelectedAssets((prev) => [...prev, asset.code]);
                       } else {
-                        setSelectedAssets(prev =>
-                          prev.filter(x => x !== asset.code)
-                        );
+                        setSelectedAssets((prev) => prev.filter((x) => x !== asset.code));
                       }
                     }}
                   />
@@ -216,42 +263,58 @@ export function MaintenanceForm({ payload, close }) {
 
         {selectedAssetData.length > 0 && (
           <div className="card compact mb-4">
-            {selectedAssetData.map(asset => (
-              <div
-                key={asset.code}
-                className="flex gap-3 items-center mb-2"
-              >
+            {selectedAssetData.map((asset) => (
+              <div key={asset.code} className="flex gap-3 items-center mb-2">
                 <QR seed={asset.code} size={6} />
 
                 <div>
-                  <div className="fw-5">
-                    {asset.name}
-                  </div>
+                  <div className="fw-5">{asset.name}</div>
 
-                  <div className="text-xs text-3">
-                    {asset.code}
-                  </div>
+                  <div className="text-xs text-3">{asset.code}</div>
                 </div>
               </div>
             ))}
           </div>
-          )}
+        )}
 
         <div className="field">
-          <div className="field-lbl">Tanggal Maintenance <span className="req">*</span></div>
-          <input className="input w-full" type="date" value={maintDate} onChange={e => setMaintDate(e.target.value)} disabled={loading} />
+          <div className="field-lbl">
+            Tanggal Maintenance <span className="req">*</span>
+          </div>
+          <input
+            className="input w-full"
+            type="date"
+            value={maintDate}
+            onChange={(e) => setMaintDate(e.target.value)}
+            disabled={loading}
+          />
         </div>
 
         <div className="field">
-          <div className="field-lbl">Tindakan <span className="req">*</span></div>
-          <textarea className="textarea" value={action} onChange={e => setAction(e.target.value)} placeholder="Misal: Kalibrasi probe, cleaning kontak, ganti termal paste…" disabled={loading} />
+          <div className="field-lbl">
+            Tindakan <span className="req">*</span>
+          </div>
+          <textarea
+            className="textarea"
+            value={action}
+            onChange={(e) => setAction(e.target.value)}
+            placeholder="Misal: Kalibrasi probe, cleaning kontak, ganti termal paste…"
+            disabled={loading}
+          />
         </div>
 
         <div className="field">
           <div className="field-lbl">Kondisi setelah maintenance</div>
-          <div className="flex gap-1.5" >
-            {['Baik', 'Perlu cek', 'Maintenance'].map(c => (
-              <button key={c} disabled={loading} className={`btn sm ${cond === c ? 'primary' : ''}`} onClick={() => setCond(c)}>{c}</button>
+          <div className="flex gap-1.5">
+            {['Baik', 'Perlu cek', 'Maintenance'].map((c) => (
+              <button
+                key={c}
+                disabled={loading}
+                className={`btn sm ${cond === c ? 'primary' : ''}`}
+                onClick={() => setCond(c)}
+              >
+                {c}
+              </button>
             ))}
           </div>
         </div>
@@ -259,14 +322,19 @@ export function MaintenanceForm({ payload, close }) {
         {isEdit ? (
           <div className="field">
             <div className="field-lbl">BHP yang telah digunakan</div>
-            {(!payload.bhp || payload.bhp.length === 0) ? (
+            {!payload.bhp || payload.bhp.length === 0 ? (
               <div className="text-3 text-xs mono">// tidak ada BHP yang digunakan</div>
             ) : (
               <div className="flex flex-col gap-1.5 mt-1">
                 {payload.bhp.map((b, i) => (
-                  <div key={i} className="text-xs px-3 py-2 bg-surface/50 border border-line-2 rounded flex justify-between">
+                  <div
+                    key={i}
+                    className="text-xs px-3 py-2 bg-surface/50 border border-line-2 rounded flex justify-between"
+                  >
                     <b>{b.id}</b>
-                    <span className="mono text-rose">−{b.qty} {b.unit}</span>
+                    <span className="mono text-rose">
+                      −{b.qty} {b.unit}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -276,28 +344,64 @@ export function MaintenanceForm({ payload, close }) {
           <div className="field">
             <div className="flex between aic mb-2">
               <div className="field-lbl mb-0">BHP yang dipakai</div>
-              <button className="btn sm" onClick={addBhp} disabled={loading || selectedAssets.length === 0}><Icon name="plus" size={11} /> Tambah BHP</button>
+              <button
+                className="btn sm"
+                onClick={addBhp}
+                disabled={loading || selectedAssets.length === 0}
+              >
+                <Icon name="plus" size={11} /> Tambah BHP
+              </button>
             </div>
-            {bhpRows.length === 0 && <div className="text-3 text-xs mono" style={{padding: '8px 0'}}>// tidak ada BHP yang dipakai</div>}
+            {bhpRows.length === 0 && (
+              <div className="text-3 text-xs mono" style={{ padding: '8px 0' }}>
+                // tidak ada BHP yang dipakai
+              </div>
+            )}
             <div className="flex flex-col gap-2">
               {bhpRows.map((b, i) => {
-                const bd = state.bhp.find(x => x.id === b.id);
+                const bd = state.bhp.find((x) => x.id === b.id);
                 return (
                   <div key={i} className="bg-surface/50 border border-line-2 p-2 rounded-md">
                     <div className="flex items-center gap-2 mb-2">
-                      <select className="select flex-1" value={b.assetCode} onChange={e => updateBhp(i, { assetCode: e.target.value })} disabled={loading}>
+                      <select
+                        className="select flex-1"
+                        value={b.assetCode}
+                        onChange={(e) => updateBhp(i, { assetCode: e.target.value })}
+                        disabled={loading}
+                      >
                         <option value="all">Untuk Semua Aset Terpilih</option>
-                        {selectedAssets.map(ac => (
-                          <option key={ac} value={ac}>{ac}</option>
+                        {selectedAssets.map((ac) => (
+                          <option key={ac} value={ac}>
+                            {ac}
+                          </option>
                         ))}
                       </select>
-                      <button className="x-btn" onClick={() => removeBhp(i)} disabled={loading}><Icon name="x" size={12} /></button>
+                      <button className="x-btn" onClick={() => removeBhp(i)} disabled={loading}>
+                        <Icon name="x" size={12} />
+                      </button>
                     </div>
                     <div className="flex items-center gap-2">
-                      <select className="select flex-[2]" value={b.id} onChange={e => updateBhp(i, { id: e.target.value })} disabled={loading}>
-                        {state.bhp.map(x => <option key={x.id} value={x.id}>{x.name} (stok: {x.stock})</option>)}
+                      <select
+                        className="select flex-[2]"
+                        value={b.id}
+                        onChange={(e) => updateBhp(i, { id: e.target.value })}
+                        disabled={loading}
+                      >
+                        {state.bhp.map((x) => (
+                          <option key={x.id} value={x.id}>
+                            {x.name} (stok: {x.stock})
+                          </option>
+                        ))}
                       </select>
-                      <input className="input mono flex-1" type="number" step="0.1" value={b.qty} onChange={e => updateBhp(i, { qty: e.target.value })} placeholder={bd?.unit} disabled={loading} />
+                      <input
+                        className="input mono flex-1"
+                        type="number"
+                        step="0.1"
+                        value={b.qty}
+                        onChange={(e) => updateBhp(i, { qty: e.target.value })}
+                        placeholder={bd?.unit}
+                        disabled={loading}
+                      />
                       <span className="text-xs text-3 font-mono">{bd?.unit}</span>
                     </div>
                   </div>
@@ -305,7 +409,15 @@ export function MaintenanceForm({ payload, close }) {
               })}
             </div>
             {bhpRows.length > 0 && (
-              <div className="text-xs text-3 mt-2" style={{padding: '8px 12px', background: 'var(--surface)', borderRadius: 8, border: '1px dashed var(--line-2)'}}>
+              <div
+                className="text-xs text-3 mt-2"
+                style={{
+                  padding: '8px 12px',
+                  background: 'var(--surface)',
+                  borderRadius: 8,
+                  border: '1px dashed var(--line-2)',
+                }}
+              >
                 <Icon name="info" size={11} /> Stok BHP akan otomatis berkurang setelah disimpan
               </div>
             )}
@@ -313,8 +425,12 @@ export function MaintenanceForm({ payload, close }) {
         )}
       </div>
       <div className="drawer-foot">
-        <button className="btn" onClick={close} disabled={loading}>Batal</button>
-        <button className="btn primary" onClick={save} disabled={loading}><Icon name="check" size={13} strokeWidth={2.4} /> Simpan log</button>
+        <button className="btn" onClick={close} disabled={loading}>
+          Batal
+        </button>
+        <button className="btn primary" onClick={save} disabled={loading}>
+          <Icon name="check" size={13} strokeWidth={2.4} /> Simpan log
+        </button>
       </div>
     </>
   );

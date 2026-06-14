@@ -1,4 +1,14 @@
-const { Draft, DraftItem, DraftApproval, Receiving, User, Inventory, Label, Bhp, sequelize } = require('../models');
+const {
+  Draft,
+  DraftItem,
+  DraftApproval,
+  Receiving,
+  User,
+  Inventory,
+  Label,
+  Bhp,
+  sequelize,
+} = require('../models');
 const { logAudit } = require('../middleware/audit');
 const { Op } = require('sequelize');
 
@@ -51,7 +61,7 @@ const createDraft = async (req, res) => {
     );
 
     if (items && items.length > 0) {
-      const draftItems = items.map(item => ({ ...item, draft_id: draft.id }));
+      const draftItems = items.map((item) => ({ ...item, draft_id: draft.id }));
       await DraftItem.bulkCreate(draftItems, { transaction: t });
     }
 
@@ -79,8 +89,10 @@ const updateDraft = async (req, res) => {
   try {
     const draft = await Draft.findByPk(req.params.id);
     if (!draft) return res.status(404).json({ error: 'Draf tidak ditemukan.' });
-    if (draft.status !== 'draft' && draft.status !== 'revision') return res.status(400).json({ error: 'Draf sudah tidak dapat diubah.' });
-    if (draft.created_by !== req.user.id) return res.status(403).json({ error: 'Anda tidak berhak mengubah draf ini.' });
+    if (draft.status !== 'draft' && draft.status !== 'revision')
+      return res.status(400).json({ error: 'Draf sudah tidak dapat diubah.' });
+    if (draft.created_by !== req.user.id)
+      return res.status(403).json({ error: 'Anda tidak berhak mengubah draf ini.' });
 
     if (req.body.title) draft.title = req.body.title;
     await draft.save();
@@ -97,10 +109,14 @@ const updateDraft = async (req, res) => {
 
 const submitDraft = async (req, res) => {
   try {
-    const draft = await Draft.findByPk(req.params.id, { include: [{ model: DraftItem, as: 'items' }] });
+    const draft = await Draft.findByPk(req.params.id, {
+      include: [{ model: DraftItem, as: 'items' }],
+    });
     if (!draft) return res.status(404).json({ error: 'Draf tidak ditemukan.' });
-    if (draft.status !== 'draft' && draft.status !== 'revision') return res.status(400).json({ error: 'Draf sudah disubmit.' });
-    if (draft.items.length === 0) return res.status(400).json({ error: 'Draf harus memiliki minimal 1 item.' });
+    if (draft.status !== 'draft' && draft.status !== 'revision')
+      return res.status(400).json({ error: 'Draf sudah disubmit.' });
+    if (draft.items.length === 0)
+      return res.status(400).json({ error: 'Draf harus memiliki minimal 1 item.' });
 
     draft.status = 'submitted';
     draft.submitted_at = new Date();
@@ -114,7 +130,7 @@ const submitDraft = async (req, res) => {
       io.emit('notification', {
         message: `Draf pengadaan baru ${draft.code} - "${draft.title}" telah diajukan oleh Kepala Lab.`,
         roles: ['kaprodi'],
-        kind: 'info'
+        kind: 'info',
       });
     }
     res.json({ data: draft });
@@ -128,14 +144,24 @@ const addDraftItem = async (req, res) => {
   try {
     const draft = await Draft.findByPk(req.params.id);
     if (!draft) return res.status(404).json({ error: 'Draf tidak ditemukan.' });
-    if (draft.status !== 'draft' && draft.status !== 'revision' && draft.status !== 'submitted') return res.status(400).json({ error: 'Draf sudah tidak dapat diubah.' });
+    if (draft.status !== 'draft' && draft.status !== 'revision' && draft.status !== 'submitted')
+      return res.status(400).json({ error: 'Draf sudah tidak dapat diubah.' });
 
     const { kind, name, qty, unit, price, link, replaces } = req.body;
     if (!kind || !name || !qty || !unit || !price) {
       return res.status(400).json({ error: 'Semua field item wajib diisi.' });
     }
 
-    const item = await DraftItem.create({ draft_id: draft.id, kind, name, qty, unit, price, link, replaces });
+    const item = await DraftItem.create({
+      draft_id: draft.id,
+      kind,
+      name,
+      qty,
+      unit,
+      price,
+      link,
+      replaces,
+    });
     await logAudit(req.user.id, 'draft.addItem', `${draft.code} · ${name}`, req.ip);
     const io = req.app.get('io');
     if (io) io.emit('data_changed', { type: 'draft' });
@@ -190,28 +216,31 @@ const approveDraftItems = async (req, res) => {
       if (d.status === 'delete' || d.status === null) {
         await DraftApproval.destroy({
           where: { draft_item_id: d.item_id },
-          transaction: t
+          transaction: t,
         });
         continue;
       }
-      
+
       const existing = await DraftApproval.findOne({
         where: { draft_item_id: d.item_id },
-        transaction: t
+        transaction: t,
       });
-      
+
       if (existing) {
         existing.status = d.status;
         existing.approved_by = req.user.id;
         existing.notes = d.notes || null;
         await existing.save({ transaction: t });
       } else {
-        await DraftApproval.create({
-          draft_item_id: d.item_id,
-          approved_by: req.user.id,
-          status: d.status,
-          notes: d.notes || null,
-        }, { transaction: t });
+        await DraftApproval.create(
+          {
+            draft_item_id: d.item_id,
+            approved_by: req.user.id,
+            status: d.status,
+            notes: d.notes || null,
+          },
+          { transaction: t }
+        );
       }
     }
 
@@ -224,7 +253,7 @@ const approveDraftItems = async (req, res) => {
       io.emit('notification', {
         message: `Review item draf ${draft.code} telah diperbarui oleh Kaprodi.`,
         roles: ['kalab'],
-        kind: 'info'
+        kind: 'info',
       });
     }
     res.json({ message: 'Review berhasil disimpan.' });
@@ -238,10 +267,13 @@ const approveDraftItems = async (req, res) => {
 const finalizeDraft = async (req, res) => {
   try {
     const draft = await Draft.findByPk(req.params.id, {
-      include: [{ model: DraftItem, as: 'items', include: [{ model: DraftApproval, as: 'approval' }] }],
+      include: [
+        { model: DraftItem, as: 'items', include: [{ model: DraftApproval, as: 'approval' }] },
+      ],
     });
     if (!draft) return res.status(404).json({ error: 'Draf tidak ditemukan.' });
-    if (draft.status !== 'submitted') return res.status(400).json({ error: 'Draf belum disubmit atau sudah difinalisasi.' });
+    if (draft.status !== 'submitted')
+      return res.status(400).json({ error: 'Draf belum disubmit atau sudah difinalisasi.' });
 
     draft.status = 'finalized';
     draft.finalized_at = new Date();
@@ -255,7 +287,7 @@ const finalizeDraft = async (req, res) => {
       io.emit('notification', {
         message: `Draf pengadaan ${draft.code} telah disetujui & difinalisasi oleh Kaprodi. Siap diterima oleh Admin!`,
         roles: ['kalab', 'admin'],
-        kind: 'ok'
+        kind: 'ok',
       });
     }
     res.json({ data: draft });
@@ -291,13 +323,16 @@ const getReceiving = async (req, res) => {
   try {
     const finalized = await Draft.findAll({
       where: { status: { [Op.in]: ['finalized', 'completed'] } },
-      include: [{
-        model: DraftItem, as: 'items',
-        include: [
-          { model: DraftApproval, as: 'approval', where: { status: 'approved' }, required: true },
-          { model: Receiving, as: 'receivings' },
-        ],
-      }],
+      include: [
+        {
+          model: DraftItem,
+          as: 'items',
+          include: [
+            { model: DraftApproval, as: 'approval', where: { status: 'approved' }, required: true },
+            { model: Receiving, as: 'receivings' },
+          ],
+        },
+      ],
       order: [['finalized_at', 'DESC']],
     });
     res.json({ data: finalized });
@@ -318,7 +353,7 @@ const receiveItem = async (req, res) => {
 
     const draftItem = await DraftItem.findByPk(draft_item_id, {
       include: [{ model: DraftApproval, as: 'approval' }],
-      transaction: t
+      transaction: t,
     });
     if (!draftItem) {
       await t.rollback();
@@ -329,52 +364,72 @@ const receiveItem = async (req, res) => {
       return res.status(400).json({ error: 'Item belum disetujui.' });
     }
 
-    const receiving = await Receiving.create({
-      draft_item_id, received_by: req.user.id,
-      received_date, qty_received: qty_received || draftItem.qty, notes,
-    }, { transaction: t });
+    const receiving = await Receiving.create(
+      {
+        draft_item_id,
+        received_by: req.user.id,
+        received_date,
+        qty_received: qty_received || draftItem.qty,
+        notes,
+      },
+      { transaction: t }
+    );
 
     if (draftItem.kind === 'Inventaris') {
       if (!code || !qr_photo) {
         await t.rollback();
         return res.status(400).json({ error: 'Kode dan Foto QR wajib untuk inventaris.' });
       }
-      
-      const inv = await Inventory.create({
-        code,
-        name: draftItem.name,
-        category: 'Umum',
-        condition: 'Baik',
-        acquired_date: received_date,
-        value: draftItem.price,
-        specs: draftItem.qty + ' ' + draftItem.unit
-      }, { transaction: t });
 
-      await Label.create({
-        inventory_id: inv.id,
-        label_number: code,
-        qr_data: code,
-        photo_url: qr_photo
-      }, { transaction: t });
+      const inv = await Inventory.create(
+        {
+          code,
+          name: draftItem.name,
+          category: 'Umum',
+          condition: 'Baik',
+          acquired_date: received_date,
+          value: draftItem.price,
+          specs: draftItem.qty + ' ' + draftItem.unit,
+        },
+        { transaction: t }
+      );
 
+      await Label.create(
+        {
+          inventory_id: inv.id,
+          label_number: code,
+          qr_data: code,
+          photo_url: qr_photo,
+        },
+        { transaction: t }
+      );
     } else if (draftItem.kind === 'BHP') {
       const existingBhp = await Bhp.findOne({ where: { name: draftItem.name }, transaction: t });
       if (existingBhp) {
         existingBhp.stock += parseInt(qty_received || draftItem.qty);
         await existingBhp.save({ transaction: t });
       } else {
-        await Bhp.create({
-          code: 'BHP-' + Date.now(),
-          name: draftItem.name,
-          category: 'Umum',
-          stock: qty_received || draftItem.qty,
-          unit: draftItem.unit
-        }, { transaction: t });
+        await Bhp.create(
+          {
+            code: 'BHP-' + Date.now(),
+            name: draftItem.name,
+            category: 'Umum',
+            stock: qty_received || draftItem.qty,
+            unit: draftItem.unit,
+          },
+          { transaction: t }
+        );
       }
     }
 
-    await logAudit(req.user.id, 'receiving.confirm', `${draftItem.name} · ${qty_received || draftItem.qty} unit`, req.ip, t);
-    
+    await logAudit(
+      req.user.id,
+      'receiving.confirm',
+      `${draftItem.name} · ${qty_received || draftItem.qty} unit`,
+      req.ip,
+      t
+    );
+
     await t.commit();
     const io = req.app.get('io');
     if (io) io.emit('data_changed', { type: 'draft' });
@@ -390,18 +445,24 @@ const deleteDraftItem = async (req, res) => {
   try {
     const { itemId } = req.params;
     const item = await DraftItem.findByPk(itemId, {
-      include: [{ model: Draft, as: 'draft' }]
+      include: [{ model: Draft, as: 'draft' }],
     });
     if (!item) return res.status(404).json({ error: 'Item draf tidak ditemukan.' });
-    if (item.draft.status !== 'draft' && item.draft.status !== 'revision' && item.draft.status !== 'submitted') {
-      return res.status(400).json({ error: 'Tidak bisa menghapus item dari draf yang sudah dikunci.' });
+    if (
+      item.draft.status !== 'draft' &&
+      item.draft.status !== 'revision' &&
+      item.draft.status !== 'submitted'
+    ) {
+      return res
+        .status(400)
+        .json({ error: 'Tidak bisa menghapus item dari draf yang sudah dikunci.' });
     }
-    
+
     const draftCode = item.draft.code;
     const itemName = item.name;
-    
+
     await item.destroy();
-    
+
     await logAudit(req.user.id, 'procurement.remove_item', `${itemName} dari ${draftCode}`, req.ip);
     const io = req.app.get('io');
     if (io) io.emit('data_changed', { type: 'draft' });
@@ -416,11 +477,17 @@ const updateDraftItem = async (req, res) => {
   try {
     const { itemId } = req.params;
     const item = await DraftItem.findByPk(itemId, {
-      include: [{ model: Draft, as: 'draft' }]
+      include: [{ model: Draft, as: 'draft' }],
     });
     if (!item) return res.status(404).json({ error: 'Item draf tidak ditemukan.' });
-    if (item.draft.status !== 'draft' && item.draft.status !== 'revision' && item.draft.status !== 'submitted') {
-      return res.status(400).json({ error: 'Tidak bisa mengubah item pada draf yang sudah dikunci.' });
+    if (
+      item.draft.status !== 'draft' &&
+      item.draft.status !== 'revision' &&
+      item.draft.status !== 'submitted'
+    ) {
+      return res
+        .status(400)
+        .json({ error: 'Tidak bisa mengubah item pada draf yang sudah dikunci.' });
     }
 
     const { kind, name, qty, unit, price, link, replaces } = req.body;
@@ -434,7 +501,7 @@ const updateDraftItem = async (req, res) => {
     item.unit = unit;
     item.price = price;
     item.link = link || null;
-    item.replaces = kind === 'Inventaris' ? (replaces || null) : null;
+    item.replaces = kind === 'Inventaris' ? replaces || null : null;
 
     await item.save();
 
@@ -453,7 +520,8 @@ const completeDraft = async (req, res) => {
   try {
     const draft = await Draft.findByPk(req.params.id);
     if (!draft) return res.status(404).json({ error: 'Draf tidak ditemukan.' });
-    if (draft.status !== 'finalized') return res.status(400).json({ error: 'Draf belum difinalisasi atau sudah diselesaikan.' });
+    if (draft.status !== 'finalized')
+      return res.status(400).json({ error: 'Draf belum difinalisasi atau sudah diselesaikan.' });
 
     draft.status = 'completed';
     await draft.save();
@@ -480,7 +548,9 @@ const requestRevision = async (req, res) => {
     }
     if (draft.status !== 'submitted') {
       await t.rollback();
-      return res.status(400).json({ error: 'Hanya draf yang berstatus "submitted" yang dapat direvisi.' });
+      return res
+        .status(400)
+        .json({ error: 'Hanya draf yang berstatus "submitted" yang dapat direvisi.' });
     }
 
     const { notes } = req.body;
@@ -503,7 +573,7 @@ const requestRevision = async (req, res) => {
       io.emit('notification', {
         message: `Draf pengadaan ${draft.code} membutuhkan revisi: "${notes}"`,
         roles: ['kalab'],
-        kind: 'warn'
+        kind: 'warn',
       });
     }
 
@@ -516,7 +586,19 @@ const requestRevision = async (req, res) => {
 };
 
 module.exports = {
-  getDrafts, createDraft, updateDraft, submitDraft, addDraftItem, deleteDraftItem, updateDraftItem,
-  getDraftsForReview, approveDraftItems, finalizeDraft, getDraftHistory,
-  getReceiving, receiveItem, completeDraft, requestRevision
+  getDrafts,
+  createDraft,
+  updateDraft,
+  submitDraft,
+  addDraftItem,
+  deleteDraftItem,
+  updateDraftItem,
+  getDraftsForReview,
+  approveDraftItems,
+  finalizeDraft,
+  getDraftHistory,
+  getReceiving,
+  receiveItem,
+  completeDraft,
+  requestRevision,
 };

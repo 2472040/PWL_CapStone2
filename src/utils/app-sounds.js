@@ -1,7 +1,7 @@
 // app-sounds.js — Micro-interaction sounds using Web Audio API (no external files)
 // Respects prefers-reduced-motion (treated as reduced-sensory) and OS silence.
 
-window.LokaSounds = (function() {
+window.LokaSounds = (function () {
   let ctx = null;
   let enabled = true;
 
@@ -23,7 +23,9 @@ window.LokaSounds = (function() {
   // Respect reduced motion
   const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
   if (mq.matches) enabled = false;
-  mq.addEventListener('change', (e) => { enabled = !e.matches; });
+  mq.addEventListener('change', (e) => {
+    enabled = !e.matches;
+  });
 
   // Oscillator beep
   function beep({ freq = 440, type = 'sine', duration = 0.06, vol = 0.04, fade = true }) {
@@ -112,4 +114,5 @@ window.LokaSounds = (function() {
     osc.stop(now + 0.3);
   }
 
-  return { click, hover, success, error, toggle, drawer }})();
+  return { click, hover, success, error, toggle, drawer };
+})();
