@@ -14,7 +14,21 @@ const {
   Receiving,
   Label,
   AuditLog,
+  RefreshToken,
+  RevokedToken,
 } = require('../models');
+
+// Cache the sysadmin user ID to avoid repeated lookups
+let _cachedSysadminId = null;
+const getSysadminId = async () => {
+  if (_cachedSysadminId) return _cachedSysadminId;
+  const sysadmin = await User.findOne({
+    where: { role: 'sysadmin', status: 'active' },
+    attributes: ['id'],
+  });
+  _cachedSysadminId = sysadmin ? sysadmin.id : null;
+  return _cachedSysadminId;
+};
 
 const ALGORITHM = 'aes-256-gcm';
 const BACKUP_DIR = path.join(__dirname, '..', 'backups');
@@ -55,6 +69,8 @@ const runAutoBackup = async () => {
       receivings: await Receiving.findAll(),
       labels: await Label.findAll(),
       auditLogs: await AuditLog.findAll(),
+      refreshTokens: await RefreshToken.findAll(),
+      revokedTokens: await RevokedToken.findAll(),
     };
 
     const rawJson = JSON.stringify(dbPayload);
@@ -80,19 +96,25 @@ const runAutoBackup = async () => {
     };
 
     const dateStr = new Date().toISOString().substring(0, 10);
-    const filePath = path.join(BACKUP_DIR, `auto-backup-${dateStr}.loka`);
+    const randomSuffix = crypto.randomBytes(4).toString('hex');
+    const filePath = path.join(BACKUP_DIR, `auto-backup-${dateStr}-${randomSuffix}.loka`);
 
     fs.writeFileSync(filePath, JSON.stringify(backupFile, null, 2));
     console.log(`✅ [SCHEDULER] Auto backup saved successfully: ${filePath}`);
 
-    // Log in AuditLog under system (user 1 - Anindita Hartono / Sysadmin)
-    await AuditLog.create({
-      user_id: 1, // Sysadmin Anindita
-      action: 'backup.auto',
-      target: `auto-backup-${dateStr}`,
-      ip_address: '127.0.0.1',
-      details: 'Automated scheduled daily backup (AES-256-GCM)',
-    });
+    // Log in AuditLog under the active sysadmin (dynamically resolved)
+    const sysadminId = await getSysadminId();
+    if (sysadminId) {
+      await AuditLog.create({
+        user_id: sysadminId,
+        action: 'backup.auto',
+        target: `auto-backup-${dateStr}`,
+        ip: '127.0.0.1',
+        details: 'Automated scheduled daily backup (AES-256-GCM)',
+      });
+    } else {
+      console.warn('⚠️  [SCHEDULER] No active sysadmin found — backup audit log skipped.');
+    }
 
     // Prune old backups older than 7 days
     pruneOldBackups();
@@ -101,12 +123,13 @@ const runAutoBackup = async () => {
   }
 };
 
-// Prunes automated backups older than 7 days
+// Prunes automated backups older than 30 days (configurable via BACKUP_RETENTION_DAYS)
 const pruneOldBackups = () => {
   try {
     if (!fs.existsSync(BACKUP_DIR)) return;
     const files = fs.readdirSync(BACKUP_DIR);
     const now = new Date();
+    const retentionDays = parseInt(process.env.BACKUP_RETENTION_DAYS, 10) || 30;
 
     files.forEach((file) => {
       if (file.startsWith('auto-backup-') && file.endsWith('.loka')) {
@@ -114,9 +137,11 @@ const pruneOldBackups = () => {
         const stats = fs.statSync(filePath);
         const ageDays = (now - stats.mtime) / (1000 * 60 * 60 * 24);
 
-        if (ageDays > 7) {
+        if (ageDays > retentionDays) {
           fs.unlinkSync(filePath);
-          console.log(`🗑️ [SCHEDULER] Pruned old automatic backup: ${file}`);
+          console.log(
+            `🗑️ [SCHEDULER] Pruned old automatic backup (${Math.round(ageDays)} hari): ${file}`
+          );
         }
       }
     });

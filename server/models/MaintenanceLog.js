@@ -39,6 +39,7 @@ const MaintenanceLog = sequelize.define(
   },
   {
     tableName: 'maintenance_logs',
+    indexes: [{ fields: ['inventory_id'] }, { fields: ['tech_user_id'] }, { fields: ['date'] }],
   }
 );
 

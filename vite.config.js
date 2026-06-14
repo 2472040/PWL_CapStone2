@@ -47,7 +47,7 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['server/tests/procurement.integration.test.js'],
+    include: ['server/tests/**/*.test.js'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

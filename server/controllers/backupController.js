@@ -12,6 +12,8 @@ const {
   Receiving,
   Label,
   AuditLog,
+  RefreshToken,
+  RevokedToken,
   sequelize,
 } = require('../models');
 const { logAudit } = require('../middleware/audit');
@@ -56,6 +58,8 @@ const exportBackup = async (req, res) => {
       receivings: await Receiving.findAll(),
       labels: await Label.findAll(),
       auditLogs: await AuditLog.findAll(),
+      refreshTokens: await RefreshToken.findAll(),
+      revokedTokens: await RevokedToken.findAll(),
     };
 
     const rawJson = JSON.stringify(dbPayload);
@@ -109,12 +113,10 @@ const restoreBackup = async (req, res) => {
     }
 
     if (!backupFile.tag) {
-      return res
-        .status(400)
-        .json({
-          error:
-            'Integritas backup gagal: File tidak memiliki authentication tag (format tidak didukung).',
-        });
+      return res.status(400).json({
+        error:
+          'Integritas backup gagal: File tidak memiliki authentication tag (format tidak didukung).',
+      });
     }
 
     // Decrypt data using the stored salt (falls back to legacy static salt if undefined)
@@ -129,11 +131,9 @@ const restoreBackup = async (req, res) => {
       decrypted = decipher.update(backupFile.encrypted, 'hex', 'utf8');
       decrypted += decipher.final('utf8');
     } catch (decryptErr) {
-      return res
-        .status(400)
-        .json({
-          error: 'Integritas backup gagal: File backup telah dimanipulasi atau kunci salah.',
-        });
+      return res.status(400).json({
+        error: 'Integritas backup gagal: File backup telah dimanipulasi atau kunci salah.',
+      });
     }
 
     // Verify SHA-256 Checksum Integrity if present
@@ -168,6 +168,8 @@ const restoreBackup = async (req, res) => {
         Receiving,
         Label,
         AuditLog,
+        RefreshToken,
+        RevokedToken,
       ];
       for (const model of modelsList) {
         await model.destroy({ truncate: true, force: true, transaction });
@@ -197,6 +199,10 @@ const restoreBackup = async (req, res) => {
         await Label.bulkCreate(payload.labels, { transaction });
       if (payload.auditLogs && payload.auditLogs.length)
         await AuditLog.bulkCreate(payload.auditLogs, { transaction });
+      if (payload.refreshTokens && payload.refreshTokens.length)
+        await RefreshToken.bulkCreate(payload.refreshTokens, { transaction });
+      if (payload.revokedTokens && payload.revokedTokens.length)
+        await RevokedToken.bulkCreate(payload.revokedTokens, { transaction });
 
       // Enable foreign keys back
       await sequelize.query('SET FOREIGN_KEY_CHECKS = 1', { transaction });

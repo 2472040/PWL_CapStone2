@@ -183,9 +183,9 @@ function Shell({ onLogout }) {
     const lenis = new window.Lenis({
       wrapper: main,
       content: content,
-      lerp: 0.08,
+      lerp: 0.06,
       smoothWheel: true,
-      wheelMultiplier: 1.2,
+      wheelMultiplier: 1.0,
     });
 
     function raf(time) {

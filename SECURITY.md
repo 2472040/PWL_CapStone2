@@ -104,7 +104,7 @@ LokaLab menerapkan pendekatan keamanan **defense-in-depth** (pertahanan berlapis
 │  │  users:                    audit_logs:                      │ │
 │  │  ├── password (bcrypt)     ├── hash (HMAC-SHA256)           │ │
 │  │  ├── token_version         ├── previous_hash (chain link)   │ │
-│  │  └── is_active             └── action, target, details      │ │
+│  │  └── status                └── action, target, details      │ │
 │  └─────────────────────────────────────────────────────────────┘ │
 └──────────────────────────────────────────────────────────────────┘
 ```
@@ -199,15 +199,15 @@ JSON Web Token (JWT) digunakan untuk autentikasi _stateless_. Token berisi ident
 ```javascript
 const login = async (req, res) => {
   // 1. Validasi input
-  const { username, password } = req.body;
-  if (!username || !password) { return res.status(400)... }
+  const { email, password } = req.body;
+  if (!email || !password) { return res.status(400)... }
 
   // 2. Cari user & verifikasi status aktif
-  const user = await User.findOne({ where: { username } });
-  if (!user || !user.is_active) { return res.status(401/403)... }
+  const user = await User.findOne({ where: { email } });
+  if (!user || user.status !== 'active') { return res.status(401/403)... }
 
   // 3. Verifikasi password via bcrypt
-  const isMatch = await user.comparePassword(password);
+  const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) { return res.status(401)... }
 
   // 4. Generate JTI unik (UUID v4 untuk identifikasi token ini)
@@ -217,13 +217,12 @@ const login = async (req, res) => {
   const token = jwt.sign(
     {
       id: user.id,
-      username: user.username,
       role: user.role,
       tokenVersion: user.token_version,  // Untuk deteksi token usang
       jti,                                // Untuk blacklist per-token
     },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRY || '30m' }
+    { expiresIn: '15m' }
   );
 
   // 6. Set sebagai HttpOnly Cookie (BUKAN response body)
@@ -231,11 +230,11 @@ const login = async (req, res) => {
     httpOnly: true,                                    // JS tidak bisa akses
     secure: process.env.NODE_ENV === 'production',     // HTTPS only di production
     sameSite: 'lax',                                   // CSRF protection
-    maxAge: 30 * 60 * 1000,                            // 30 menit
+    maxAge: 15 * 60 * 1000,                            // 15 menit
   });
 
-  // 7. Response HANYA berisi data user (TANPA token string)
-  res.json({ message: 'Login berhasil', user: { id, username, full_name, role } });
+  // 7. Response berisi data user & token
+  res.json({ data: { token, user: { id, name, email, role, initials } } });
 };
 ```
 
@@ -249,13 +248,14 @@ Setiap request yang memerlukan autentikasi melewati middleware ini:
 const authenticate = async (req, res, next) => {
   // LANGKAH 1: Ekstrak token dari cookie (prioritas) atau header
   let token = null;
-  const cookies = parseCookies(req.headers.cookie);
-  if (cookies.token) {
-    token = cookies.token; // ← Prioritas: HttpOnly Cookie
-  } else {
+  if (req.headers.cookie) {
+    const cookies = parseCookies(req.headers.cookie);
+    token = cookies.token || null;
+  }
+  if (!token) {
     const authHeader = req.headers.authorization;
-    if (authHeader?.startsWith('Bearer ')) {
-      token = authHeader.split(' ')[1]; // ← Fallback: Bearer header
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
     }
   }
 
@@ -264,20 +264,23 @@ const authenticate = async (req, res, next) => {
 
   // LANGKAH 3: Cek JTI blacklist (apakah token ini sudah di-logout?)
   if (decoded.jti && (await tokenBlacklist.has(decoded.jti))) {
-    return res.status(401).json({ message: 'Sesi telah berakhir.' });
+    return res.status(401).json({ error: 'Sesi Anda telah berakhir. Silakan login kembali.' });
   }
 
   // LANGKAH 4: Cek user aktif di database
   const user = await User.findByPk(decoded.id);
-  if (!user || !user.is_active) {
-    return res.status(401).json({ message: 'User tidak ditemukan atau tidak aktif.' });
+  if (!user) {
+    return res.status(401).json({ error: 'User tidak ditemukan.' });
+  }
+  if (user.status !== 'active') {
+    return res.status(403).json({ error: 'Akun Anda telah dinonaktifkan.' });
   }
 
   // LANGKAH 5: Validasi token_version
-  if (decoded.tokenVersion !== undefined && decoded.tokenVersion !== user.token_version) {
-    return res
-      .status(401)
-      .json({ message: 'Sesi tidak valid. Password atau peran Anda telah diperbarui.' });
+  if (decoded.tokenVersion === undefined || decoded.tokenVersion !== user.token_version) {
+    return res.status(401).json({
+      error: 'Sesi Anda tidak valid (sandi/peran berubah atau telah keluar). Silakan login ulang.',
+    });
   }
 
   req.user = user;
@@ -299,7 +302,6 @@ const authenticate = async (req, res, next) => {
 ```json
 {
   "id": 1,
-  "username": "admin",
   "role": "sysadmin",
   "tokenVersion": 0,
   "jti": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",

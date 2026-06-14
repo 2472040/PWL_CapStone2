@@ -20,18 +20,18 @@ const { loginRateLimiter } = require('../middleware/rateLimiter');
  *       required: true
  *       content:
  *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - username
- *               - password
- *             properties:
- *               username:
- *                 type: string
- *                 example: staflab
- *               password:
- *                 type: string
- *                 example: password123
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - email
+ *                 - password
+ *               properties:
+ *                 email:
+ *                   type: string
+ *                   example: maharani@kampus.id
+ *                 password:
+ *                   type: string
+ *                   example: password123
  *     responses:
  *       200:
  *         description: Login berhasil, token JWT diset di HttpOnly Cookie (token)
@@ -40,21 +40,29 @@ const { loginRateLimiter } = require('../middleware/rateLimiter');
  *             schema:
  *               type: object
  *               properties:
- *                 message:
- *                   type: string
- *                   example: Login berhasil
- *                 user:
+ *                 data:
  *                   type: object
  *                   properties:
- *                     id:
- *                       type: integer
- *                       example: 1
- *                     username:
+ *                     token:
  *                       type: string
- *                       example: staflab
- *                     role:
- *                       type: string
- *                       example: staflab
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                           example: 1
+ *                         name:
+ *                           type: string
+ *                           example: Maharani Larasati
+ *                         email:
+ *                           type: string
+ *                           example: maharani@kampus.id
+ *                         role:
+ *                           type: string
+ *                           example: staflab
+ *                         initials:
+ *                           type: string
+ *                           example: ML
  *       400:
  *         description: Username atau password salah
  *       429:
@@ -108,15 +116,27 @@ router.post('/refresh', refresh);
  *             schema:
  *               type: object
  *               properties:
- *                 user:
+ *                 data:
  *                   type: object
  *                   properties:
  *                     id:
  *                       type: integer
- *                     username:
+ *                       example: 1
+ *                     name:
  *                       type: string
+ *                       example: Maharani Larasati
+ *                     email:
+ *                       type: string
+ *                       example: maharani@kampus.id
  *                     role:
  *                       type: string
+ *                       example: staflab
+ *                     initials:
+ *                       type: string
+ *                       example: ML
+ *                     status:
+ *                       type: string
+ *                       example: active
  *       401:
  *         description: Tidak terautentikasi
  */

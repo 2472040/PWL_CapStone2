@@ -30,6 +30,7 @@ const DraftApproval = sequelize.define(
   },
   {
     tableName: 'draft_approvals',
+    indexes: [{ fields: ['draft_item_id'] }, { fields: ['approved_by'] }],
   }
 );
 

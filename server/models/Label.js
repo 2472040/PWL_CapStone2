@@ -29,6 +29,7 @@ const Label = sequelize.define(
   },
   {
     tableName: 'labels',
+    indexes: [{ fields: ['inventory_id'] }],
   }
 );
 

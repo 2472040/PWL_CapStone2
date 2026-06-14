@@ -27,6 +27,7 @@ const MaintenanceBhp = sequelize.define(
   },
   {
     tableName: 'maintenance_bhp',
+    indexes: [{ fields: ['maintenance_log_id'] }, { fields: ['bhp_id'] }],
   }
 );
 

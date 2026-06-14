@@ -1,14 +1,4 @@
-const {
-  User,
-  Room,
-  Inventory,
-  Bhp,
-  Draft,
-  DraftItem,
-  DraftApproval,
-  MaintenanceLog,
-  AuditLog,
-} = require('../models');
+const { User, Room, Inventory, Bhp, Draft, MaintenanceLog, AuditLog } = require('../models');
 const { Op } = require('sequelize');
 const sequelize = require('../config/database');
 
@@ -62,7 +52,9 @@ const getDashboardStats = async (req, res) => {
     // 2. Top 3 Lowest / Critical Stock BHP items
     const top3LowBhp = await Bhp.findAll({
       where: sequelize.where(sequelize.col('stock'), Op.lte, sequelize.col('min_stock')),
-      order: [[sequelize.literal('CASE WHEN min_stock > 0 THEN stock / min_stock ELSE stock END'), 'ASC']],
+      order: [
+        [sequelize.literal('CASE WHEN min_stock > 0 THEN stock / min_stock ELSE stock END'), 'ASC'],
+      ],
       limit: 3,
     });
     stats.top3LowBhp = top3LowBhp.map((b) => {
@@ -79,108 +71,110 @@ const getDashboardStats = async (req, res) => {
       };
     });
 
-    // 3. Maintenance Incident Count / Load per Room (Top 5)
-    const maintLogs = await MaintenanceLog.findAll({
-      include: [
-        {
-          model: Inventory,
-          attributes: ['room_id'],
-          include: [
-            {
-              model: Room,
-              attributes: ['id', 'code', 'name'],
-            },
-          ],
-        },
-      ],
-    });
-    const roomMaintMap = {};
-    maintLogs.forEach((log) => {
-      const room = log.Inventory?.Room;
-      if (room) {
-        if (!roomMaintMap[room.code]) {
-          roomMaintMap[room.code] = {
-            id: room.id,
-            code: room.code,
-            name: room.name,
-            count: 0,
-          };
-        }
-        roomMaintMap[room.code].count += 1;
-      }
-    });
-    stats.maintLoadByRoom = Object.values(roomMaintMap)
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5);
-
-    // 4. Monthly Financial Analytics (Requested vs Approved vs Savings)
-    const last6Months = [];
-    const monthNames = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mei',
-      'Jun',
-      'Jul',
-      'Agu',
-      'Sep',
-      'Okt',
-      'Nov',
-      'Des',
-    ];
-
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date();
-      d.setMonth(d.getMonth() - i);
-      last6Months.push({
-        monthKey: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
-        name: monthNames[d.getMonth()],
-        requested: 0,
-        approved: 0,
-        saved: 0,
+    // 3. Maintenance Incident Count / Load per Room (Top 5) — management roles only
+    if (['sysadmin', 'kalab', 'admin'].includes(role)) {
+      const maintLogs = await MaintenanceLog.findAll({
+        include: [
+          {
+            model: Inventory,
+            attributes: ['room_id'],
+            include: [
+              {
+                model: Room,
+                attributes: ['id', 'code', 'name'],
+              },
+            ],
+          },
+        ],
       });
+      const roomMaintMap = {};
+      maintLogs.forEach((log) => {
+        const room = log.Inventory?.Room;
+        if (room) {
+          if (!roomMaintMap[room.code]) {
+            roomMaintMap[room.code] = {
+              id: room.id,
+              code: room.code,
+              name: room.name,
+              count: 0,
+            };
+          }
+          roomMaintMap[room.code].count += 1;
+        }
+      });
+      stats.maintLoadByRoom = Object.values(roomMaintMap)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+    } else {
+      stats.maintLoadByRoom = [];
     }
 
-    const allDraftsForChart = await Draft.findAll({
-      include: [
-        {
-          model: DraftItem,
-          as: 'items',
-          include: [{ model: DraftApproval, as: 'approval' }],
-        },
-      ],
-      order: [['created_at', 'ASC']],
-    });
+    // 4. Monthly Financial Analytics — restricted to management/review roles
+    if (['sysadmin', 'kalab', 'kaprodi', 'admin'].includes(role)) {
+      const last6Months = [];
+      const monthNames = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'Mei',
+        'Jun',
+        'Jul',
+        'Agu',
+        'Sep',
+        'Okt',
+        'Nov',
+        'Des',
+      ];
 
-    allDraftsForChart.forEach((d) => {
-      const date = new Date(d.finalized_at || d.submitted_at || d.created_at);
-      const mKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const bucket = last6Months.find((m) => m.monthKey === mKey);
-
-      if (bucket) {
-        d.items.forEach((it) => {
-          const subtotal = (parseFloat(it.qty) || 0) * (parseFloat(it.price) || 0);
-          bucket.requested += subtotal;
-
-          if (!it.approval || it.approval.status === 'approved') {
-            bucket.approved += subtotal;
-          }
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        last6Months.push({
+          monthKey: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+          name: monthNames[d.getMonth()],
+          requested: 0,
+          approved: 0,
+          saved: 0,
         });
       }
-    });
 
-    // Calculate savings
-    last6Months.forEach((b) => {
-      b.saved = Math.max(0, b.requested - b.approved);
-    });
+      // Optimized: single SQL aggregation query instead of loading ALL drafts + items into memory
+      const [financialRows] = await sequelize.query(`
+      SELECT
+        DATE_FORMAT(COALESCE(d.finalized_at, d.submitted_at, d.created_at), '%Y-%m') AS month_key,
+        COALESCE(SUM(di.qty * di.price), 0) AS total_requested,
+        COALESCE(SUM(CASE WHEN da.status = 'approved' THEN di.qty * di.price ELSE 0 END), 0) AS total_approved
+      FROM drafts d
+      INNER JOIN draft_items di ON di.draft_id = d.id
+      LEFT JOIN draft_approvals da ON da.draft_item_id = di.id
+      GROUP BY month_key
+      ORDER BY month_key ASC
+    `);
 
-    stats.financialAnalytics = last6Months.map((b) => ({
-      month: b.name,
-      requested: b.requested,
-      approved: b.approved,
-      saved: b.saved,
-    }));
+      // Map SQL results into the 6-month buckets
+      financialRows.forEach((row) => {
+        const bucket = last6Months.find((m) => m.monthKey === row.month_key);
+        if (bucket) {
+          bucket.requested = parseFloat(row.total_requested) || 0;
+          bucket.approved = parseFloat(row.total_approved) || 0;
+        }
+      });
+
+      // Calculate savings
+      last6Months.forEach((b) => {
+        b.saved = Math.max(0, b.requested - b.approved);
+      });
+
+      stats.financialAnalytics = last6Months.map((b) => ({
+        month: b.name,
+        requested: b.requested,
+        approved: b.approved,
+        saved: b.saved,
+      }));
+    } else {
+      stats.financialAnalytics = [];
+    }
 
     // Role-specific stats
     if (role === 'sysadmin') {
@@ -201,12 +195,16 @@ const getDashboardStats = async (req, res) => {
       });
     }
 
-    // Recent activity (last 10)
-    stats.recentActivity = await AuditLog.findAll({
-      include: [{ model: User, attributes: ['id', 'name', 'role'] }],
-      order: [['created_at', 'DESC']],
-      limit: 10,
-    });
+    // Recent activity (last 10) — sysadmin only (contains audit log data)
+    if (role === 'sysadmin') {
+      stats.recentActivity = await AuditLog.findAll({
+        include: [{ model: User, attributes: ['id', 'name', 'role'] }],
+        order: [['created_at', 'DESC']],
+        limit: 10,
+      });
+    } else {
+      stats.recentActivity = [];
+    }
 
     res.json({ data: stats });
   } catch (err) {

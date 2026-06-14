@@ -41,6 +41,7 @@ const AuditLog = sequelize.define(
   },
   {
     tableName: 'audit_logs',
+    indexes: [{ fields: ['user_id'] }, { fields: ['action'] }, { fields: ['created_at'] }],
   }
 );
 

@@ -125,26 +125,67 @@ export function TiltEngine() {
       const card = e.target.closest('.tilt-card');
       if (!card) {
         document.querySelectorAll('.tilt-card').forEach((c) => {
-          c.style.transform = '';
-          const shine = c.querySelector('.tilt-shine');
-          if (shine) shine.style.background = '';
+          if (window.gsap) {
+            window.gsap.to(c, {
+              transform: 'perspective(1800px) rotateX(0deg) rotateY(0deg)',
+              duration: 0.6,
+              ease: 'power3.out',
+              overwrite: 'auto',
+            });
+            const shine = c.querySelector('.tilt-shine');
+            if (shine) {
+              window.gsap.to(shine, {
+                background: 'transparent',
+                duration: 0.6,
+                ease: 'power3.out',
+              });
+            }
+          } else {
+            c.style.transform = '';
+            const shine = c.querySelector('.tilt-shine');
+            if (shine) shine.style.background = '';
+          }
         });
         return;
       }
 
       const interactive = e.target.closest('button, a, input, select, textarea, [role="button"]');
       if (interactive) {
-        card.style.transform = '';
-        const shine = card.querySelector('.tilt-shine');
-        if (shine) shine.style.background = '';
+        if (window.gsap) {
+          window.gsap.to(card, {
+            transform: 'perspective(1800px) rotateX(0deg) rotateY(0deg)',
+            duration: 0.4,
+            ease: 'power3.out',
+            overwrite: 'auto',
+          });
+          const shine = card.querySelector('.tilt-shine');
+          if (shine) {
+            window.gsap.to(shine, {
+              background: 'transparent',
+              duration: 0.4,
+              ease: 'power3.out',
+            });
+          }
+        } else {
+          card.style.transform = '';
+          const shine = card.querySelector('.tilt-shine');
+          if (shine) shine.style.background = '';
+        }
         return;
       }
 
       const rect = card.getBoundingClientRect();
       const x = (e.clientX - rect.left) / rect.width;
       const y = (e.clientY - rect.top) / rect.height;
-      const rotateX = (y - 0.5) * -5; // deg — subtle tilt
-      const rotateY = (x - 0.5) * 5;
+      const rotateX = (y - 0.5) * -7; // deg — slightly more active but still elegant
+      const rotateY = (x - 0.5) * 7;
+
+      // Responsive direct transform on move, kill active tweens first
+      if (window.gsap) {
+        window.gsap.killTweensOf([card]);
+        const shine = card.querySelector('.tilt-shine');
+        if (shine) window.gsap.killTweensOf([shine]);
+      }
       card.style.transform = `perspective(1800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
       const shine = card.querySelector('.tilt-shine');
       if (shine) {
@@ -155,9 +196,26 @@ export function TiltEngine() {
     const onLeave = (e) => {
       const card = e.target.closest('.tilt-card');
       if (card) {
-        card.style.transform = '';
-        const shine = card.querySelector('.tilt-shine');
-        if (shine) shine.style.background = '';
+        if (window.gsap) {
+          window.gsap.to(card, {
+            transform: 'perspective(1800px) rotateX(0deg) rotateY(0deg)',
+            duration: 0.6,
+            ease: 'power3.out',
+            overwrite: 'auto',
+          });
+          const shine = card.querySelector('.tilt-shine');
+          if (shine) {
+            window.gsap.to(shine, {
+              background: 'transparent',
+              duration: 0.6,
+              ease: 'power3.out',
+            });
+          }
+        } else {
+          card.style.transform = '';
+          const shine = card.querySelector('.tilt-shine');
+          if (shine) shine.style.background = '';
+        }
       }
     };
 

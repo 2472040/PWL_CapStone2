@@ -14,7 +14,12 @@ const PORT = process.env.PORT || 3000;
  * cryptographically secure keys and permanently writes them to the .env file.
  */
 function ensureProductionSecrets() {
-  const criticalSecrets = ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'BACKUP_ENCRYPTION_SECRET', 'AUDIT_LOG_SECRET'];
+  const criticalSecrets = [
+    'JWT_SECRET',
+    'JWT_REFRESH_SECRET',
+    'BACKUP_ENCRYPTION_SECRET',
+    'AUDIT_LOG_SECRET',
+  ];
   const missing = criticalSecrets.filter((secret) => !process.env[secret]);
 
   if (missing.length > 0) {
@@ -106,9 +111,9 @@ async function start() {
     // Run cleanup every 6 hours
     setInterval(
       () => {
-        tokenBlacklist.cleanup().catch((err) =>
-          console.error('[Blacklist Cleanup Interval Error]', err.message)
-        );
+        tokenBlacklist
+          .cleanup()
+          .catch((err) => console.error('[Blacklist Cleanup Interval Error]', err.message));
       },
       6 * 60 * 60 * 1000
     );
@@ -119,6 +124,11 @@ async function start() {
 
     // Start server
     const server = http.createServer(app);
+
+    // Request timeout — prevent hanging connections from exhausting resources
+    const REQUEST_TIMEOUT_MS = parseInt(process.env.REQUEST_TIMEOUT_MS, 10) || 30000;
+    server.setTimeout(REQUEST_TIMEOUT_MS);
+
     const io = new Server(server, {
       cors: {
         origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
@@ -128,8 +138,50 @@ async function start() {
 
     app.set('io', io);
 
+    // WebSocket authentication middleware — verify JWT before allowing connection
+    const jwt = require('jsonwebtoken');
+    io.use((socket, next) => {
+      // Try Authorization header first (Bearer token)
+      const authHeader = socket.handshake.auth?.token || socket.handshake.headers?.authorization;
+      let token = null;
+
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+      } else if (authHeader) {
+        token = authHeader;
+      }
+
+      // Fallback: parse token from cookie header
+      if (!token && socket.handshake.headers?.cookie) {
+        const cookies = socket.handshake.headers.cookie.split(';').reduce((acc, c) => {
+          const [k, ...v] = c.split('=');
+          acc[k.trim()] = decodeURI(v.join('='));
+          return acc;
+        }, {});
+        token = cookies.token || null;
+      }
+
+      if (!token) {
+        return next(new Error('WebSocket authentication required'));
+      }
+
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        socket.user = decoded;
+        next();
+      } catch (err) {
+        next(new Error('Invalid or expired token'));
+      }
+    });
+
     io.on('connection', (socket) => {
-      console.log(`🔌 Client terhubung ke WebSocket: ${socket.id}`);
+      console.log(
+        `🔌 Client terhubung ke WebSocket: ${socket.id} (user: ${socket.user?.id || 'unknown'})`
+      );
+      // Join role-based room for targeted notifications
+      if (socket.user?.role) {
+        socket.join(`role:${socket.user.role}`);
+      }
       socket.on('disconnect', () => {
         console.log(`🔌 Client terputus dari WebSocket: ${socket.id}`);
       });
@@ -140,6 +192,43 @@ async function start() {
       console.log(`📋 API Docs: http://localhost:${PORT}/api/health`);
       console.log(`🔐 Login Page: http://localhost:${PORT}/login\n`);
     });
+
+    // =============================================
+    // Graceful Shutdown — clean up connections on SIGTERM/SIGINT
+    // =============================================
+    const gracefulShutdown = async (signal) => {
+      console.log(`\n🛑 Received ${signal}. Starting graceful shutdown...`);
+
+      // Stop accepting new connections
+      server.close(async () => {
+        console.log('✅ HTTP server closed.');
+
+        // Close WebSocket connections
+        io.close(() => {
+          console.log('✅ WebSocket server closed.');
+        });
+
+        // Close database connection
+        try {
+          await sequelize.close();
+          console.log('✅ Database connection closed.');
+        } catch (err) {
+          console.error('❌ Error closing database:', err.message);
+        }
+
+        console.log('✅ Graceful shutdown complete.');
+        process.exit(0);
+      });
+
+      // Force shutdown after 10 seconds if graceful shutdown fails
+      setTimeout(() => {
+        console.error('⚠️  Forced shutdown after timeout.');
+        process.exit(1);
+      }, 10000).unref();
+    };
+
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
   } catch (err) {
     console.error('❌ Gagal menjalankan server:', err);
     process.exit(1);

@@ -22,15 +22,31 @@ const getDrafts = async (req, res) => {
     if (req.user.role === 'kalab' || req.user.role === 'staflab') where.created_by = req.user.id;
     if (req.query.status) where.status = req.query.status;
 
-    const drafts = await Draft.findAll({
+    const { page, limit } = req.query;
+    const parsedLimit = Math.min(parseInt(limit) || 200, 1000);
+    const parsedPage = Math.max(parseInt(page) || 1, 1);
+    const offset = (parsedPage - 1) * parsedLimit;
+
+    const { count, rows } = await Draft.findAndCountAll({
       where,
       include: [
         { model: User, as: 'creator', attributes: ['id', 'name', 'initials', 'role'] },
         { model: DraftItem, as: 'items', include: [{ model: DraftApproval, as: 'approval' }] },
       ],
       order: [['created_at', 'DESC']],
+      limit: parsedLimit,
+      offset,
     });
-    res.json({ data: drafts });
+
+    res.json({
+      data: rows,
+      pagination: {
+        total: count,
+        page: parsedPage,
+        limit: parsedLimit,
+        pages: Math.ceil(count / parsedLimit),
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Gagal memuat data pengadaan.' });
@@ -120,6 +136,8 @@ const submitDraft = async (req, res) => {
     if (!draft) return res.status(404).json({ error: 'Draf tidak ditemukan.' });
     if (draft.status !== 'draft' && draft.status !== 'revision')
       return res.status(400).json({ error: 'Draf sudah disubmit.' });
+    if (draft.created_by !== req.user.id)
+      return res.status(403).json({ error: 'Anda tidak berhak mengirim draf ini.' });
     if (draft.items.length === 0)
       return res.status(400).json({ error: 'Draf harus memiliki minimal 1 item.' });
 
@@ -151,6 +169,10 @@ const addDraftItem = async (req, res) => {
     if (!draft) return res.status(404).json({ error: 'Draf tidak ditemukan.' });
     if (draft.status !== 'draft' && draft.status !== 'revision' && draft.status !== 'submitted')
       return res.status(400).json({ error: 'Draf sudah tidak dapat diubah.' });
+    if (draft.created_by !== req.user.id)
+      return res
+        .status(403)
+        .json({ error: 'Anda tidak berhak mengubah item pada draf orang lain.' });
 
     const { kind, name, qty, unit, price, link, replaces } = req.body;
     if (!kind || !name || !qty || !unit || !price) {
@@ -183,15 +205,31 @@ const addDraftItem = async (req, res) => {
 
 const getDraftsForReview = async (req, res) => {
   try {
-    const drafts = await Draft.findAll({
+    const { page, limit } = req.query;
+    const parsedLimit = Math.min(parseInt(limit) || 200, 1000);
+    const parsedPage = Math.max(parseInt(page) || 1, 1);
+    const offset = (parsedPage - 1) * parsedLimit;
+
+    const { count, rows } = await Draft.findAndCountAll({
       where: { status: 'submitted' },
       include: [
         { model: User, as: 'creator', attributes: ['id', 'name', 'initials', 'role'] },
         { model: DraftItem, as: 'items', include: [{ model: DraftApproval, as: 'approval' }] },
       ],
       order: [['submitted_at', 'DESC']],
+      limit: parsedLimit,
+      offset,
     });
-    res.json({ data: drafts });
+
+    res.json({
+      data: rows,
+      pagination: {
+        total: count,
+        page: parsedPage,
+        limit: parsedLimit,
+        pages: Math.ceil(count / parsedLimit),
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Gagal memuat draf untuk review.' });
@@ -263,7 +301,13 @@ const approveDraftItems = async (req, res) => {
     }
     res.json({ message: 'Review berhasil disimpan.' });
   } catch (err) {
-    await t.rollback();
+    if (t) {
+      try {
+        await t.rollback();
+      } catch (rollbackErr) {
+        console.error('FAILED TO ROLLBACK TRANSACTION:', rollbackErr.message);
+      }
+    }
     console.error(err);
     res.status(500).json({ error: 'Gagal menyimpan review.' });
   }
@@ -279,6 +323,19 @@ const finalizeDraft = async (req, res) => {
     if (!draft) return res.status(404).json({ error: 'Draf tidak ditemukan.' });
     if (draft.status !== 'submitted')
       return res.status(400).json({ error: 'Draf belum disubmit atau sudah difinalisasi.' });
+
+    // Validasi: semua item harus sudah disetujui (approved) sebelum finalisasi
+    if (draft.items.length === 0) {
+      return res.status(400).json({ error: 'Draf tidak memiliki item untuk difinalisasi.' });
+    }
+    const unapprovedItems = draft.items.filter(
+      (item) => !item.approval || item.approval.status !== 'approved'
+    );
+    if (unapprovedItems.length > 0) {
+      return res.status(400).json({
+        error: `Terdapat ${unapprovedItems.length} item yang belum disetujui. Semua item harus disetujui sebelum finalisasi.`,
+      });
+    }
 
     draft.status = 'finalized';
     draft.finalized_at = new Date();
@@ -304,7 +361,12 @@ const finalizeDraft = async (req, res) => {
 
 const getDraftHistory = async (req, res) => {
   try {
-    const drafts = await Draft.findAll({
+    const { page, limit } = req.query;
+    const parsedLimit = Math.min(parseInt(limit) || 200, 1000);
+    const parsedPage = Math.max(parseInt(page) || 1, 1);
+    const offset = (parsedPage - 1) * parsedLimit;
+
+    const { count, rows } = await Draft.findAndCountAll({
       where: { status: { [Op.in]: ['finalized', 'completed'] } },
       include: [
         { model: User, as: 'creator', attributes: ['id', 'name', 'initials'] },
@@ -312,8 +374,19 @@ const getDraftHistory = async (req, res) => {
         { model: DraftItem, as: 'items', include: [{ model: DraftApproval, as: 'approval' }] },
       ],
       order: [['finalized_at', 'DESC']],
+      limit: parsedLimit,
+      offset,
     });
-    res.json({ data: drafts });
+
+    res.json({
+      data: rows,
+      pagination: {
+        total: count,
+        page: parsedPage,
+        limit: parsedLimit,
+        pages: Math.ceil(count / parsedLimit),
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Gagal memuat riwayat draf.' });
@@ -326,7 +399,12 @@ const getDraftHistory = async (req, res) => {
 
 const getReceiving = async (req, res) => {
   try {
-    const finalized = await Draft.findAll({
+    const { page, limit } = req.query;
+    const parsedLimit = Math.min(parseInt(limit) || 200, 1000);
+    const parsedPage = Math.max(parseInt(page) || 1, 1);
+    const offset = (parsedPage - 1) * parsedLimit;
+
+    const { count, rows } = await Draft.findAndCountAll({
       where: { status: { [Op.in]: ['finalized', 'completed'] } },
       include: [
         {
@@ -339,8 +417,19 @@ const getReceiving = async (req, res) => {
         },
       ],
       order: [['finalized_at', 'DESC']],
+      limit: parsedLimit,
+      offset,
     });
-    res.json({ data: finalized });
+
+    res.json({
+      data: rows,
+      pagination: {
+        total: count,
+        page: parsedPage,
+        limit: parsedLimit,
+        pages: Math.ceil(count / parsedLimit),
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Gagal memuat data penerimaan.' });
@@ -360,7 +449,9 @@ const receiveItem = async (req, res) => {
     const parsedQty = qty_received ? parseInt(qty_received, 10) : null;
     if (parsedQty !== null && parsedQty <= 0) {
       await t.rollback();
-      return res.status(400).json({ error: 'Jumlah diterima (qty_received) harus bernilai positif.' });
+      return res
+        .status(400)
+        .json({ error: 'Jumlah diterima (qty_received) harus bernilai positif.' });
     }
 
     const draftItem = await DraftItem.findByPk(draft_item_id, {
@@ -374,6 +465,15 @@ const receiveItem = async (req, res) => {
     if (!draftItem.approval || draftItem.approval.status !== 'approved') {
       await t.rollback();
       return res.status(400).json({ error: 'Item belum disetujui.' });
+    }
+
+    // Validate qty_received does not exceed ordered quantity
+    const orderedQty = parseInt(draftItem.qty, 10);
+    if (parsedQty !== null && parsedQty > orderedQty) {
+      await t.rollback();
+      return res.status(400).json({
+        error: `Jumlah diterima (${parsedQty}) tidak boleh melebihi jumlah yang dipesan (${orderedQty}).`,
+      });
     }
 
     const receiving = await Receiving.create(
@@ -447,10 +547,14 @@ const receiveItem = async (req, res) => {
     res.status(201).json({ data: receiving });
   } catch (err) {
     if (t) {
-      try { await t.rollback(); } catch (_) { /* already committed or rolled back */ }
+      try {
+        await t.rollback();
+      } catch (_) {
+        /* already committed or rolled back */
+      }
     }
     console.error(err);
-    res.status(500).json({ error: 'Gagal mencatat penerimaan: ' + err.message });
+    res.status(500).json({ error: 'Gagal mencatat penerimaan.' });
   }
 };
 
@@ -461,6 +565,10 @@ const deleteDraftItem = async (req, res) => {
       include: [{ model: Draft, as: 'draft' }],
     });
     if (!item) return res.status(404).json({ error: 'Item draf tidak ditemukan.' });
+    if (item.draft.created_by !== req.user.id)
+      return res
+        .status(403)
+        .json({ error: 'Anda tidak berhak menghapus item dari draf orang lain.' });
     if (
       item.draft.status !== 'draft' &&
       item.draft.status !== 'revision' &&
@@ -493,6 +601,10 @@ const updateDraftItem = async (req, res) => {
       include: [{ model: Draft, as: 'draft' }],
     });
     if (!item) return res.status(404).json({ error: 'Item draf tidak ditemukan.' });
+    if (item.draft.created_by !== req.user.id)
+      return res
+        .status(403)
+        .json({ error: 'Anda tidak berhak mengubah item pada draf orang lain.' });
     if (
       item.draft.status !== 'draft' &&
       item.draft.status !== 'revision' &&
@@ -531,10 +643,39 @@ const updateDraftItem = async (req, res) => {
 
 const completeDraft = async (req, res) => {
   try {
-    const draft = await Draft.findByPk(req.params.id);
+    const draft = await Draft.findByPk(req.params.id, {
+      include: [
+        {
+          model: DraftItem,
+          as: 'items',
+          include: [
+            {
+              model: DraftApproval,
+              as: 'approval',
+              where: { status: 'approved' },
+              required: false,
+            },
+            { model: Receiving, as: 'receivings' },
+          ],
+        },
+      ],
+    });
     if (!draft) return res.status(404).json({ error: 'Draf tidak ditemukan.' });
     if (draft.status !== 'finalized')
       return res.status(400).json({ error: 'Draf belum difinalisasi atau sudah diselesaikan.' });
+
+    // Verify all approved items have been received
+    const unreceivedItems = draft.items.filter(
+      (item) =>
+        item.approval &&
+        item.approval.status === 'approved' &&
+        (!item.receivings || item.receivings.length === 0)
+    );
+    if (unreceivedItems.length > 0) {
+      return res.status(400).json({
+        error: `Terdapat ${unreceivedItems.length} item yang belum diterima. Semua item harus diterima sebelum menyelesaikan draf.`,
+      });
+    }
 
     draft.status = 'completed';
     await draft.save();
@@ -592,7 +733,13 @@ const requestRevision = async (req, res) => {
 
     res.json({ data: draft });
   } catch (err) {
-    await t.rollback();
+    if (t) {
+      try {
+        await t.rollback();
+      } catch (rollbackErr) {
+        console.error('FAILED TO ROLLBACK TRANSACTION:', rollbackErr.message);
+      }
+    }
     console.error(err);
     res.status(500).json({ error: 'Gagal memproses permintaan revisi draf.' });
   }

@@ -141,10 +141,10 @@ const updateProfile = asyncHandler(async (req, res) => {
     throw new NotFoundError('Pengguna tidak ditemukan.');
   }
 
-  // Require current password verification before allowing sensitive changes
-  if (password || (email && email !== user.email)) {
+  // Require current password verification before allowing any sensitive profile changes
+  if (password || (email && email !== user.email) || (name && name !== user.name)) {
     if (!currentPassword) {
-      throw new BadRequestError('Password saat ini wajib diisi untuk mengubah email atau password.');
+      throw new BadRequestError('Password saat ini wajib diisi untuk mengubah profil.');
     }
     const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
     if (!isCurrentPasswordValid) {

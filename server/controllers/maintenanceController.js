@@ -8,7 +8,12 @@ const sequelize = require('../config/database');
 
 const getMaintenanceLogs = async (req, res) => {
   try {
-    const logs = await MaintenanceLog.findAll({
+    const { page, limit } = req.query;
+    const parsedLimit = Math.min(parseInt(limit) || 200, 1000);
+    const parsedPage = Math.max(parseInt(page) || 1, 1);
+    const offset = (parsedPage - 1) * parsedLimit;
+
+    const { count, rows } = await MaintenanceLog.findAndCountAll({
       include: [
         { model: Inventory, attributes: ['id', 'code', 'name'] },
         { model: User, as: 'technician', attributes: ['id', 'name'] },
@@ -19,8 +24,19 @@ const getMaintenanceLogs = async (req, res) => {
         },
       ],
       order: [['date', 'DESC']],
+      limit: parsedLimit,
+      offset,
     });
-    res.json({ data: logs });
+
+    res.json({
+      data: rows,
+      pagination: {
+        total: count,
+        page: parsedPage,
+        limit: parsedLimit,
+        pages: Math.ceil(count / parsedLimit),
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Gagal memuat log maintenance.' });
@@ -39,9 +55,20 @@ const createMaintenance = async (req, res) => {
     const logsCreated = [];
     const inventoryCodes = [];
 
-    // Initial count for code generation
+    // Initial count for code generation — lock the last row to prevent concurrent duplicate codes
     const year = new Date().getFullYear();
-    const startCount = (await MaintenanceLog.count({ transaction: t })) + 1;
+    const lastLog = await MaintenanceLog.findOne({
+      order: [['id', 'DESC']],
+      transaction: t,
+      lock: t.LOCK.UPDATE,
+    });
+    let startCount = 1;
+    if (lastLog && lastLog.code) {
+      const match = lastLog.code.match(/M-\d+-(\d+)/);
+      if (match) {
+        startCount = parseInt(match[1], 10) + 1;
+      }
+    }
 
     for (let i = 0; i < inventory_ids.length; i++) {
       const inv_id = inventory_ids[i];
@@ -158,8 +185,36 @@ const createMaintenance = async (req, res) => {
 
 const getBhp = async (req, res) => {
   try {
-    const items = await Bhp.findAll({ order: [['code', 'ASC']] });
-    res.json({ data: items });
+    const { page, limit, search } = req.query;
+    const parsedLimit = Math.min(parseInt(limit) || 200, 1000);
+    const parsedPage = Math.max(parseInt(page) || 1, 1);
+    const offset = (parsedPage - 1) * parsedLimit;
+
+    const where = {};
+    if (search) {
+      const { Op } = require('sequelize');
+      where[Op.or] = [
+        { name: { [Op.like]: `%${search}%` } },
+        { code: { [Op.like]: `%${search}%` } },
+      ];
+    }
+
+    const { count, rows } = await Bhp.findAndCountAll({
+      where,
+      order: [['code', 'ASC']],
+      limit: parsedLimit,
+      offset,
+    });
+
+    res.json({
+      data: rows,
+      pagination: {
+        total: count,
+        page: parsedPage,
+        limit: parsedLimit,
+        pages: Math.ceil(count / parsedLimit),
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Gagal memuat data BHP.' });

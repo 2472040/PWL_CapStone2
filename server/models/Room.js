@@ -35,6 +35,7 @@ const Room = sequelize.define(
   },
   {
     tableName: 'rooms',
+    indexes: [{ fields: ['pic_user_id'] }],
   }
 );
 

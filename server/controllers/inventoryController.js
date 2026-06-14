@@ -5,7 +5,7 @@ const sequelize = require('../config/database');
 
 const getInventory = async (req, res) => {
   try {
-    const { category, room_id, condition, search } = req.query;
+    const { category, room_id, condition, search, page, limit, include_deleted } = req.query;
     const where = {};
     if (category) where.category = category;
     if (room_id) where.room_id = room_id;
@@ -16,15 +16,39 @@ const getInventory = async (req, res) => {
         { code: { [Op.like]: `%${search}%` } },
       ];
     }
-    const items = await Inventory.findAll({
+
+    // Pagination: default 200, max 1000
+    const parsedLimit = Math.min(parseInt(limit) || 200, 1000);
+    const parsedPage = Math.max(parseInt(page) || 1, 1);
+    const offset = (parsedPage - 1) * parsedLimit;
+
+    const findOptions = {
       where,
       include: [
         { model: Room, attributes: ['id', 'code', 'name'] },
         { model: Label, as: 'label' },
       ],
       order: [['code', 'ASC']],
+      limit: parsedLimit,
+      offset,
+    };
+
+    // Opt-in: include soft-deleted items
+    if (include_deleted === 'true') {
+      findOptions.paranoid = false;
+    }
+
+    const { count, rows } = await Inventory.findAndCountAll(findOptions);
+
+    res.json({
+      data: rows,
+      pagination: {
+        total: count,
+        page: parsedPage,
+        limit: parsedLimit,
+        pages: Math.ceil(count / parsedLimit),
+      },
     });
-    res.json({ data: items });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Gagal memuat inventaris.' });
@@ -60,6 +84,14 @@ const createInventory = async (req, res) => {
       req.body;
     if (!code || !name || !category) {
       return res.status(400).json({ error: 'Code, name, category wajib diisi.' });
+    }
+
+    // Pre-check for duplicate code before inserting
+    const existingCode = await Inventory.findOne({ where: { code } });
+    if (existingCode) {
+      return res
+        .status(409)
+        .json({ error: `Kode inventaris "${code}" sudah digunakan. Gunakan kode yang berbeda.` });
     }
     const item = await Inventory.create({
       code,
@@ -163,14 +195,75 @@ const updateLabel = async (req, res) => {
 
 const getLabels = async (req, res) => {
   try {
-    const labels = await Label.findAll({
+    const { page, limit } = req.query;
+    const parsedLimit = Math.min(parseInt(limit) || 200, 1000);
+    const parsedPage = Math.max(parseInt(page) || 1, 1);
+    const offset = (parsedPage - 1) * parsedLimit;
+
+    const { count, rows } = await Label.findAndCountAll({
       include: [{ model: Inventory, attributes: ['id', 'code', 'name', 'category'] }],
       order: [['created_at', 'DESC']],
+      limit: parsedLimit,
+      offset,
     });
-    res.json({ data: labels });
+
+    res.json({
+      data: rows,
+      pagination: {
+        total: count,
+        page: parsedPage,
+        limit: parsedLimit,
+        pages: Math.ceil(count / parsedLimit),
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Gagal memuat label.' });
+  }
+};
+
+const deleteInventory = async (req, res) => {
+  try {
+    const item = await Inventory.findByPk(req.params.id);
+    if (!item) return res.status(404).json({ error: 'Item tidak ditemukan.' });
+
+    // Soft delete — marks as deleted but keeps the record for recovery
+    await item.destroy();
+
+    await logAudit(req.user.id, 'inventory.delete', item.code, req.ip);
+
+    const io = req.app.get('io');
+    if (io) io.emit('data_changed', { type: 'inventory' });
+
+    res.json({
+      message: `Inventaris "${item.code}" berhasil dihapus (soft delete). Data masih dapat dipulihkan.`,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Gagal menghapus inventaris.' });
+  }
+};
+
+const restoreInventory = async (req, res) => {
+  try {
+    // paranoid: false allows finding soft-deleted records
+    const item = await Inventory.findByPk(req.params.id, { paranoid: false });
+    if (!item) return res.status(404).json({ error: 'Item tidak ditemukan.' });
+    if (!item.deleted_at) {
+      return res.status(400).json({ error: 'Item ini tidak dalam status terhapus.' });
+    }
+
+    await item.restore();
+
+    await logAudit(req.user.id, 'inventory.restore', item.code, req.ip);
+
+    const io = req.app.get('io');
+    if (io) io.emit('data_changed', { type: 'inventory' });
+
+    res.json({ message: `Inventaris "${item.code}" berhasil dipulihkan.` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Gagal memulihkan inventaris.' });
   }
 };
 
@@ -181,4 +274,6 @@ module.exports = {
   updateInventory,
   updateLabel,
   getLabels,
+  deleteInventory,
+  restoreInventory,
 };

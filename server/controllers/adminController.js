@@ -1,7 +1,8 @@
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const { User, Room, AuditLog } = require('../models');
+const { User, Room, AuditLog, Inventory } = require('../models');
 const { logAudit } = require('../middleware/audit');
+const sequelize = require('../config/database');
 
 // =============================================
 // USERS
@@ -9,11 +10,37 @@ const { logAudit } = require('../middleware/audit');
 
 const getUsers = async (req, res) => {
   try {
-    const users = await User.findAll({
+    const { page, limit, search } = req.query;
+    const parsedLimit = Math.min(parseInt(limit) || 200, 1000);
+    const parsedPage = Math.max(parseInt(page) || 1, 1);
+    const offset = (parsedPage - 1) * parsedLimit;
+
+    const where = {};
+    if (search) {
+      const { Op } = require('sequelize');
+      where[Op.or] = [
+        { name: { [Op.like]: `%${search}%` } },
+        { email: { [Op.like]: `%${search}%` } },
+      ];
+    }
+
+    const { count, rows } = await User.findAndCountAll({
+      where,
       attributes: { exclude: ['password'] },
       order: [['created_at', 'DESC']],
+      limit: parsedLimit,
+      offset,
     });
-    res.json({ data: users });
+
+    res.json({
+      data: rows,
+      pagination: {
+        total: count,
+        page: parsedPage,
+        limit: parsedLimit,
+        pages: Math.ceil(count / parsedLimit),
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Gagal memuat data pengguna.' });
@@ -86,6 +113,11 @@ const updateUser = async (req, res) => {
       diffs.push(`Nama: ${user.name} ➔ ${name}`);
     }
     if (email && email !== user.email) {
+      // Cek apakah email baru sudah digunakan oleh pengguna lain
+      const existingEmail = await User.findOne({ where: { email } });
+      if (existingEmail && existingEmail.id !== user.id) {
+        return res.status(409).json({ error: 'Email sudah digunakan oleh akun lain.' });
+      }
       diffs.push(`Email: ${user.email} ➔ ${email}`);
     }
     if (initials && initials !== user.initials) {
@@ -161,21 +193,48 @@ const deleteUser = async (req, res) => {
 
 const getRooms = async (req, res) => {
   try {
-    const rooms = await Room.findAll({
+    const { page, limit } = req.query;
+    const parsedLimit = Math.min(parseInt(limit) || 200, 1000);
+    const parsedPage = Math.max(parseInt(page) || 1, 1);
+    const offset = (parsedPage - 1) * parsedLimit;
+
+    const { count, rows } = await Room.findAndCountAll({
       include: [{ model: User, as: 'pic', attributes: ['id', 'name', 'initials'] }],
       order: [['code', 'ASC']],
+      limit: parsedLimit,
+      offset,
     });
 
-    // Count assets per room
-    const { Inventory } = require('../models');
-    const data = await Promise.all(
-      rooms.map(async (room) => {
-        const assetCount = await Inventory.count({ where: { room_id: room.id } });
-        return { ...room.toJSON(), assets: assetCount };
-      })
-    );
+    // Count assets per room using a single SQL query (eliminates N+1 problem)
+    const roomIds = rows.map((r) => r.id);
+    const assetCounts =
+      roomIds.length > 0
+        ? await Inventory.findAll({
+            where: { room_id: roomIds },
+            attributes: ['room_id', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
+            group: ['room_id'],
+            raw: true,
+          })
+        : [];
+    const countMap = assetCounts.reduce((map, row) => {
+      map[row.room_id] = parseInt(row.count, 10);
+      return map;
+    }, {});
 
-    res.json({ data });
+    const data = rows.map((room) => ({
+      ...room.toJSON(),
+      assets: countMap[room.id] || 0,
+    }));
+
+    res.json({
+      data,
+      pagination: {
+        total: count,
+        page: parsedPage,
+        limit: parsedLimit,
+        pages: Math.ceil(count / parsedLimit),
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Gagal memuat data ruangan.' });
@@ -248,6 +307,14 @@ const deleteRoom = async (req, res) => {
   try {
     const room = await Room.findByPk(req.params.id);
     if (!room) return res.status(404).json({ error: 'Ruangan tidak ditemukan.' });
+
+    // Cek apakah masih ada inventaris yang terhubung ke ruangan ini
+    const linkedInventoryCount = await Inventory.count({ where: { room_id: room.id } });
+    if (linkedInventoryCount > 0) {
+      return res.status(400).json({
+        error: `Tidak dapat menghapus ruangan "${room.code}" karena masih terdapat ${linkedInventoryCount} item inventaris yang terhubung. Pindahkan atau hapus inventaris terlebih dahulu.`,
+      });
+    }
 
     await logAudit(req.user.id, 'room.delete', room.code, req.ip);
     await room.destroy();

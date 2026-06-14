@@ -15,11 +15,14 @@
     "lint:fix": "eslint \"**/*.{js,jsx,cjs,mjs}\" --fix",
     "format": "prettier --write \"**/*.{js,jsx,json,css,md}\"",
     "format:check": "prettier --check \"**/*.{js,jsx,json,css,md}\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@studio-freight/lenis": "^1.0.42",
     "bcryptjs": "^3.0.3",
+    "compression": "^1.8.1",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
@@ -51,9 +54,9 @@
     "@tailwindcss/vite": "^4.0.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^4.3.1",
+    "@vitejs/plugin-react": "^6.0.2",
     "@vitest/coverage-v8": "^4.1.8",
-    "concurrently": "^9.2.1",
+    "concurrently": "^10.0.3",
     "eslint": "^9.39.4",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react": "^7.37.5",
@@ -61,7 +64,7 @@
     "prettier": "^3.8.4",
     "supertest": "^7.2.2",
     "tailwindcss": "^4.0.0",
-    "vite": "^6.0.0",
+    "vite": "^8.0.16",
     "vitest": "^4.1.7"
   }
 }

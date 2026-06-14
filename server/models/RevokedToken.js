@@ -22,6 +22,7 @@ const RevokedToken = sequelize.define(
   {
     tableName: 'revoked_tokens',
     timestamps: false,
+    indexes: [{ fields: ['expires_at'] }],
   }
 );
 

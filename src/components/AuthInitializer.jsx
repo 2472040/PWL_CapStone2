@@ -349,12 +349,14 @@ export function AuthInitializer({ pendingRole }) {
     pollData();
 
     // Connect to LokaLab WebSocket for event-driven real-time data synchronization
+    const wsToken = getToken();
     const socket = io(
       window.location.origin === 'http://localhost:5173'
         ? 'http://localhost:3000'
         : window.location.origin,
       {
         withCredentials: true,
+        auth: wsToken ? { token: wsToken } : {},
       }
     );
 

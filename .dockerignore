@@ -1,0 +1,39 @@
+# Dependencies (will be installed inside container)
+node_modules
+server/node_modules
+
+# Build output (will be built inside container for production)
+dist
+
+# Version control
+.git
+.gitignore
+
+# IDE & editor
+.vscode
+.idea
+
+# Test & coverage
+coverage
+server/tests
+
+# Logs & backups (runtime data, not image data)
+server/logs
+server/backups
+
+# Documentation (not needed in container)
+*.md
+
+# Docker files (prevent recursive copy)
+docker-compose*.yml
+Dockerfile
+.dockerignore
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files (secrets should be passed at runtime)
+.env
+.env.local
+.env.*.local

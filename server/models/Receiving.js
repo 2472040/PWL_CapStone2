@@ -35,6 +35,7 @@ const Receiving = sequelize.define(
   },
   {
     tableName: 'receiving',
+    indexes: [{ fields: ['draft_item_id'] }, { fields: ['received_by'] }],
   }
 );
 

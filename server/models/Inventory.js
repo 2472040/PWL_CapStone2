@@ -53,9 +53,21 @@ const Inventory = sequelize.define(
       type: DataTypes.STRING(255),
       allowNull: true,
     },
+    deleted_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     tableName: 'inventory',
+    paranoid: true,
+    deletedAt: 'deleted_at',
+    indexes: [
+      { fields: ['room_id'] },
+      { fields: ['category'] },
+      { fields: ['condition'] },
+      { fields: ['deleted_at'] },
+    ],
   }
 );
 

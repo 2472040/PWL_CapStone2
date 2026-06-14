@@ -48,6 +48,7 @@ const Draft = sequelize.define(
   },
   {
     tableName: 'drafts',
+    indexes: [{ fields: ['created_by'] }, { fields: ['finalized_by'] }, { fields: ['status'] }],
   }
 );
 

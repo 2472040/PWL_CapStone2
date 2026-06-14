@@ -1,17 +1,12 @@
-/**
- * Refresh Token Rotation (RTR) Unit Tests
- * Run directly with: node server/tests/rtr.test.cjs
- */
-
-const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
-const { assert } = require('console');
+import { describe, it, expect, beforeEach } from 'vitest';
+import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 // Setup mock environment variables if not set
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret';
 
-// Mock Models
-const mockRefreshTokensDb = [];
+// Mock Databases
+let mockRefreshTokensDb = [];
 const mockUsersDb = [
   {
     id: 1,
@@ -20,33 +15,35 @@ const mockUsersDb = [
     role: 'sysadmin',
     token_version: 0,
     status: 'active',
-    save: async function() { return this; }
-  }
+    save: async function () {
+      return this;
+    },
+  },
 ];
 
 const mockRefreshTokenModel = {
   create: async (data) => {
-    const record = { 
-      ...data, 
-      id: mockRefreshTokensDb.length + 1, 
+    const record = {
+      ...data,
+      id: mockRefreshTokensDb.length + 1,
       is_used: false,
-      destroy: async function() {
-        const idx = mockRefreshTokensDb.findIndex(r => r.id === this.id);
+      destroy: async function () {
+        const idx = mockRefreshTokensDb.findIndex((r) => r.id === this.id);
         if (idx !== -1) {
           mockRefreshTokensDb.splice(idx, 1);
         }
-      }
+      },
     };
     mockRefreshTokensDb.push(record);
     return record;
   },
   findOne: async ({ where }) => {
-    return mockRefreshTokensDb.find(r => r.token === where.token) || null;
+    return mockRefreshTokensDb.find((r) => r.token === where.token) || null;
   },
   destroy: async ({ where }) => {
     let deletedCount = 0;
     if (where.token) {
-      const idx = mockRefreshTokensDb.findIndex(r => r.token === where.token);
+      const idx = mockRefreshTokensDb.findIndex((r) => r.token === where.token);
       if (idx !== -1) {
         mockRefreshTokensDb.splice(idx, 1);
         deletedCount = 1;
@@ -60,18 +57,17 @@ const mockRefreshTokenModel = {
       }
     }
     return deletedCount;
-  }
+  },
 };
 
 const mockUserModel = {
   findByPk: async (id) => {
-    const user = mockUsersDb.find(u => u.id === id);
+    const user = mockUsersDb.find((u) => u.id === id);
     if (user) {
-      // Mock destroy handler for refresh tokens
       user.destroy = async () => {};
     }
     return user || null;
-  }
+  },
 };
 
 // Helper for Mock request and response
@@ -100,30 +96,13 @@ const createMockResponse = () => {
   return res;
 };
 
-// Test Suite
-async function runRtrTests() {
-  console.log('==================================================');
-  console.log('🛡️  RUNNING REFRESH TOKEN ROTATION (RTR) UNIT TESTS...');
-  console.log('==================================================\n');
+describe('Refresh Token Rotation (RTR)', () => {
+  beforeEach(() => {
+    mockRefreshTokensDb = [];
+    mockUsersDb[0].token_version = 0;
+  });
 
-  let passed = 0;
-  let failed = 0;
-
-  const test = async (description, fn) => {
-    try {
-      await fn();
-      console.log(`✅ [PASSED] ${description}`);
-      passed++;
-    } catch (err) {
-      console.error(`❌ [FAILED] ${description}`);
-      console.error(`   Error: ${err.message}`);
-      console.error(err.stack);
-      failed++;
-    }
-  };
-
-  // 1. Verify token rotation on refresh
-  await test('RTR: should rotate refresh token and return new access token', async () => {
+  it('should rotate refresh token and return new access token', async () => {
     const user = mockUsersDb[0];
     const refreshJti = crypto.randomUUID();
     const mockRefreshToken = jwt.sign(
@@ -134,30 +113,21 @@ async function runRtrTests() {
 
     // Save refresh token to mock DB
     const hashed = crypto.createHash('sha256').update(mockRefreshToken).digest('hex');
-    const dbRecord = await mockRefreshTokenModel.create({
+    await mockRefreshTokenModel.create({
       token: hashed,
       user_id: user.id,
       jti: refreshJti,
-      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     });
 
-    // Mock Req & Res
-    const req = {
-      headers: {
-        cookie: `refreshToken=${mockRefreshToken}`
-      },
-      ip: '127.0.0.1'
-    };
     const res = createMockResponse();
 
-    // Import controllers manually or simulate the refresh logic
-    // We will simulate the refresh logic using our mock models to make sure it matches controllers/authController.js
-    let refreshToken = mockRefreshToken;
-    let decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
-    const hashedCheck = crypto.createHash('sha256').update(refreshToken).digest('hex');
+    // Simulate RTR Logic
+    const decoded = jwt.verify(mockRefreshToken, process.env.JWT_SECRET);
+    const hashedCheck = crypto.createHash('sha256').update(mockRefreshToken).digest('hex');
     const tokenRecord = await mockRefreshTokenModel.findOne({ where: { token: hashedCheck } });
 
-    if (!tokenRecord) throw new Error('Token should exist');
+    expect(tokenRecord).toBeDefined();
     await tokenRecord.destroy(); // Rotate token
 
     const newJti = crypto.randomUUID();
@@ -179,25 +149,26 @@ async function runRtrTests() {
       token: hashedNew,
       user_id: user.id,
       jti: newRefreshJti,
-      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     });
 
     res.cookie('token', newAccessToken, { httpOnly: true, maxAge: 15 * 60 * 1000 });
-    res.cookie('refreshToken', newRefreshToken, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
+    res.cookie('refreshToken', newRefreshToken, {
+      httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
-    if (!res.cookies.token || !res.cookies.refreshToken) {
-      throw new Error('Cookies not set correctly');
-    }
+    expect(res.cookies.token).toBeDefined();
+    expect(res.cookies.refreshToken).toBeDefined();
 
     const decodedAccess = jwt.verify(res.cookies.token.value, process.env.JWT_SECRET);
     const decodedRefresh = jwt.verify(res.cookies.refreshToken.value, process.env.JWT_SECRET);
 
-    if (decodedAccess.id !== user.id) throw new Error('User ID mismatch in access token');
-    if (decodedRefresh.jti === refreshJti) throw new Error('JTI not rotated');
+    expect(decodedAccess.id).toBe(user.id);
+    expect(decodedRefresh.jti).not.toBe(refreshJti);
   });
 
-  // 2. Verify reuse detection
-  await test('RTR: should detect reuse of refresh token and invalidate all sessions', async () => {
+  it('should detect reuse of refresh token and invalidate all sessions', async () => {
     const user = mockUsersDb[0];
     const originalTokenVersion = user.token_version;
     const oldRefreshJti = crypto.randomUUID();
@@ -207,20 +178,12 @@ async function runRtrTests() {
       { expiresIn: '7d' }
     );
 
-    // Old token is NOT in database (it was already rotated/deleted)
-    // The client tries to send this old rotated token (REUSE ATTACK)
-    const req = {
-      headers: {
-        cookie: `refreshToken=${oldRefreshToken}`
-      },
-      ip: '127.0.0.1'
-    };
-    const res = createMockResponse();
-
-    // Simulate reuse detection logic
+    // Old token is not in DB because it was already rotated
     const decoded = jwt.verify(oldRefreshToken, process.env.JWT_SECRET);
     const hashedCheck = crypto.createHash('sha256').update(oldRefreshToken).digest('hex');
     const tokenRecord = await mockRefreshTokenModel.findOne({ where: { token: hashedCheck } });
+
+    expect(tokenRecord).toBeNull();
 
     if (!tokenRecord) {
       // REUSE DETECTED!
@@ -231,23 +194,7 @@ async function runRtrTests() {
       }
     }
 
-    if (user.token_version !== originalTokenVersion + 1) {
-      throw new Error('Token version not incremented upon reuse detection');
-    }
-    if (mockRefreshTokensDb.filter(r => r.user_id === user.id).length !== 0) {
-      throw new Error('Active sessions not cleared upon reuse detection');
-    }
+    expect(user.token_version).toBe(originalTokenVersion + 1);
+    expect(mockRefreshTokensDb.filter((r) => r.user_id === user.id).length).toBe(0);
   });
-
-  console.log('\n==================================================');
-  console.log(`📊 RESULTS: ${passed} passed, ${failed} failed, ${passed + failed} total`);
-  console.log('==================================================\n');
-
-  if (failed > 0) {
-    process.exit(1);
-  } else {
-    process.exit(0);
-  }
-}
-
-runRtrTests();
+});

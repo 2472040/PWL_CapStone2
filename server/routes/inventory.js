@@ -7,6 +7,8 @@ const {
   updateInventory,
   updateLabel,
   getLabels,
+  deleteInventory,
+  restoreInventory,
 } = require('../controllers/inventoryController');
 
 /**
@@ -33,6 +35,22 @@ router.use(authenticate);
  *         description: Tidak terautentikasi
  */
 router.get('/', getInventory);
+
+/**
+ * @swagger
+ * /inventory/manage/labels:
+ *   get:
+ *     summary: Dapatkan daftar seluruh label aset
+ *     tags: [Inventory]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Daftar label berhasil diambil
+ *       403:
+ *         description: Hanya admin yang diizinkan
+ */
+router.get('/manage/labels', authorize('admin'), getLabels);
 
 /**
  * @swagger
@@ -143,18 +161,46 @@ router.put('/:id/label', authorize('admin'), updateLabel);
 
 /**
  * @swagger
- * /inventory/manage/labels:
- *   get:
- *     summary: Dapatkan daftar seluruh label aset
+ * /inventory/{id}:
+ *   delete:
+ *     summary: Hapus aset inventaris (soft delete)
  *     tags: [Inventory]
  *     security:
  *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
  *     responses:
  *       200:
- *         description: Daftar label berhasil diambil
- *       403:
- *         description: Hanya admin yang diizinkan
+ *         description: Aset berhasil dihapus (soft delete)
+ *       404:
+ *         description: Aset tidak ditemukan
  */
-router.get('/manage/labels', authorize('admin'), getLabels);
+router.delete('/:id', authorize('sysadmin', 'admin'), deleteInventory);
+
+/**
+ * @swagger
+ * /inventory/{id}/restore:
+ *   post:
+ *     summary: Pulihkan aset inventaris yang telah dihapus (soft delete)
+ *     tags: [Inventory]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Aset berhasil dipulihkan
+ *       404:
+ *         description: Aset tidak ditemukan
+ */
+router.post('/:id/restore', authorize('sysadmin'), restoreInventory);
 
 module.exports = router;
