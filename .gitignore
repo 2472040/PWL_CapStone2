@@ -46,3 +46,7 @@ screenshots/
 # Scratch / temp files
 scratch/
 *.exe
+coverage/
+html_artifacts/
+mcp/
+

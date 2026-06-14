@@ -45,4 +45,21 @@ export default defineConfig({
       },
     },
   },
+  test: {
+    environment: 'node',
+    include: ['server/tests/procurement.integration.test.js'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      reportsDirectory: './coverage',
+      exclude: [
+        'node_modules/**',
+        'dist/**',
+        'server/backups/**',
+        'server/tests/**',
+        'eslint.config.js',
+        'vite.config.js',
+      ],
+    },
+  },
 });
