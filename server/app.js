@@ -55,6 +55,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(csrfProtection);
 
+// Swagger Documentation
+const { setupSwagger } = require('./utils/swagger');
+setupSwagger(app);
+
 // Pug view engine
 app.set('view engine', 'pug');
 app.set('views', path.join(__dirname, 'views'));
