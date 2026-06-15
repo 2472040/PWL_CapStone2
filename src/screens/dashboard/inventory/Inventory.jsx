@@ -40,10 +40,54 @@ export function Inventory() {
   const [localQuery, setLocalQuery] = useState('');
   const query = globalQuery || localQuery;
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [cats, setCats] = useState(['all']);
+  const [years, setYears] = useState([]);
+  const limit = 12;
+
+  // Reset page on filter/search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, monthFilter, yearFilter, query]);
+
+  // Fetch complete filter options once on mount
+  useEffect(() => {
+    async function fetchFilterOptions() {
+      try {
+        const res = await apiFetch('/inventory?limit=1000');
+        if (res.data) {
+          const uniqueCats = ['all', ...new Set(res.data.map((i) => i.category))].filter(Boolean);
+          const uniqueYears = [
+            ...new Set(res.data.map((i) => (i.acquired_date ? i.acquired_date.split('-')[0] : null))),
+          ]
+            .filter(Boolean)
+            .sort();
+          setCats(uniqueCats);
+          setYears(uniqueYears);
+        }
+      } catch (err) {
+        console.error('Failed to fetch filter options:', err);
+      }
+    }
+    fetchFilterOptions();
+  }, []);
+
+  // Fetch paginated inventory
   useEffect(() => {
     async function fetchInventory() {
       try {
-        const res = await apiFetch('/inventory');
+        const params = new URLSearchParams({
+          page: currentPage.toString(),
+          limit: limit.toString(),
+        });
+        if (filter !== 'all') params.append('category', filter);
+        if (monthFilter !== 'all') params.append('month', monthFilter);
+        if (yearFilter !== 'all') params.append('year', yearFilter);
+        if (query) params.append('search', query);
+
+        const res = await apiFetch(`/inventory?${params.toString()}`);
         if (res.data) {
           const inv = res.data.map((i) => ({
             id: i.id,
@@ -62,32 +106,19 @@ export function Inventory() {
             photo_url: i.label?.photo_url || null,
           }));
           dispatch({ type: 'SET_INVENTORY', inventory: inv });
+          if (res.pagination) {
+            setTotalPages(res.pagination.pages || 1);
+            setTotalItems(res.pagination.total || 0);
+          }
         }
       } catch (err) {
         console.error('Failed to load inventory', err);
       }
     }
     fetchInventory();
-  }, [dispatch]);
+  }, [dispatch, currentPage, filter, monthFilter, yearFilter, query]);
 
-  const filtered = state.inventory.filter((it) => {
-    if (filter !== 'all' && it.cat !== filter) return false;
-
-    const [acqYear, acqMonth] = it.acquired.split('-');
-    if (yearFilter !== 'all' && acqYear !== yearFilter) return false;
-    if (monthFilter !== 'all' && acqMonth !== monthFilter) return false;
-
-    if (query) {
-      const q = query.toLowerCase();
-      return (
-        it.name.toLowerCase().includes(q) ||
-        it.code.toLowerCase().includes(q) ||
-        it.room.toLowerCase().includes(q) ||
-        it.specs.toLowerCase().includes(q)
-      );
-    }
-    return true;
-  });
+  const filtered = state.inventory;
 
   const generateInventoryPDF = () => {
     if (window.showToast) window.showToast('Menyiapkan Laporan PDF…', 'info', 'log');
@@ -222,18 +253,13 @@ export function Inventory() {
     if (window.showToast) window.showToast('Laporan PDF berhasil diunduh!', 'ok');
   };
 
-  const cats = ['all', ...new Set(state.inventory.map((it) => it.cat))];
-  const years = [...new Set(state.inventory.map((it) => it.acquired.split('-')[0]))]
-    .filter(Boolean)
-    .sort();
-
   return (
     <div className="page" style={{ '--role-accent': role ? role.accent : undefined }}>
       <div className="page-head" data-reveal>
         <div>
           <h1 className="page-title">Inventaris</h1>
           <p className="page-sub">
-            {filtered.length} dari {state.inventory.length} aset. Klik kartu untuk membuka detail
+            Menampilkan {filtered.length} dari {totalItems} aset. Klik kartu untuk membuka detail
             dan riwayat maintenance.
           </p>
         </div>
@@ -338,6 +364,33 @@ export function Inventory() {
           </div>
         ))}
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex justify-between items-center mt-6 p-4 border-t border-line" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px', padding: '16px 0', borderTop: '1px solid var(--color-line)' }}>
+          <span className="text-sm text-ink-3" style={{ fontSize: '13px', color: 'var(--ink-3)' }}>
+            Menampilkan {filtered.length} dari {totalItems} aset (Halaman {currentPage} dari {totalPages})
+          </span>
+          <div className="flex gap-2" style={{ display: 'flex', gap: '8px' }}>
+            <button
+              className="btn sm border border-line"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              style={{ opacity: currentPage === 1 ? 0.5 : 1, cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
+            >
+              Sebelumnya
+            </button>
+            <button
+              className="btn sm border border-line"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              style={{ opacity: currentPage === totalPages ? 0.5 : 1, cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' }}
+            >
+              Berikutnya
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

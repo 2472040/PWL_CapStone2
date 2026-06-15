@@ -16,22 +16,18 @@ if (typeof window !== 'undefined') {
   window.clearApiCache = clearApiCache;
 }
 
-// set login flag + store JWT in memory only (never persisted to localStorage to prevent XSS theft)
-export const setToken = (token) => {
-  _memoryToken = token;
-
-  // Only store a non-sensitive login flag in localStorage — the actual JWT lives in memory + HttpOnly cookie
+// set login flag — the actual JWT lives in HttpOnly cookie
+export const setToken = () => {
   localStorage.setItem('loka_logged_in', 'true');
 };
 
 // check if user is logged in using a non-sensitive flag
 export const getToken = () => {
-  return _memoryToken;
+  return localStorage.getItem('loka_logged_in') === 'true';
 };
 
-// clear login flag and memory token
+// clear login flag
 export const removeToken = () => {
-  _memoryToken = null;
   localStorage.removeItem('loka_logged_in');
 };
 
@@ -45,17 +41,12 @@ const getCookie = (name) => {
   return '';
 };
 
-// header helper — includes Bearer token from memory if available
+// header helper — no Bearer token needed since it is handled by HttpOnly cookie
 export const authHeaders = () => {
-  const token = getToken();
-
   return {
     'Content-Type': 'application/json',
     'X-CSRF-Token': getCookie('csrfToken') || '',
     'X-Requested-With': 'XMLHttpRequest',
-    ...(token && {
-      Authorization: `Bearer ${token}`,
-    }),
   };
 };
 
@@ -84,9 +75,9 @@ async function attemptTokenRefresh() {
       }
 
       const data = await res.json();
-      if (data && data.data && data.data.token) {
-        setToken(data.data.token);
-        return data.data.token;
+      if (data && data.data && data.data.user) {
+        setToken();
+        return true;
       }
       throw new Error('Invalid refresh response');
     } catch (e) {

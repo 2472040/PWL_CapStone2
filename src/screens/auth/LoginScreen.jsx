@@ -32,7 +32,7 @@ export function LoginScreen({ onLogin, onBack }) {
         body: JSON.stringify({ email, password }),
       });
 
-      setToken(result.data.token);
+      setToken();
       onLogin(result.data.user);
     } catch (err) {
       setError(err.message || 'Login gagal. Periksa email dan password.');

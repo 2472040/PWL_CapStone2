@@ -34,6 +34,7 @@ describe('Inventory CRUD Integration Test', () => {
     sysadminToken = resSys.body.data.token;
 
     // 4. Create a test room first
+    await Room.destroy({ where: { code: 'TEST-ROOM-INV' } });
     const room = await Room.create({
       code: 'TEST-ROOM-INV',
       name: 'Test Room for Inventory Integration',

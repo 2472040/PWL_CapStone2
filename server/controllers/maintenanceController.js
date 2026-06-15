@@ -92,7 +92,7 @@ const createMaintenance = asyncHandler(async (req, res) => {
 // =============================================
 
 const getBhp = asyncHandler(async (req, res) => {
-  const { page, limit, search } = req.query;
+  const { page, limit, search, year, month } = req.query;
   const parsedLimit = Math.min(parseInt(limit) || 200, 1000);
   const parsedPage = Math.max(parseInt(page) || 1, 1);
   const offset = (parsedPage - 1) * parsedLimit;
@@ -100,6 +100,15 @@ const getBhp = asyncHandler(async (req, res) => {
   const where = {};
   if (search) {
     where[Op.or] = [{ name: { [Op.like]: `%${search}%` } }, { code: { [Op.like]: `%${search}%` } }];
+  }
+
+  if (year && year !== 'all') {
+    where[Op.and] = where[Op.and] || [];
+    where[Op.and].push(sequelize.where(sequelize.fn('YEAR', sequelize.col('last_in')), year));
+  }
+  if (month && month !== 'all') {
+    where[Op.and] = where[Op.and] || [];
+    where[Op.and].push(sequelize.where(sequelize.fn('MONTH', sequelize.col('last_in')), month));
   }
 
   const { count, rows } = await Bhp.findAndCountAll({

@@ -53,10 +53,51 @@ export function BHP() {
   const [monthFilter, setMonthFilter] = useState('all');
   const [yearFilter, setYearFilter] = useState('all');
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [years, setYears] = useState([]);
+  const limit = 10;
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [monthFilter, yearFilter, query]);
+
+  // Fetch unique last_in years once on mount
+  useEffect(() => {
+    async function fetchBhpYears() {
+      try {
+        const res = await apiFetch('/bhp?limit=1000');
+        if (res.data) {
+          const uniqueYears = [
+            ...new Set(
+              res.data.map((b) => (b.last_in && b.last_in !== '-' ? b.last_in.split('-')[0] : null))
+            ),
+          ]
+            .filter(Boolean)
+            .sort();
+          setYears(uniqueYears);
+        }
+      } catch (err) {
+        console.error('Failed to fetch BHP years:', err);
+      }
+    }
+    fetchBhpYears();
+  }, []);
+
   useEffect(() => {
     async function loadBhpData() {
       try {
-        const res = await apiFetch('/bhp');
+        const params = new URLSearchParams({
+          page: currentPage.toString(),
+          limit: limit.toString(),
+        });
+        if (monthFilter !== 'all') params.append('month', monthFilter);
+        if (yearFilter !== 'all') params.append('year', yearFilter);
+        if (query) params.append('search', query);
+
+        const res = await apiFetch(`/bhp?${params.toString()}`);
         if (res.data) {
           const formatted = res.data.map((b) => ({
             id: b.code || b.id.toString(),
@@ -69,13 +110,17 @@ export function BHP() {
             cat: b.category || 'General',
           }));
           dispatch({ type: 'SET_BHP', bhp: formatted });
+          if (res.pagination) {
+            setTotalPages(res.pagination.pages || 1);
+            setTotalItems(res.pagination.total || 0);
+          }
         }
       } catch (err) {
         console.error('Failed to load BHP:', err);
       }
     }
     loadBhpData();
-  }, [dispatch]);
+  }, [dispatch, currentPage, monthFilter, yearFilter, query]);
 
   async function submitRestock() {
     if (!restockQty || isNaN(parseFloat(restockQty)) || parseFloat(restockQty) <= 0) {
@@ -159,35 +204,7 @@ export function BHP() {
     }
   }
 
-  const filteredBhp = state.bhp.filter((b) => {
-    if (yearFilter !== 'all' || monthFilter !== 'all') {
-      if (!b.lastIn || b.lastIn === '-') return false;
-      const parts = b.lastIn.split('-');
-      if (parts.length >= 2) {
-        const [bYear, bMonth] = parts;
-        if (yearFilter !== 'all' && bYear !== yearFilter) return false;
-        if (monthFilter !== 'all' && bMonth !== monthFilter) return false;
-      } else {
-        return false;
-      }
-    }
-
-    if (!query) return true;
-    const q = query.toLowerCase();
-    return (
-      (b.name || '').toLowerCase().includes(q) ||
-      (b.id || '').toLowerCase().includes(q) ||
-      (b.cat || '').toLowerCase().includes(q)
-    );
-  });
-
-  const years = [
-    ...new Set(
-      state.bhp.map((b) => (b.lastIn && b.lastIn !== '-' ? b.lastIn.split('-')[0] : null))
-    ),
-  ]
-    .filter(Boolean)
-    .sort();
+  const filteredBhp = state.bhp;
 
   return (
     <div className="page" style={{ '--role-accent': role ? role.accent : undefined }}>
@@ -340,6 +357,33 @@ export function BHP() {
           );
         })}
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex justify-between items-center mt-6 p-4 border-t border-line" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px', padding: '16px 18px', background: 'rgba(255,255,255,0.01)', borderTop: '1px solid var(--color-line)' }}>
+          <span className="text-sm text-ink-3" style={{ fontSize: '13px', color: 'var(--ink-3)' }}>
+            Menampilkan {filteredBhp.length} dari {totalItems} barang (Halaman {currentPage} dari {totalPages})
+          </span>
+          <div className="flex gap-2" style={{ display: 'flex', gap: '8px' }}>
+            <button
+              className="btn sm border border-line"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              style={{ opacity: currentPage === 1 ? 0.5 : 1, cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
+            >
+              Sebelumnya
+            </button>
+            <button
+              className="btn sm border border-line"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              style={{ opacity: currentPage === totalPages ? 0.5 : 1, cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' }}
+            >
+              Berikutnya
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Staflab Restock Request Modal ── */}
       {showRestockRequest &&
