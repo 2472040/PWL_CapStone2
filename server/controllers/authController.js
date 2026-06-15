@@ -95,7 +95,7 @@ const login = asyncHandler(async (req, res) => {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    path: '/api/auth/refresh',
+    path: '/api/v1/auth/refresh',
   });
 
   // Set CSRF Cookie (Double Submit Cookie Pattern - must be accessible via JS)
@@ -255,7 +255,7 @@ const logout = asyncHandler(async (req, res) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    path: '/api/auth/refresh',
+    path: '/api/v1/auth/refresh',
   });
 
   // Clear CSRF Cookie
@@ -394,7 +394,7 @@ const refresh = asyncHandler(async (req, res) => {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000,
-    path: '/api/auth/refresh',
+    path: '/api/v1/auth/refresh',
   });
 
   // Rotate CSRF token on refresh to limit exposure window

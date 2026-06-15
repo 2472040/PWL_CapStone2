@@ -4,6 +4,7 @@ const compression = require('compression');
 const path = require('path');
 const helmet = require('helmet');
 const { requestLogger, logger } = require('./utils/logger');
+const { correlationMiddleware } = require('./middleware/correlation');
 require('dotenv').config();
 const { sequelize } = require('./models');
 const { parseCookies } = require('./utils/cookies');
@@ -13,6 +14,9 @@ const app = express();
 // =============================================
 // Middleware
 // =============================================
+// Correlation ID tracking must be the first middleware to trace all logs
+app.use(correlationMiddleware);
+
 // Security Hardening with Helmet
 app.use(
   helmet({
@@ -85,7 +89,7 @@ if (process.env.NODE_ENV === 'production') {
 // =============================================
 // Health check (no auth required)
 // =============================================
-app.get('/api/health', async (req, res) => {
+app.get(['/api/health', '/api/v1/health'], async (req, res) => {
   let dbStatus = 'disconnected';
   try {
     await sequelize.authenticate();
@@ -96,7 +100,7 @@ app.get('/api/health', async (req, res) => {
 
   const memoryUsage = process.memoryUsage();
   const status = dbStatus === 'connected' ? 'ok' : 'degraded';
-  
+
   res.status(status === 'ok' ? 200 : 503).json({
     status,
     timestamp: new Date().toISOString(),
@@ -108,19 +112,19 @@ app.get('/api/health', async (req, res) => {
       heapUsed: Math.floor(memoryUsage.heapUsed / 1024 / 1024) + 'MB',
       heapTotal: Math.floor(memoryUsage.heapTotal / 1024 / 1024) + 'MB',
       rss: Math.floor(memoryUsage.rss / 1024 / 1024) + 'MB',
-    }
+    },
   });
 });
 
 // =============================================
-// API Routes
+// API Routes (Version 1)
 // =============================================
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api', require('./routes/admin'));
-app.use('/api/inventory', require('./routes/inventory'));
-app.use('/api/procurement', require('./routes/procurement'));
-app.use('/api', require('./routes/maintenance'));
-app.use('/api/dashboard', require('./routes/dashboard'));
+app.use('/api/v1/auth', require('./routes/auth'));
+app.use('/api/v1', require('./routes/admin'));
+app.use('/api/v1/inventory', require('./routes/inventory'));
+app.use('/api/v1/procurement', require('./routes/procurement'));
+app.use('/api/v1', require('./routes/maintenance'));
+app.use('/api/v1/dashboard', require('./routes/dashboard'));
 
 // =============================================
 // Pug Routes (Server-rendered pages)

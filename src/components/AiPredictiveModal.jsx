@@ -181,7 +181,8 @@ export function AiPredictiveModal({ payload, close }) {
 
             <div className="flex gap-4 justify-center items-center mt-5 mono text-[10px] text-ink-3">
               <div>
-                Epoch: <span className="text-violet font-semibold">{epoch}</span>/{data.epochsTrained}
+                Epoch: <span className="text-violet font-semibold">{epoch}</span>/
+                {data.epochsTrained}
               </div>
               <div className="h-3 w-px bg-surface" />
               <div>
@@ -216,7 +217,9 @@ export function AiPredictiveModal({ payload, close }) {
                     <>
                       Stok diprediksi habis dalam{' '}
                       <span
-                        className={predictedDays < 15 ? 'text-rose font-bold' : 'text-cyan font-bold'}
+                        className={
+                          predictedDays < 15 ? 'text-rose font-bold' : 'text-cyan font-bold'
+                        }
                       >
                         {predictedDays} hari
                       </span>

@@ -15,9 +15,9 @@ const csrfProtection = (req, res, next) => {
 
   if (
     safeMethods.includes(method) ||
-    cleanPath === '/api/auth/login' ||
+    cleanPath === '/api/v1/auth/login' ||
     cleanPath === '/auth/login' ||
-    cleanOriginalUrl === '/api/auth/login' ||
+    cleanOriginalUrl === '/api/v1/auth/login' ||
     cleanOriginalUrl === '/auth/login'
   ) {
     return next();

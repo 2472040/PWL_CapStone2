@@ -1,4 +1,4 @@
-const API_BASE = '/api';
+const API_BASE = '/api/v1';
 
 // In-memory JWT storage (fallback when cookie doesn't work through Vite proxy)
 let _memoryToken = null;

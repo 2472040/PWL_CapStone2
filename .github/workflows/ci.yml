@@ -1,0 +1,77 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: lokalab_db
+          MYSQL_USER: lokalab_user
+          MYSQL_PASSWORD: lokalab_password
+          MYSQL_ROOT_PASSWORD: root_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check code formatting
+        run: npm run format:check
+
+      - name: Run ESLint check
+        run: npm run lint
+
+      - name: Seed Database
+        env:
+          NODE_ENV: test
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_NAME: lokalab_db
+          DB_USER: lokalab_user
+          DB_PASS: lokalab_password
+          JWT_SECRET: testing-secret-key-12345
+          JWT_REFRESH_SECRET: testing-refresh-secret-12345
+          BACKUP_ENCRYPTION_SECRET: testing-backup-secret-12345
+          AUDIT_LOG_SECRET: testing-audit-secret-12345
+        run: npm run seed
+
+      - name: Run Unit and Integration Tests
+        env:
+          NODE_ENV: test
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_NAME: lokalab_db
+          DB_USER: lokalab_user
+          DB_PASS: lokalab_password
+          JWT_SECRET: testing-secret-key-12345
+          JWT_REFRESH_SECRET: testing-refresh-secret-12345
+          BACKUP_ENCRYPTION_SECRET: testing-backup-secret-12345
+          AUDIT_LOG_SECRET: testing-audit-secret-12345
+        run: npm run test
+
+      - name: Build frontend production assets
+        run: npm run build

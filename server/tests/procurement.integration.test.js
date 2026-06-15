@@ -17,7 +17,7 @@ describe('Procurement Workflow Integration Test', () => {
 
     // 1. Login as Kalab
     const resKalab = await request(app)
-      .post('/api/auth/login')
+      .post('/api/v1/auth/login')
       .send({ email: 'pradipta@kampus.id', password: 'password123' });
 
     expect(resKalab.status).toBe(200);
@@ -25,7 +25,7 @@ describe('Procurement Workflow Integration Test', () => {
 
     // 2. Login as Kaprodi
     const resKaprodi = await request(app)
-      .post('/api/auth/login')
+      .post('/api/v1/auth/login')
       .send({ email: 'hendra@kampus.id', password: 'password123' });
 
     expect(resKaprodi.status).toBe(200);
@@ -33,7 +33,7 @@ describe('Procurement Workflow Integration Test', () => {
 
     // 3. Login as Admin
     const resAdmin = await request(app)
-      .post('/api/auth/login')
+      .post('/api/v1/auth/login')
       .send({ email: 'faqih@kampus.id', password: 'password123' });
 
     expect(resAdmin.status).toBe(200);
@@ -65,7 +65,7 @@ describe('Procurement Workflow Integration Test', () => {
     };
 
     const resCreate = await request(app)
-      .post('/api/procurement/drafts')
+      .post('/api/v1/procurement/drafts')
       .set('Authorization', `Bearer ${kalabToken}`)
       .set('Cookie', 'csrfToken=test_csrf')
       .set('x-csrf-token', 'test_csrf')
@@ -78,7 +78,7 @@ describe('Procurement Workflow Integration Test', () => {
 
     // B. Kalab submits the draft for review
     const resSubmit = await request(app)
-      .post(`/api/procurement/drafts/${createdDraftId}/submit`)
+      .post(`/api/v1/procurement/drafts/${createdDraftId}/submit`)
       .set('Authorization', `Bearer ${kalabToken}`)
       .set('Cookie', 'csrfToken=test_csrf')
       .set('x-csrf-token', 'test_csrf')
@@ -89,7 +89,7 @@ describe('Procurement Workflow Integration Test', () => {
 
     // C. Kaprodi views pending drafts for review
     const resPending = await request(app)
-      .get('/api/procurement/review')
+      .get('/api/v1/procurement/review')
       .set('Authorization', `Bearer ${kaprodiToken}`);
 
     expect(resPending.status).toBe(200);
@@ -108,7 +108,7 @@ describe('Procurement Workflow Integration Test', () => {
     }));
 
     const resReview = await request(app)
-      .post(`/api/procurement/drafts/${createdDraftId}/approve`)
+      .post(`/api/v1/procurement/drafts/${createdDraftId}/approve`)
       .set('Authorization', `Bearer ${kaprodiToken}`)
       .set('Cookie', 'csrfToken=test_csrf')
       .set('x-csrf-token', 'test_csrf')
@@ -118,7 +118,7 @@ describe('Procurement Workflow Integration Test', () => {
 
     // E. Kaprodi finalizes the draft
     const resFinalize = await request(app)
-      .post(`/api/procurement/drafts/${createdDraftId}/finalize`)
+      .post(`/api/v1/procurement/drafts/${createdDraftId}/finalize`)
       .set('Authorization', `Bearer ${kaprodiToken}`)
       .set('Cookie', 'csrfToken=test_csrf')
       .set('x-csrf-token', 'test_csrf')
@@ -136,7 +136,7 @@ describe('Procurement Workflow Integration Test', () => {
   it('should block unauthorized roles (like Admin) from finalising the draft', async () => {
     // Try to finalize using Admin token (should be forbidden 403)
     const resFinalizeBad = await request(app)
-      .post(`/api/procurement/drafts/1/finalize`)
+      .post(`/api/v1/procurement/drafts/1/finalize`)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Cookie', 'csrfToken=test_csrf')
       .set('x-csrf-token', 'test_csrf')
@@ -154,7 +154,7 @@ describe('Procurement Workflow Integration Test', () => {
     };
 
     const res = await request(app)
-      .post('/api/procurement/drafts')
+      .post('/api/v1/procurement/drafts')
       .set('Authorization', `Bearer ${kalabToken}`)
       .set('Cookie', 'csrfToken=test_csrf')
       .set('x-csrf-token', 'test_csrf')
@@ -175,7 +175,7 @@ describe('Procurement Workflow Integration Test', () => {
     };
 
     const resCreate = await request(app)
-      .post('/api/procurement/drafts')
+      .post('/api/v1/procurement/drafts')
       .set('Authorization', `Bearer ${kalabToken}`)
       .set('Cookie', 'csrfToken=test_csrf')
       .set('x-csrf-token', 'test_csrf')
@@ -186,7 +186,7 @@ describe('Procurement Workflow Integration Test', () => {
 
     // 2. Kalab submits the draft
     const resSubmit = await request(app)
-      .post(`/api/procurement/drafts/${draftId}/submit`)
+      .post(`/api/v1/procurement/drafts/${draftId}/submit`)
       .set('Authorization', `Bearer ${kalabToken}`)
       .set('Cookie', 'csrfToken=test_csrf')
       .set('x-csrf-token', 'test_csrf')
@@ -196,7 +196,7 @@ describe('Procurement Workflow Integration Test', () => {
 
     // 3. Kaprodi requests revision with notes
     const resRev = await request(app)
-      .post(`/api/procurement/drafts/${draftId}/revision`)
+      .post(`/api/v1/procurement/drafts/${draftId}/revision`)
       .set('Authorization', `Bearer ${kaprodiToken}`)
       .set('Cookie', 'csrfToken=test_csrf')
       .set('x-csrf-token', 'test_csrf')
@@ -208,7 +208,7 @@ describe('Procurement Workflow Integration Test', () => {
 
     // 4. Kalab re-submits the draft (validating that it clears revision notes)
     const resReSubmit = await request(app)
-      .post(`/api/procurement/drafts/${draftId}/submit`)
+      .post(`/api/v1/procurement/drafts/${draftId}/submit`)
       .set('Authorization', `Bearer ${kalabToken}`)
       .set('Cookie', 'csrfToken=test_csrf')
       .set('x-csrf-token', 'test_csrf')

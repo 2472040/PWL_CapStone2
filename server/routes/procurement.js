@@ -419,10 +419,6 @@ router.post('/drafts/:id/complete', authorize('admin'), completeDraft);
  *       404:
  *         description: Draf pengadaan tidak ditemukan
  */
-router.get(
-  '/drafts/:id/pdf',
-  authorize('sysadmin', 'kalab', 'kaprodi', 'admin'),
-  generateBastPdf
-);
+router.get('/drafts/:id/pdf', authorize('sysadmin', 'kalab', 'kaprodi', 'admin'), generateBastPdf);
 
 module.exports = router;

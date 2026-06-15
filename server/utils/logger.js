@@ -1,11 +1,22 @@
 const winston = require('winston');
 const DailyRotateFile = require('winston-daily-rotate-file');
 const path = require('path');
+const { getCorrelationId } = require('../middleware/correlation');
 
 const logDir = path.join(__dirname, '../logs');
 
+// Custom winston format to append the active correlation ID
+const addCorrelationId = winston.format((info) => {
+  const correlationId = getCorrelationId();
+  if (correlationId) {
+    info.correlationId = correlationId;
+  }
+  return info;
+});
+
 // Define custom format for console (readable/colorized) and files (structured JSON)
 const customFormat = winston.format.combine(
+  addCorrelationId(),
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }),
   winston.format.errors({ stack: true }),
   winston.format.splat(),
@@ -13,10 +24,12 @@ const customFormat = winston.format.combine(
 );
 
 const consoleFormat = winston.format.combine(
+  addCorrelationId(),
   winston.format.colorize(),
-  winston.format.printf(({ timestamp, level, message, stack, ...meta }) => {
+  winston.format.printf(({ timestamp, level, message, stack, correlationId, ...meta }) => {
+    const correlationStr = correlationId ? ` [ReqID: ${correlationId}]` : '';
     const metaStr = Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : '';
-    return `[${timestamp}] ${level}: ${message}${stack ? `\n${stack}` : ''}${metaStr}`;
+    return `[${timestamp}]${correlationStr} ${level}: ${message}${stack ? `\n${stack}` : ''}${metaStr}`;
   })
 );
 

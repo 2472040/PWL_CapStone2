@@ -291,7 +291,7 @@ function App() {
       localStorage.removeItem('loka-role');
     } catch (e) {}
 
-    fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
+    fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
   }
 
   return (

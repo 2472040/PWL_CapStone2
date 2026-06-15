@@ -282,11 +282,7 @@ export function Dashboard() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button
-            className="btn"
-            onClick={handleExportCSV}
-            title="Export ke CSV"
-          >
+          <button className="btn" onClick={handleExportCSV} title="Export ke CSV">
             <Icon name="download" size={13} /> Export
           </button>
           {state.role === 'kalab' && (

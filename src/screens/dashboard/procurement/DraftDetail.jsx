@@ -22,7 +22,18 @@ export function DraftDetail({ draft, onBack, mode }) {
   const isStaflab = mode === 'staflab';
 
   const exportToCSV = () => {
-    const headers = ['ID', 'Tipe', 'Nama Item', 'Jumlah', 'Satuan', 'Harga Satuan', 'Subtotal', 'Link Pembelian', 'Mengganti Aset', 'Status Persetujuan'];
+    const headers = [
+      'ID',
+      'Tipe',
+      'Nama Item',
+      'Jumlah',
+      'Satuan',
+      'Harga Satuan',
+      'Subtotal',
+      'Link Pembelian',
+      'Mengganti Aset',
+      'Status Persetujuan',
+    ];
     const data = d.items.map((it) => [
       it.id,
       it.kind,
@@ -938,7 +949,10 @@ export function KalabKaprodiItems({
                         href={it.link.startsWith('http') ? it.link : `https://${it.link}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{ color: 'var(--role-accent, var(--color-violet))', textDecoration: 'underline' }}
+                        style={{
+                          color: 'var(--role-accent, var(--color-violet))',
+                          textDecoration: 'underline',
+                        }}
                       >
                         Link Pembelian
                       </a>
@@ -954,7 +968,10 @@ export function KalabKaprodiItems({
               </div>
               <div className="item-qty">
                 {it.qty}{' '}
-                <span className="text-3" style={{ fontSize: '11px', opacity: 0.75, fontWeight: 'normal' }}>
+                <span
+                  className="text-3"
+                  style={{ fontSize: '11px', opacity: 0.75, fontWeight: 'normal' }}
+                >
                   ({it.unit})
                 </span>
               </div>
