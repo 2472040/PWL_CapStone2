@@ -5,6 +5,8 @@ const path = require('path');
 const helmet = require('helmet');
 const { requestLogger, logger } = require('./utils/logger');
 require('dotenv').config();
+const { sequelize } = require('./models');
+const { parseCookies } = require('./utils/cookies');
 
 const app = express();
 
@@ -83,8 +85,31 @@ if (process.env.NODE_ENV === 'production') {
 // =============================================
 // Health check (no auth required)
 // =============================================
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get('/api/health', async (req, res) => {
+  let dbStatus = 'disconnected';
+  try {
+    await sequelize.authenticate();
+    dbStatus = 'connected';
+  } catch (err) {
+    console.error('Database connection verification failed in health check:', err);
+  }
+
+  const memoryUsage = process.memoryUsage();
+  const status = dbStatus === 'connected' ? 'ok' : 'degraded';
+  
+  res.status(status === 'ok' ? 200 : 503).json({
+    status,
+    timestamp: new Date().toISOString(),
+    services: {
+      database: dbStatus,
+    },
+    uptime: Math.floor(process.uptime()),
+    memory: {
+      heapUsed: Math.floor(memoryUsage.heapUsed / 1024 / 1024) + 'MB',
+      heapTotal: Math.floor(memoryUsage.heapTotal / 1024 / 1024) + 'MB',
+      rss: Math.floor(memoryUsage.rss / 1024 / 1024) + 'MB',
+    }
+  });
 });
 
 // =============================================
@@ -108,13 +133,7 @@ app.get(
   '/print/label/:id',
   async (req, res, next) => {
     // Lightweight auth gate for server-rendered page: redirect to login if no token cookie
-    const cookies = req.headers.cookie
-      ? req.headers.cookie.split(';').reduce((acc, c) => {
-          const [k, ...v] = c.split('=');
-          acc[k.trim()] = decodeURI(v.join('='));
-          return acc;
-        }, {})
-      : {};
+    const cookies = req.headers.cookie ? parseCookies(req.headers.cookie) : {};
     if (!cookies.token) {
       return res.redirect('/login');
     }

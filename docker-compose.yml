@@ -48,10 +48,10 @@ services:
       - NODE_ENV=development
       - PORT=3000
       - CORS_ORIGIN=http://localhost:5173
-      - JWT_SECRET=lokalab-super-secure-jwt-secret-key-2026
-      - JWT_REFRESH_SECRET=lokalab-super-secure-jwt-refresh-secret-2026
-      - BACKUP_ENCRYPTION_SECRET=lokalab-super-secure-backup-secret-key-2026
-      - AUDIT_LOG_SECRET=lokalab-super-secure-audit-secret-key-2026
+      - JWT_SECRET=${JWT_SECRET:-lokalab-super-secure-jwt-secret-key-2026}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-lokalab-super-secure-jwt-refresh-secret-2026}
+      - BACKUP_ENCRYPTION_SECRET=${BACKUP_ENCRYPTION_SECRET:-lokalab-super-secure-backup-secret-key-2026}
+      - AUDIT_LOG_SECRET=${AUDIT_LOG_SECRET:-lokalab-super-secure-audit-secret-key-2026}
       - DB_HOST=db
       - DB_PORT=3306
       - DB_NAME=lokalab_db

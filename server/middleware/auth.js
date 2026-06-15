@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { User, RevokedToken } = require('../models');
+const { parseCookies } = require('../utils/cookies');
 
 // Persistent blacklist for JTI values in MySQL
 const tokenBlacklist = {
@@ -52,18 +53,7 @@ const tokenBlacklist = {
   },
 };
 
-/**
- * Helper to parse cookies from Header
- */
-const parseCookies = (cookieHeader) => {
-  const list = {};
-  if (!cookieHeader) return list;
-  cookieHeader.split(';').forEach((cookie) => {
-    const parts = cookie.split('=');
-    list[parts.shift().trim()] = decodeURI(parts.join('='));
-  });
-  return list;
-};
+// parseCookies imported from ../utils/cookies
 
 /**
  * JWT Authentication middleware

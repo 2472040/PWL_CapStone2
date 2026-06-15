@@ -50,3 +50,7 @@ coverage/
 html_artifacts/
 mcp/
 
+# Database backups
+server/backups/
+*.loka
+
