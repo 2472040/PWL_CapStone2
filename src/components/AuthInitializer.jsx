@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useStore, D } from './app-shell.jsx';
-import { apiFetch, getToken } from '../services/api.js';
+import { apiFetch, getToken } from '../services/api';
 import { io } from 'socket.io-client';
 
 export function AuthInitializer({ pendingRole }) {

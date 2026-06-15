@@ -7,7 +7,7 @@ import {
   StatTile,
   useSearch,
 } from '../../../components/app-shell.jsx';
-import { apiFetch } from '../../../services/api.js';
+import { apiFetch } from '../../../services/api';
 
 export function Users() {
   const { state, dispatch } = useStore();

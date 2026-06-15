@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { apiFetch, setToken } from '../../services/api.js';
+import { apiFetch, setToken } from '../../services/api';
 
 const DEMO_ACCOUNTS = [
   { label: 'Administrator', email: 'anindita@kampus.id' },

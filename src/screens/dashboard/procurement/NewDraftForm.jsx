@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStore, useToast, D, Icon } from '../../../components/app-shell.jsx';
-import { apiFetch } from '../../../services/api.js';
+import { apiFetch } from '../../../services/api';
 import { createDraftSchema } from '../../../schemas/procurementSchema.js';
 
 function formatThousand(val) {

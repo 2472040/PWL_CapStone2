@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStore, Icon } from './app-shell.jsx';
-import { apiFetch } from '../services/api.js';
+import { apiFetch } from '../services/api';
 
 export function AiPredictiveModal({ payload, close }) {
   const { state } = useStore();

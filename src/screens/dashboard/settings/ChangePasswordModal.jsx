@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useToast } from '../../../components/app-shell.jsx';
-import { apiFetch } from '../../../services/api.js';
+import { apiFetch } from '../../../services/api';
 
 export function ChangePasswordModal({ close }) {
   const toast = useToast();

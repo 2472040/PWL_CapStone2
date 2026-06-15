@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStore, useToast, Icon, QR } from '../../../components/app-shell.jsx';
-import { apiFetch } from '../../../services/api.js';
+import { apiFetch } from '../../../services/api';
 
 export function MaintenanceForm({ payload, close }) {
   const { state, dispatch } = useStore();

@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useStore, useToast, D, Icon } from '../../../components/app-shell.jsx';
 import { useNavigate } from 'react-router-dom';
-import { apiFetch } from '../../../services/api.js';
+import { apiFetch } from '../../../services/api';
 import { AdminReceiveGrid } from './ReceivingAdmin.jsx';
 
 function formatThousand(val) {

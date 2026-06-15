@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useStore, useToast, Icon, D, useSearch, CustomSelect } from '../../../components/app-shell.jsx';
-import { apiFetch } from '../../../services/api.js';
+import { apiFetch } from '../../../services/api';
 
 function formatThousand(val) {
   if (val === undefined || val === null || val === '') return '';

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStore, useToast, D, Icon, themeTransition } from '../../../components/app-shell.jsx';
-import { apiFetch } from '../../../services/api.js';
+import { apiFetch } from '../../../services/api';
 
 export function SettingsSection({ title, sub, children, reveal }) {
   return (

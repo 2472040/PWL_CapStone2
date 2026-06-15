@@ -1,11 +1,28 @@
-import React, { useState, useEffect, useRef, createContext, useContext } from 'react';
+import React, { useState, useEffect, useRef, createContext, useContext, ReactNode } from 'react';
 import { Icon } from './app-icons.jsx';
 
-const ToastCtx = createContext(null);
+export interface ToastItem {
+  id: string;
+  msg: string;
+  kind: 'ok' | 'warn' | 'info';
+  icon?: string;
+  exiting?: boolean;
+}
 
-export function ToastProvider({ children }) {
-  const [items, setItems] = useState([]);
-  const push = (msg, kind = 'ok', icon) => {
+export type PushToastFn = (msg: string, kind?: 'ok' | 'warn' | 'info', icon?: string) => void;
+
+const ToastCtx = createContext<PushToastFn | null>(null);
+
+declare global {
+  interface Window {
+    showToast?: PushToastFn;
+    gsap?: any;
+  }
+}
+
+export function ToastProvider({ children }: { children: ReactNode }) {
+  const [items, setItems] = useState<ToastItem[]>([]);
+  const push: PushToastFn = (msg, kind = 'ok', icon) => {
     const id = Math.random().toString(36).slice(2);
     setItems((xs) => [...xs, { id, msg, kind, icon }]);
     setTimeout(() => {
@@ -15,7 +32,9 @@ export function ToastProvider({ children }) {
   };
 
   // Global access for non-React handlers (demo buttons)
-  if (!window.showToast) window.showToast = push;
+  if (typeof window !== 'undefined' && !window.showToast) {
+    window.showToast = push;
+  }
 
   return (
     <ToastCtx.Provider value={push}>
@@ -29,10 +48,10 @@ export function ToastProvider({ children }) {
   );
 }
 
-function Toast({ t }) {
-  const ref = useRef();
+function Toast({ t }: { t: ToastItem }) {
+  const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (window.gsap && ref.current) {
+    if (typeof window !== 'undefined' && window.gsap && ref.current) {
       window.gsap.from(ref.current, { x: 30, opacity: 0, duration: 0.35, ease: 'power3.out' });
     }
   }, []);
@@ -55,4 +74,10 @@ function Toast({ t }) {
   );
 }
 
-export const useToast = () => useContext(ToastCtx);
+export const useToast = (): PushToastFn => {
+  const ctx = useContext(ToastCtx);
+  if (!ctx) {
+    return () => {};
+  }
+  return ctx;
+};

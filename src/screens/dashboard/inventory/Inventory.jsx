@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStore, StatTile, D, Icon, QR, useSearch, CustomSelect } from '../../../components/app-shell.jsx';
-import { apiFetch } from '../../../services/api.js';
+import { apiFetch } from '../../../services/api';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 

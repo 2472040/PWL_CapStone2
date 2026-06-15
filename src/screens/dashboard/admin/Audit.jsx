@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useStore, useToast, D, Icon, useSearch } from '../../../components/app-shell.jsx';
-import { apiFetch } from '../../../services/api.js';
+import { apiFetch } from '../../../services/api';
 
 function CustomDatePicker({ value, onChange, placeholder }) {
   const [open, setOpen] = useState(false);

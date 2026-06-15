@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useStore, StatTile, D, Icon } from '../../components/app-shell.jsx';
-import { apiFetch } from '../../services/api.js';
+import { apiFetch } from '../../services/api';
 import { FinancialChart } from '../../components/FinancialChart.jsx';
 
 export function Dashboard() {

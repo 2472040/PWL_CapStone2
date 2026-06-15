@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStore, useToast, D, Icon, useSearch, CustomSelect } from '../../../components/app-shell.jsx';
-import { apiFetch } from '../../../services/api.js';
+import { apiFetch } from '../../../services/api';
 import { DraftDetail } from './DraftDetail.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 

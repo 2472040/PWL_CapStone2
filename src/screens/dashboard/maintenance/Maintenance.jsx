@@ -8,7 +8,7 @@ import {
   useToast,
 } from '../../../components/app-shell.jsx';
 import { useNavigate } from 'react-router-dom';
-import { apiFetch } from '../../../services/api.js';
+import { apiFetch } from '../../../services/api';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 

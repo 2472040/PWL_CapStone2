@@ -1,7 +1,7 @@
 // app-main.jsx — wires up landing page + shell + screens + drawer registry
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
-import { removeToken, getToken } from './services/api.js';
+import { removeToken, getToken } from './services/api';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import {
   DrawerContent,

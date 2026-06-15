@@ -1,48 +1,60 @@
 const API_BASE = '/api/v1';
 
-// In-memory JWT storage (fallback when cookie doesn't work through Vite proxy)
-let _memoryToken = null;
+interface CacheEntry {
+  data: any;
+  timestamp: number;
+}
 
 // Dynamic In-memory API Cache layer (TanStack Query-like lightweight interceptor)
-const _apiCache = new Map();
+const _apiCache = new Map<string, CacheEntry>();
 const CACHE_TTL = 15000; // 15 seconds TTL
 
-export const clearApiCache = () => {
+export const clearApiCache = (): void => {
   _apiCache.clear();
   console.log('⚡ [API Cache] Cache successfully invalidated.');
 };
+
+declare global {
+  interface Window {
+    clearApiCache?: () => void;
+    __lokaLogout?: () => void;
+  }
+}
 
 if (typeof window !== 'undefined') {
   window.clearApiCache = clearApiCache;
 }
 
 // set login flag — the actual JWT lives in HttpOnly cookie
-export const setToken = () => {
+export const setToken = (): void => {
   localStorage.setItem('loka_logged_in', 'true');
 };
 
 // check if user is logged in using a non-sensitive flag
-export const getToken = () => {
+export const getToken = (): boolean => {
   return localStorage.getItem('loka_logged_in') === 'true';
 };
 
 // clear login flag
-export const removeToken = () => {
+export const removeToken = (): void => {
   localStorage.removeItem('loka_logged_in');
 };
 
 // helper to extract a cookie value on frontend
-const getCookie = (name) => {
+const getCookie = (name: string): string => {
   try {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
+    if (parts.length === 2) {
+      const popped = parts.pop();
+      if (popped) return popped.split(';').shift() || '';
+    }
   } catch (e) {}
   return '';
 };
 
 // header helper — no Bearer token needed since it is handled by HttpOnly cookie
-export const authHeaders = () => {
+export const authHeaders = (): Record<string, string> => {
   return {
     'Content-Type': 'application/json',
     'X-CSRF-Token': getCookie('csrfToken') || '',
@@ -50,9 +62,9 @@ export const authHeaders = () => {
   };
 };
 
-let _refreshPromise = null;
+let _refreshPromise: Promise<boolean> | null = null;
 
-async function attemptTokenRefresh() {
+async function attemptTokenRefresh(): Promise<boolean> {
   if (_refreshPromise) {
     return _refreshPromise;
   }
@@ -96,7 +108,7 @@ async function attemptTokenRefresh() {
 }
 
 // wrapper fetch with credentials: 'include' support
-export async function apiFetch(endpoint, options = {}) {
+export async function apiFetch(endpoint: string, options: RequestInit = {}): Promise<any> {
   const method = (options.method || 'GET').toUpperCase();
 
   // Clear cache on write operations (POST, PUT, DELETE)
@@ -105,7 +117,6 @@ export async function apiFetch(endpoint, options = {}) {
   }
 
   // Handle dynamic caching for GET requests — use endpoint only as cache key
-  // (GET requests shouldn't have bodies; including body in key risks collisions)
   const cacheKey = endpoint;
   if (method === 'GET') {
     const cached = _apiCache.get(cacheKey);
@@ -122,7 +133,7 @@ export async function apiFetch(endpoint, options = {}) {
       credentials: 'include', // Ensure HttpOnly cookies are attached
       headers: {
         ...authHeaders(),
-        ...(options.headers || {}),
+        ...(options.headers as Record<string, string> || {}),
       },
     });
 
@@ -139,7 +150,7 @@ export async function apiFetch(endpoint, options = {}) {
           credentials: 'include',
           headers: {
             ...authHeaders(),
-            ...(options.headers || {}),
+            ...(options.headers as Record<string, string> || {}),
           },
         });
       } catch (refreshErr) {
@@ -152,7 +163,7 @@ export async function apiFetch(endpoint, options = {}) {
     if (contentType && contentType.includes('application/json')) {
       result = await response.json();
     } else {
-      const text = await response.text();
+      await response.text();
       // Handle HTML proxy errors (e.g. 401 from middleware)
       if (response.status === 401 && endpoint !== '/auth/login' && endpoint !== '/auth/refresh') {
         removeToken();
@@ -186,10 +197,12 @@ export async function apiFetch(endpoint, options = {}) {
     }
 
     return result;
-  } catch (err) {
+  } catch (err: any) {
     if (
-      err.message.includes('Unexpected end of JSON input') ||
-      err.message.includes('Failed to fetch')
+      err.message && (
+        err.message.includes('Unexpected end of JSON input') ||
+        err.message.includes('Failed to fetch')
+      )
     ) {
       throw new Error(
         'Gagal terhubung ke server. Pastikan backend sudah dijalankan (npm run server atau npm run dev:all).'
