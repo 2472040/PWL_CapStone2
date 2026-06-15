@@ -62,7 +62,7 @@ function CustomDatePicker({ value, onChange, placeholder }) {
   };
 
   return (
-    <div className="relative inline-block" ref={ref}>
+    <div className="relative inline-block" ref={ref} style={{ zIndex: 99 }}>
       <button
         type="button"
         onClick={() => setOpen(!open)}
@@ -76,6 +76,7 @@ function CustomDatePicker({ value, onChange, placeholder }) {
           height: '32px',
           minWidth: '120px',
           justifyContent: 'space-between',
+          cursor: 'pointer',
         }}
       >
         <span>{displayValue || placeholder}</span>
@@ -84,11 +85,9 @@ function CustomDatePicker({ value, onChange, placeholder }) {
 
       {open && (
         <div
-          className="absolute mt-1.5 p-4 rounded-xl border border-line z-[99] animate-fade-in text-left"
+          className="absolute mt-1.5 p-4 rounded-xl border border-line z-[999] animate-fade-in text-left"
           style={{
-            background: 'rgba(15, 15, 20, 0.95)',
-            backdropFilter: 'blur(24px)',
-            WebkitBackdropFilter: 'blur(24px)',
+            background: '#121214', // Solid dark charcoal, fully opaque
             width: '260px',
             boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
             left: 0,
@@ -404,6 +403,8 @@ export function Audit() {
         style={{
           background: 'rgba(255, 255, 255, 0.02)',
           backdropFilter: 'blur(10px)',
+          position: 'relative',
+          zIndex: 20, // Elevate stacking context of filter bar above table wrap
         }}
       >
         <div className="flex flex-wrap items-center gap-1.5">
@@ -444,7 +445,7 @@ export function Audit() {
         </div>
 
         {/* Custom Themed Date Picker Filter */}
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap" style={{ position: 'relative' }}>
           <span className="text-xs text-ink-3 fw-5">Tanggal:</span>
           <CustomDatePicker
             value={startDate}
@@ -489,17 +490,18 @@ export function Audit() {
         </div>
       )}
 
-      <div className="table-wrap" data-reveal>
-        <table className="tbl" style={{ minWidth: '1000px' }}>
+      {/* Added data-lenis-prevent to enable native horizontal scroll without Lenis intercepting */}
+      <div className="table-wrap" data-lenis-prevent data-reveal>
+        <table className="tbl" style={{ minWidth: '1100px' }}>
           <thead>
             <tr>
-              <th>Waktu</th>
-              <th>Pengguna</th>
-              <th>Role</th>
-              <th>Aksi</th>
-              <th>Target</th>
-              <th>Detail</th>
-              <th>IP</th>
+              <th style={{ width: '160px', minWidth: '160px' }}>Waktu</th>
+              <th style={{ width: '160px', minWidth: '160px' }}>Pengguna</th>
+              <th style={{ width: '100px', minWidth: '100px' }}>Role</th>
+              <th style={{ width: '160px', minWidth: '160px' }}>Aksi</th>
+              <th style={{ width: '160px', minWidth: '160px' }}>Target</th>
+              <th style={{ width: '320px', minWidth: '320px' }}>Detail</th>
+              <th style={{ width: '120px', minWidth: '120px' }}>IP</th>
             </tr>
           </thead>
           <tbody>
@@ -520,7 +522,7 @@ export function Audit() {
                 <td className="text-sm">{a.target}</td>
                 <td
                   className="text-xs"
-                  style={{ maxWidth: 320, wordBreak: 'break-word', color: 'var(--color-ink-2)' }}
+                  style={{ minWidth: '320px', width: '320px', wordBreak: 'break-word', color: 'var(--color-ink-2)', lineHeight: '1.5' }}
                 >
                   {a.details || <span style={{ opacity: 0.3 }}>—</span>}
                 </td>

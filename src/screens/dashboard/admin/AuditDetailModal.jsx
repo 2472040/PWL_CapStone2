@@ -37,7 +37,7 @@ export function AuditDetailModal({ payload: selectedLog, close }) {
       </div>
 
       {/* Modal Content */}
-      <div className="p-6 space-y-4 text-sm overflow-y-auto" style={{ maxHeight: '70vh' }}>
+      <div className="p-6 space-y-4 text-sm overflow-y-auto" style={{ maxHeight: '70vh' }} data-lenis-prevent>
         <div className="grid grid-cols-3 gap-2 py-2.5 border-b border-white/5">
           <span className="text-ink-3">Waktu</span>
           <span className="col-span-2 mono text-xs font-medium text-ink-2">{selectedLog.ts}</span>
