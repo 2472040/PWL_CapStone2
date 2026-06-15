@@ -1,8 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { useStore, useToast, D, Icon, useSearch } from '../../../components/app-shell.jsx';
+import { useStore, useToast, D, Icon, useSearch, CustomSelect } from '../../../components/app-shell.jsx';
 import { apiFetch } from '../../../services/api.js';
 import { DraftDetail } from './DraftDetail.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const monthOptions = [
+  { value: 'all', label: 'Semua Bulan' },
+  { value: '01', label: 'Januari' },
+  { value: '02', label: 'Februari' },
+  { value: '03', label: 'Maret' },
+  { value: '04', label: 'April' },
+  { value: '05', label: 'Mei' },
+  { value: '06', label: 'Juni' },
+  { value: '07', label: 'Juli' },
+  { value: '08', label: 'Agustus' },
+  { value: '09', label: 'September' },
+  { value: '10', label: 'Oktober' },
+  { value: '11', label: 'November' },
+  { value: '12', label: 'Desember' }
+];
 
 export function PengadaanKalab() {
   const { state, dispatch } = useStore();
@@ -140,41 +156,23 @@ export function PengadaanKalab() {
           </div>
 
           <div data-reveal className="flex flex-wrap gap-2 mb-[18px]">
-            <select
-              className="select sm"
+            <CustomSelect
               value={monthFilter}
-              onChange={(e) => setMonthFilter(e.target.value)}
-              title="Filter bulan"
+              onChange={setMonthFilter}
+              options={monthOptions}
               style={{ width: '130px' }}
-            >
-              <option value="all">Semua Bulan</option>
-              <option value="01">Januari</option>
-              <option value="02">Februari</option>
-              <option value="03">Maret</option>
-              <option value="04">April</option>
-              <option value="05">Mei</option>
-              <option value="06">Juni</option>
-              <option value="07">Juli</option>
-              <option value="08">Agustus</option>
-              <option value="09">September</option>
-              <option value="10">Oktober</option>
-              <option value="11">November</option>
-              <option value="12">Desember</option>
-            </select>
-            <select
-              className="select sm"
+              placeholder="Semua Bulan"
+            />
+            <CustomSelect
               value={yearFilter}
-              onChange={(e) => setYearFilter(e.target.value)}
-              title="Filter tahun"
+              onChange={setYearFilter}
+              options={[
+                { value: 'all', label: 'Semua Tahun' },
+                ...years.map((y) => ({ value: y, label: y }))
+              ]}
               style={{ width: '130px' }}
-            >
-              <option value="all">Semua Tahun</option>
-              {years.map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </select>
+              placeholder="Semua Tahun"
+            />
             <button
               className="btn sm"
               onClick={() => setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))}

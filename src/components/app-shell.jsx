@@ -30,3 +30,4 @@ export { Sidebar } from './sidebar.jsx';
 // Re-export shared static assets and utilities
 export { LOKA as D } from '../data/app-data.jsx';
 export { Icon, QR, downloadQR } from './app-icons.jsx';
+export { CustomSelect } from './CustomSelect.jsx';

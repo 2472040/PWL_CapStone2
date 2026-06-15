@@ -1238,3 +1238,99 @@ html[data-theme='light'] select option {
     color 0.2s,
     border-color 0.2s;
 }
+
+/* ── Custom Select (Dropdown) ── */
+.custom-select-container {
+  display: inline-block;
+  font-size: 13px;
+  font-family: var(--font-sans);
+}
+.custom-select-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-ink);
+  background-color: #16151a;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  outline: none;
+  min-width: 130px;
+  height: 32px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.custom-select-trigger:focus {
+  border-color: var(--color-violet);
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15);
+}
+.custom-select-trigger .chevron-icon {
+  color: var(--color-ink-3);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+.custom-select-trigger .chevron-icon.open {
+  transform: rotate(180deg);
+}
+
+.custom-select-options {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 50;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background-color: #16151a;
+  border: 1px solid var(--color-line-2);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  min-width: 140px;
+  max-height: 260px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.custom-select-option {
+  padding: 8px 12px;
+  border-radius: 6px;
+  color: var(--color-ink-2);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.custom-select-option:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+  color: var(--color-ink);
+}
+.custom-select-option.selected {
+  background-color: rgba(167, 139, 250, 0.15);
+  color: var(--color-violet);
+  font-weight: 600;
+}
+
+/* Light Theme Overrides */
+html[data-theme='light'] .custom-select-trigger {
+  background-color: #ffffff;
+  color: #111113;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+html[data-theme='light'] .custom-select-options {
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+html[data-theme='light'] .custom-select-option {
+  color: rgba(17, 17, 19, 0.8);
+}
+html[data-theme='light'] .custom-select-option:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+  color: #111113;
+}
+html[data-theme='light'] .custom-select-option.selected {
+  background-color: rgba(167, 139, 250, 0.15);
+  color: #7c3aed;
+}
