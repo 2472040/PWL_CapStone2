@@ -11,6 +11,7 @@ const {
 } = require('../models');
 const { logAudit } = require('../middleware/audit');
 const { Op } = require('sequelize');
+const procurementService = require('../services/procurementService');
 
 // =============================================
 // KALAB — Pengadaan
@@ -54,44 +55,14 @@ const getDrafts = async (req, res) => {
 };
 
 const createDraft = async (req, res) => {
-  const t = await sequelize.transaction();
   try {
     const { title, items } = req.body;
 
-    const year = new Date().getFullYear();
-    // Lock the last draft row to prevent concurrent duplicate code generation
-    const lastDraft = await Draft.findOne({
-      where: {
-        code: {
-          [Op.like]: `PRC-${year}-LK%`,
-        },
-      },
-      order: [['code', 'DESC']],
-      transaction: t,
-      lock: t.LOCK.UPDATE,
+    const { draft, code } = await procurementService.createDraftService({
+      title,
+      items,
+      userId: req.user.id,
     });
-    let count = 1;
-    if (lastDraft && lastDraft.code) {
-      const match = lastDraft.code.match(/LK(\d+)$/);
-      if (match) {
-        count = parseInt(match[1], 10) + 1;
-      } else {
-        count = lastDraft.id + 1;
-      }
-    }
-    const code = `PRC-${year}-LK${String(count).padStart(2, '0')}`;
-
-    const draft = await Draft.create(
-      { code, title, created_by: req.user.id, status: 'draft' },
-      { transaction: t }
-    );
-
-    if (items && items.length > 0) {
-      const draftItems = items.map((item) => ({ ...item, draft_id: draft.id }));
-      await DraftItem.bulkCreate(draftItems, { transaction: t });
-    }
-
-    await t.commit();
 
     await logAudit(req.user.id, 'draft.create', code, req.ip);
     const io = req.app.get('io');
@@ -99,14 +70,7 @@ const createDraft = async (req, res) => {
     const result = await Draft.findByPk(draft.id, { include: [{ model: DraftItem, as: 'items' }] });
     res.status(201).json({ data: result });
   } catch (err) {
-    console.error('INITIAL ERROR IN CREATEDRAFT:', err);
-    if (t) {
-      try {
-        await t.rollback();
-      } catch (rollbackErr) {
-        console.error('FAILED TO ROLLBACK TRANSACTION:', rollbackErr.message);
-      }
-    }
+    console.error('Error in createDraft controller:', err);
     res.status(500).json({ error: 'Gagal membuat draf pengadaan.' });
   }
 };

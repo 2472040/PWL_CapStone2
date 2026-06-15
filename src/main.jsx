@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import { removeToken, getToken } from './services/api.js';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import {
   DrawerContent,
   ModalContent,
@@ -241,33 +242,12 @@ function Shell({ onLogout }) {
   );
 }
 
-function App() {
-  const [view, setView] = useState(() => {
-    try {
-      const isLoggedIn = getToken() || localStorage.getItem('loka_logged_in') === 'true';
-      if (isLoggedIn) {
-        return localStorage.getItem('loka-view') || 'app';
-      }
-      return 'landing';
-    } catch (e) {
-      return 'landing';
-    }
-  });
+function AppRoutes() {
+  const navigate = useNavigate();
   const [pendingRole, setPendingRole] = useState(null);
 
-  useEffect(() => {
-    const isLoggedIn = getToken() || localStorage.getItem('loka_logged_in') === 'true';
-    if (view === 'app' && !isLoggedIn) {
-      setView('landing');
-      try {
-        localStorage.removeItem('loka-view');
-      } catch (e) {}
-    }
-  }, [view]);
-
-  function showLogin() {
-    setView('login');
-  }
+  // Verify token or local storage login indicator
+  const isLoggedIn = getToken() || localStorage.getItem('loka_logged_in') === 'true';
 
   function handleLogin(user) {
     if (user && user.role) {
@@ -276,36 +256,67 @@ function App() {
         localStorage.setItem('loka-role', user.role);
       } catch (e) {}
     }
-    setView('app');
-    try {
-      localStorage.setItem('loka-view', 'app');
-    } catch (e) {}
+    navigate('/dashboard');
   }
 
   function goToLanding() {
     removeToken();
     setPendingRole(null);
-    setView('landing');
     try {
       localStorage.removeItem('loka-view');
       localStorage.removeItem('loka-role');
     } catch (e) {}
 
-    fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
+    fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' })
+      .catch(() => {})
+      .finally(() => {
+        navigate('/');
+      });
   }
 
+  return (
+    <>
+      <AuthInitializer pendingRole={pendingRole} />
+      <Routes>
+        <Route
+          path="/"
+          element={
+            isLoggedIn ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <LandingPage onEnterApp={() => navigate('/login')} />
+            )
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            isLoggedIn ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <LoginScreen onLogin={handleLogin} onBack={() => navigate('/')} />
+            )
+          }
+        />
+        <Route
+          path="/dashboard/*"
+          element={isLoggedIn ? <Shell onLogout={goToLanding} /> : <Navigate to="/login" replace />}
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
+  );
+}
+
+function App() {
   return (
     <ErrorBoundary>
       <StoreProvider>
         <SearchProvider>
           <ToastProvider>
-            <AuthInitializer pendingRole={pendingRole} />
-
-            {view === 'landing' && <LandingPage onEnterApp={showLogin} />}
-            {view === 'login' && (
-              <LoginScreen onLogin={handleLogin} onBack={() => setView('landing')} />
-            )}
-            {view === 'app' && <Shell onLogout={goToLanding} />}
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
           </ToastProvider>
         </SearchProvider>
       </StoreProvider>

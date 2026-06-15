@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useStore, PageBar, PageHost, D } from './app-shell.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -19,28 +20,23 @@ import { Settings } from '../screens/dashboard/settings/Settings.jsx';
 
 export function Router() {
   const { state } = useStore();
+  const location = useLocation();
   const role = state.role;
-  const screen = state.screen;
 
-  let Comp = null;
-  if (screen === 'settings') Comp = Settings;
-  else if (screen === 'dashboard') Comp = Dashboard;
-  else if (screen === 'inventaris') Comp = Inventory;
-  else if (screen === 'pengadaan' && role === 'kalab') Comp = PengadaanKalab;
-  else if (screen === 'review' && role === 'kaprodi') Comp = ReviewKaprodi;
-  else if (screen === 'history' && role === 'kaprodi') Comp = HistoryKaprodi;
-  else if (screen === 'receiving' && role === 'admin') Comp = ReceivingAdmin;
-  else if (screen === 'labels' && role === 'admin') Comp = Labels;
-  else if (screen === 'maintenance' && role === 'staflab') Comp = Maintenance;
-  else if (screen === 'bhp') Comp = BHP;
-  else if (screen === 'users' && role === 'sysadmin') Comp = Users;
-  else if (screen === 'rooms' && role === 'sysadmin') Comp = Rooms;
-  else if (screen === 'audit' && role === 'sysadmin') Comp = Audit;
+  // Extract current screen segment from the path (e.g. /dashboard/inventaris -> inventaris)
+  const pathSegments = location.pathname.split('/').filter(Boolean);
+  const currentSegment = pathSegments[pathSegments.length - 1] || 'dashboard';
 
-  const screenLabel =
-    screen === 'settings'
-      ? 'Pengaturan'
-      : D.nav[role].find((n) => n.id === screen)?.label || 'Dashboard';
+  let screenLabel = 'Dashboard';
+  if (currentSegment === 'settings') {
+    screenLabel = 'Pengaturan';
+  } else if (currentSegment !== 'dashboard') {
+    const navItem = D.nav[role]?.find((n) => n.id === currentSegment);
+    if (navItem) {
+      screenLabel = navItem.label;
+    }
+  }
+
   const roleLabel = D.roles.find((r) => r.id === role).short;
 
   return (
@@ -49,15 +45,35 @@ export function Router() {
       <div className="grow relative w-full flex flex-col">
         <AnimatePresence mode="wait">
           <motion.div
-            key={role + ':' + screen}
+            key={location.pathname}
             initial={{ opacity: 0, filter: 'blur(6px)' }}
             animate={{ opacity: 1, filter: 'blur(0px)' }}
             exit={{ opacity: 0, filter: 'blur(6px)' }}
             transition={{ duration: 0.35, ease: [0.25, 0.8, 0.25, 1] }}
             style={{ width: '100%', display: 'flex', flexDirection: 'column', flexGrow: 1 }}
           >
-            <PageHost role={role} screen={screen}>
-              {Comp ? <Comp /> : <Dashboard />}
+            <PageHost role={role} screen={currentSegment}>
+              <Routes location={location}>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="settings" element={<Settings />} />
+
+                {/* Role-based sub-routes */}
+                <Route path="inventaris" element={<Inventory />} />
+                <Route path="bhp" element={<BHP />} />
+
+                {role === 'kalab' && <Route path="pengadaan" element={<PengadaanKalab />} />}
+                {role === 'kaprodi' && <Route path="review" element={<ReviewKaprodi />} />}
+                {role === 'kaprodi' && <Route path="history" element={<HistoryKaprodi />} />}
+                {role === 'admin' && <Route path="receiving" element={<ReceivingAdmin />} />}
+                {role === 'admin' && <Route path="labels" element={<Labels />} />}
+                {role === 'staflab' && <Route path="maintenance" element={<Maintenance />} />}
+                {role === 'sysadmin' && <Route path="users" element={<Users />} />}
+                {role === 'sysadmin' && <Route path="rooms" element={<Rooms />} />}
+                {role === 'sysadmin' && <Route path="audit" element={<Audit />} />}
+
+                {/* Fallback to dashboard home */}
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              </Routes>
             </PageHost>
           </motion.div>
         </AnimatePresence>

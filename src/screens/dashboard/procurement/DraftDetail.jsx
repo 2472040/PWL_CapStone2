@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useStore, useToast, D, Icon } from '../../../components/app-shell.jsx';
+import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../../../services/api.js';
 import { AdminReceiveGrid } from './ReceivingAdmin.jsx';
 
@@ -13,6 +14,7 @@ function formatThousand(val) {
 export function DraftDetail({ draft, onBack, mode }) {
   const { state, dispatch } = useStore();
   const toast = useToast();
+  const navigate = useNavigate();
   const role = D.roles.find((r) => r.id === mode);
   const locked =
     draft.status === 'finalized' ||
@@ -515,10 +517,7 @@ export function DraftDetail({ draft, onBack, mode }) {
               <span className="chip info">
                 {totals.rec}/{eligibleCount(d.items)} dilabeli
               </span>
-              <button
-                className="btn"
-                onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'labels' })}
-              >
+              <button className="btn" onClick={() => navigate('/dashboard/labels')}>
                 <Icon name="qr" size={13} /> Cetak label
               </button>
               {d.status === 'finalized' && (

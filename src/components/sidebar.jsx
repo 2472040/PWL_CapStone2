@@ -3,18 +3,28 @@ import { useStore } from './store-context.jsx';
 import { themeTransition } from './theme-transition.jsx';
 import { LOKA as D } from '../data/app-data.jsx';
 import { Icon } from './app-icons.jsx';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 // =========================================================
 // Sidebar
 // =========================================================
 export function Sidebar() {
   const { state, dispatch } = useStore();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [popOpen, setPopOpen] = useState(false);
   const popRef = useRef();
   const sbRef = useRef();
   const role = D.roles.find((r) => r.id === state.role);
   const me = state.currentUser || D.me[state.role] || { name: 'Pengguna', initials: '?' };
   const items = D.nav[state.role];
+
+  const isActive = (id) => {
+    if (id === 'dashboard') {
+      return location.pathname === '/dashboard' || location.pathname === '/dashboard/';
+    }
+    return location.pathname === `/dashboard/${id}`;
+  };
 
   useEffect(() => {
     if (!popOpen) return;
@@ -109,18 +119,19 @@ export function Sidebar() {
             badgeValue = state.drafts.filter((d) => d.status === 'draft').length || null;
           }
 
+          const isItemActive = isActive(it.id);
+          const path = it.id === 'dashboard' ? '/dashboard' : `/dashboard/${it.id}`;
           return (
             <div
               key={it.id}
               data-sb-anim
-              className={`sb-item ${state.screen === it.id ? 'active' : ''}`}
-              onClick={() => dispatch({ type: 'SET_SCREEN', screen: it.id })}
+              className={`sb-item ${isItemActive ? 'active' : ''}`}
+              onClick={() => navigate(path)}
               role="menuitem"
               tabIndex={0}
-              aria-current={state.screen === it.id ? 'page' : undefined}
+              aria-current={isItemActive ? 'page' : undefined}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ')
-                  dispatch({ type: 'SET_SCREEN', screen: it.id });
+                if (e.key === 'Enter' || e.key === ' ') navigate(path);
               }}
             >
               <Icon name={it.icon} size={16} strokeWidth={1.6} />
@@ -138,10 +149,10 @@ export function Sidebar() {
       <div className="sb-foot" data-sb-anim>
         <div className="sb-foot-actions" role="group" aria-label="Aksi cepat">
           <button
-            className={`sb-foot-btn ${state.screen === 'settings' ? 'active' : ''}`}
+            className={`sb-foot-btn ${location.pathname === '/dashboard/settings' ? 'active' : ''}`}
             title="Pengaturan"
             aria-label="Pengaturan"
-            onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'settings' })}
+            onClick={() => navigate('/dashboard/settings')}
           >
             <Icon name="settings" size={15} />
           </button>

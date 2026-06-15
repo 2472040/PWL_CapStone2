@@ -2,6 +2,7 @@ const { MaintenanceLog, MaintenanceBhp, Bhp, Inventory, User } = require('../mod
 const { logAudit } = require('../middleware/audit');
 const sequelize = require('../config/database');
 const { Op } = require('sequelize');
+const maintenanceService = require('../services/maintenanceService');
 
 // =============================================
 // MAINTENANCE (Staf Lab)
@@ -45,111 +46,21 @@ const getMaintenanceLogs = async (req, res) => {
 };
 
 const createMaintenance = async (req, res) => {
-  const t = await sequelize.transaction();
   try {
     const { inventory_ids, action, condition_after, date, bhp_used } = req.body;
     if (!inventory_ids || !inventory_ids.length || !action || !condition_after || !date) {
-      await t.rollback();
       return res.status(400).json({ error: 'Semua field wajib diisi (minimal pilih 1 aset).' });
     }
 
-    const logsCreated = [];
-    const inventoryCodes = [];
-
-    // Initial count for code generation — lock the last row to prevent concurrent duplicate codes
-    const year = new Date().getFullYear();
-    const lastLog = await MaintenanceLog.findOne({
-      where: {
-        code: {
-          [Op.like]: `M-${year}-%`,
-        },
-      },
-      order: [['code', 'DESC']],
-      transaction: t,
-      lock: t.LOCK.UPDATE,
+    const { logsCreated, inventoryCodes } = await maintenanceService.createMaintenanceLog({
+      inventory_ids,
+      action,
+      condition_after,
+      date,
+      bhp_used,
+      userId: req.user.id,
     });
-    let startCount = 1;
-    if (lastLog && lastLog.code) {
-      const match = lastLog.code.match(/M-\d+-(\d+)/);
-      if (match) {
-        startCount = parseInt(match[1], 10) + 1;
-      }
-    }
 
-    for (let i = 0; i < inventory_ids.length; i++) {
-      const inv_id = inventory_ids[i];
-      const inventory = await Inventory.findByPk(inv_id, { transaction: t });
-      if (!inventory) continue;
-
-      inventoryCodes.push(inventory.code);
-
-      // Auto-generate code for each log
-      const code = `M-${year}-${String(startCount + logsCreated.length).padStart(3, '0')}`;
-
-      const log = await MaintenanceLog.create(
-        {
-          code,
-          inventory_id: inv_id,
-          tech_user_id: req.user.id,
-          action,
-          condition_after,
-          date,
-        },
-        { transaction: t }
-      );
-
-      logsCreated.push(log);
-
-      // Update inventory condition
-      inventory.condition = condition_after;
-      inventory.last_checked = new Date();
-      await inventory.save({ transaction: t });
-    }
-
-    if (logsCreated.length === 0) {
-      await t.rollback();
-      return res.status(404).json({ error: 'Item inventaris tidak ditemukan.' });
-    }
-
-    // Deduct BHP stock if used
-    if (bhp_used && bhp_used.length > 0) {
-      // Group BHP usage by bhp_id to deduct total stock later
-      const totalBhpUsage = {};
-
-      for (const item of bhp_used) {
-        // item: { asset_code, bhp_id, qty }
-        const log = logsCreated.find((l) => {
-          // Find the inventory code for this log
-          const invCode = inventoryCodes[logsCreated.indexOf(l)];
-          return invCode === item.asset_code;
-        });
-
-        if (log && item.qty > 0) {
-          await MaintenanceBhp.create(
-            {
-              maintenance_log_id: log.id,
-              bhp_id: item.bhp_id,
-              qty_used: parseFloat(item.qty),
-            },
-            { transaction: t }
-          );
-
-          if (!totalBhpUsage[item.bhp_id]) totalBhpUsage[item.bhp_id] = 0;
-          totalBhpUsage[item.bhp_id] += parseFloat(item.qty);
-        }
-      }
-
-      // Deduct total stock
-      for (const bhp_id of Object.keys(totalBhpUsage)) {
-        const bhp = await Bhp.findByPk(bhp_id, { transaction: t });
-        if (bhp) {
-          bhp.stock = Math.max(0, parseFloat(bhp.stock) - totalBhpUsage[bhp_id]);
-          await bhp.save({ transaction: t });
-        }
-      }
-    }
-
-    await t.commit();
     await logAudit(
       req.user.id,
       'maintenance.create',
@@ -179,11 +90,9 @@ const createMaintenance = async (req, res) => {
     });
     res.status(201).json({ data: result });
   } catch (err) {
-    console.error('Actual database error in createMaintenance:', err);
-    try {
-      await t.rollback();
-    } catch (rollbackErr) {
-      // Ignore double rollback error
+    console.error('Error in createMaintenance controller:', err);
+    if (err.message === 'Item inventaris tidak ditemukan.') {
+      return res.status(404).json({ error: err.message });
     }
     res.status(500).json({ error: 'Gagal membuat log maintenance.' });
   }

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useStore, D, Icon, StatTile, useSearch } from '../../../components/app-shell.jsx';
+import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../../../services/api.js';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
@@ -13,6 +14,7 @@ try {
 export function Maintenance() {
   const { state, dispatch } = useStore();
   const { query, setQuery } = useSearch();
+  const navigate = useNavigate();
   const role = D.roles.find((r) => r.id === 'staflab');
   const [activeModal, setActiveModal] = useState(null);
 
@@ -810,7 +812,7 @@ export function Maintenance() {
                                 title="Lakukan Restock"
                                 onClick={() => {
                                   setActiveModal(null);
-                                  dispatch({ type: 'SET_SCREEN', screen: 'bhp' });
+                                  navigate('/dashboard/bhp');
                                 }}
                               >
                                 <Icon name="plus" size={12} /> Restock
