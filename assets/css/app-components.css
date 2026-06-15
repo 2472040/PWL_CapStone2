@@ -1334,3 +1334,80 @@ html[data-theme='light'] .custom-select-option.selected {
   background-color: rgba(167, 139, 250, 0.15);
   color: #7c3aed;
 }
+
+/* ── Skeleton Shimmer Loader ── */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.02) 25%,
+    rgba(255, 255, 255, 0.08) 37%,
+    rgba(255, 255, 255, 0.02) 63%
+  );
+  background-size: 400% 100%;
+  animation: shimmer-pulse 1.6s ease infinite;
+}
+
+html[data-theme='light'] .shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.03) 25%,
+    rgba(0, 0, 0, 0.08) 37%,
+    rgba(0, 0, 0, 0.03) 63%
+  );
+  background-size: 400% 100%;
+}
+
+@keyframes shimmer-pulse {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+.skeleton-card {
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--color-line);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 200px;
+}
+
+.skeleton-row {
+  height: 60px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--color-line);
+  margin-bottom: 8px;
+}
+
+html[data-theme='light'] .skeleton-card,
+html[data-theme='light'] .skeleton-row {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+/* ── Circular Progress Ring ── */
+.stat-ring-container {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 48px;
+  height: 48px;
+}
+.stat-ring-circle-bg {
+  stroke: var(--color-line);
+  fill: none;
+}
+.stat-ring-circle {
+  fill: none;
+  stroke: var(--accent-color, var(--color-violet));
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.8s var(--ease-spring);
+  filter: drop-shadow(0 0 4px rgba(var(--accent-rgb, 167, 139, 250), 0.5));
+}
+

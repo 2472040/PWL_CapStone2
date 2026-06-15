@@ -109,15 +109,62 @@ export function PageHost({ children, role, screen }) {
 // =========================================================
 // Stat tile with GSAP counter
 // =========================================================
-export function StatTile({ label, value, fmt = 'int', icon, delta, accent }) {
+function hexToRgb(hex) {
+  if (!hex) return '167, 139, 250';
+  const clean = hex.replace('#', '');
+  const r = parseInt(clean.substring(0, 2), 16);
+  const g = parseInt(clean.substring(2, 4), 16);
+  const b = parseInt(clean.substring(4, 6), 16);
+  return isNaN(r) || isNaN(g) || isNaN(b) ? '167, 139, 250' : `${r}, ${g}, ${b}`;
+}
+
+export function StatTile({ label, value, fmt = 'int', icon, delta, accent, percentage }) {
   const initial =
     fmt === 'rp' ? window.fmtRpShort(value || 0) : (value || 0).toLocaleString('id-ID');
+  
+  const accentRgb = hexToRgb(accent);
+  const radius = 20;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = percentage !== undefined ? circumference - (Math.max(0, Math.min(100, percentage)) / 100) * circumference : 0;
+
   return (
-    <div className="stat-tile" data-reveal>
+    <div 
+      className="stat-tile" 
+      data-reveal
+      style={{
+        '--accent-color': accent || 'var(--color-violet)',
+        '--accent-rgb': accentRgb,
+      }}
+    >
       <div className="stat-tile-lbl">
         {icon && <Icon name={icon} size={13} strokeWidth={1.8} />}
         {label}
       </div>
+
+      {percentage !== undefined && percentage !== null && (
+        <div className="stat-ring-container">
+          <svg width="48" height="48" viewBox="0 0 48 48">
+            <circle
+              className="stat-ring-circle-bg"
+              cx="24"
+              cy="24"
+              r={radius}
+              strokeWidth="4"
+            />
+            <circle
+              className="stat-ring-circle"
+              cx="24"
+              cy="24"
+              r={radius}
+              strokeWidth="4"
+              strokeDasharray={circumference}
+              strokeDashoffset={strokeDashoffset}
+              transform="rotate(-90 24 24)"
+            />
+          </svg>
+        </div>
+      )}
+
       <div
         className="stat-tile-val mono"
         style={{ color: accent }}

@@ -143,6 +143,7 @@ export function Dashboard() {
         i: 'log',
         f: 'int',
         d: { dir: 'up', text: '+3 dari kemarin' },
+        p: Math.round(((dashboardData?.activeUsers || 0) / Math.max(1, state.users.length)) * 100),
       },
     ],
     kalab: [
@@ -155,11 +156,12 @@ export function Dashboard() {
         i: 'flask',
         f: 'int',
         d: { dir: 'down', text: 'segera ajukan' },
+        p: Math.round((stats.lowBhp / Math.max(1, stats.bhpItems)) * 100),
       },
     ],
     kaprodi: [
-      { l: 'Menunggu review', v: stats.draftsActive, i: 'check', f: 'int' },
-      { l: 'Sudah finalisasi', v: stats.draftsFinalized, i: 'log', f: 'int' },
+      { l: 'Menunggu review', v: stats.draftsActive, i: 'check', f: 'int', p: Math.round((stats.draftsActive / Math.max(1, state.drafts.length)) * 100) },
+      { l: 'Sudah finalisasi', v: stats.draftsFinalized, i: 'log', f: 'int', p: Math.round((stats.draftsFinalized / Math.max(1, state.drafts.length)) * 100) },
       { l: 'Total ajuan aktif', v: stats.totalDraftValue, i: 'bolt', f: 'rp' },
       { l: 'Total aset prodi', v: stats.totalAssets, i: 'box', f: 'int' },
     ],
@@ -175,26 +177,29 @@ export function Dashboard() {
           ),
         i: 'truck',
         f: 'int',
+        p: 75,
       },
       {
         l: 'Sudah dilabeli',
         v: state.drafts.reduce((s, d) => s + d.items.filter((it) => it.received).length, 0),
         i: 'qr',
         f: 'int',
+        p: Math.round((state.drafts.reduce((s, d) => s + d.items.filter((it) => it.received).length, 0) / Math.max(1, stats.totalAssets)) * 100),
       },
       { l: 'Total aset terdaftar', v: stats.totalAssets, i: 'box', f: 'int' },
-      { l: 'Hari kerja minggu ini', v: 4, i: 'cal', f: 'int' },
+      { l: 'Hari kerja minggu ini', v: 4, i: 'cal', f: 'int', p: 80 },
     ],
     staflab: [
-      { l: 'Maintenance terbuka', v: stats.inMaint, i: 'wrench', f: 'int' },
+      { l: 'Maintenance terbuka', v: stats.inMaint, i: 'wrench', f: 'int', p: Math.round((stats.inMaint / Math.max(1, stats.totalAssets)) * 100) },
       {
         l: 'Aset perlu cek',
         v: stats.needCheck,
         i: 'alert',
         f: 'int',
         d: { dir: 'down', text: 'jadwalkan minggu ini' },
+        p: Math.round((stats.needCheck / Math.max(1, stats.totalAssets)) * 100),
       },
-      { l: 'BHP rendah', v: stats.lowBhp, i: 'flask', f: 'int' },
+      { l: 'BHP rendah', v: stats.lowBhp, i: 'flask', f: 'int', p: Math.round((stats.lowBhp / Math.max(1, stats.bhpItems)) * 100) },
       { l: 'Log bulan ini', v: state.maintLog.length, i: 'log', f: 'int' },
     ],
   };
@@ -306,6 +311,7 @@ export function Dashboard() {
             icon={t.i}
             delta={t.d}
             accent={i === 0 ? role.accent : undefined}
+            percentage={t.p}
           />
         ))}
       </div>
