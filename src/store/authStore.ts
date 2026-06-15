@@ -1,4 +1,15 @@
-export const initialAuthState = {
+import { User, UserRole, AppAction } from './store.types';
+
+export interface AuthState {
+  role: UserRole;
+  currentUser: User | null;
+  pendingReviewCount: number;
+  theme: string;
+  accent: string;
+  density: string;
+}
+
+export const initialAuthState: AuthState = {
   role: 'kalab',
   currentUser: null,
   pendingReviewCount: 0,
@@ -7,7 +18,7 @@ export const initialAuthState = {
   density: 'comfortable',
 };
 
-export const authReducer = (state, action) => {
+export const authReducer = (state: Record<string, any>, action: AppAction): Record<string, any> | null => {
   switch (action.type) {
     case 'SET_ROLE':
       return { role: action.role, screen: 'dashboard', mobileSidebarOpen: false };

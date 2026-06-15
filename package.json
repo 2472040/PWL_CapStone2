@@ -57,8 +57,8 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.0",
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^6.0.2",
     "@vitest/coverage-v8": "^4.1.8",
     "concurrently": "^10.0.3",
@@ -70,6 +70,7 @@
     "sequelize-cli": "^6.6.2",
     "supertest": "^7.2.2",
     "tailwindcss": "^4.0.0",
+    "typescript": "^6.0.3",
     "vite": "^8.0.16",
     "vitest": "^4.1.7"
   }

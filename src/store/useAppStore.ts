@@ -2,8 +2,9 @@ import { create } from 'zustand';
 import { initialAuthState, authReducer } from './authStore';
 import { initialInventoryState, inventoryReducer } from './inventoryStore';
 import { initialProcurementState, procurementReducer } from './procurementStore';
+import { AppAction } from './store.types';
 
-function getInitialState() {
+function getInitialState(): Record<string, any> {
   let theme = 'dark';
   let accent = 'auto';
   let density = 'comfortable';
@@ -36,10 +37,14 @@ function getInitialState() {
   };
 }
 
-export const useAppStore = create((set) => ({
+export interface AppStoreState extends Record<string, any> {
+  dispatch: (action: AppAction) => void;
+}
+
+export const useAppStore = create<AppStoreState>((set) => ({
   ...getInitialState(),
 
-  dispatch: (action) =>
+  dispatch: (action: AppAction) =>
     set((state) => {
       // 1. Try Auth Slice Reducer
       const authUpdate = authReducer(state, action);
@@ -69,7 +74,7 @@ export const useAppStore = create((set) => ({
           return { users: [action.user, ...state.users] };
         case 'TOGGLE_USER':
           return {
-            users: state.users.map((u) =>
+            users: state.users.map((u: any) =>
               u.id !== action.id ? u : { ...u, status: u.status === 'active' ? 'paused' : 'active' }
             ),
           };
