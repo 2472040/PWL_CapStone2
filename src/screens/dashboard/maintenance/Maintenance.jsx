@@ -13,7 +13,11 @@ import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 
 try {
-  pdfMake.vfs = pdfFonts.pdfMake.vfs;
+  if (pdfFonts && pdfFonts.pdfMake) {
+    pdfMake.vfs = pdfFonts.pdfMake.vfs;
+  } else if (pdfFonts) {
+    pdfMake.vfs = pdfFonts.vfs || pdfFonts;
+  }
 } catch (e) {
   console.error('Error binding pdfmake vfs:', e);
 }
@@ -279,7 +283,7 @@ export function Maintenance() {
         },
       ],
       defaultStyle: {
-        font: 'Helvetica',
+        font: 'Roboto',
       },
       styles: {
         kopHeader: { fontSize: 13, bold: true, alignment: 'center', color: '#1a1a2e' },
@@ -291,7 +295,7 @@ export function Maintenance() {
         tableHeader: { fontSize: 8, bold: true, fillColor: '#f5f5f5', alignment: 'center' },
         tableCell: { fontSize: 8 },
         tableCellBold: { fontSize: 8, bold: true },
-        tableCellCode: { fontSize: 8, font: 'Helvetica' },
+        tableCellCode: { fontSize: 8, font: 'Roboto' },
         tableCellCenter: { fontSize: 8, alignment: 'center' },
         totalText: { fontSize: 9, bold: true },
         signTitle: { fontSize: 9, bold: true },
