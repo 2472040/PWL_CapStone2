@@ -12,7 +12,7 @@
     "db:migrate:undo": "sequelize-cli db:migrate:undo:all",
     "build": "vite build",
     "preview": "vite preview",
-    "security-test": "node server/tests/security.test.cjs",
+    "security-test": "vitest run server/tests/security.test.js",
     "lint": "eslint \"**/*.{js,jsx,cjs,mjs}\"",
     "lint:fix": "eslint \"**/*.{js,jsx,cjs,mjs}\" --fix",
     "format": "prettier --write \"**/*.{js,jsx,json,css,md}\"",

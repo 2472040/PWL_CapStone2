@@ -4,6 +4,26 @@ Semua pembaruan penting pada proyek LokaLab Suite akan dicatat di dokumen ini. F
 
 ---
 
+## [3.1.0] - 2026-06-15
+
+Versi rilis ini berfokus pada refactoring arsitektur frontend (routing dinamis berbasis URL dan state management tersentralisasi dengan Zustand), pemisahan logika bisnis backend ke Service Layer, migrasi database formal dengan Sequelize CLI, dan penambahan sistem pembatasan laju (sliding-window rate limiter) berbasis Redis.
+
+### Added
+
+- **State Management dengan Zustand**: Membuat global store Zustand (`src/store/useAppStore.js`) untuk menggantikan monolith React Context, mengizinkan re-render selektif menggunakan selector.
+- **Routing Berbasis URL (React Router v6)**: Menggantikan conditional rendering UI berbasis parameter state dengan routing dinamis (`BrowserRouter`, `<Routes>`, `<Route>`) untuk navigasi browser formal (back, forward, deep-linking).
+- **Service Layer Backend**: Mengekstrak logika database transaksional berat dari controllers ke modul service mandiri (`server/services/maintenanceService.js` & `server/services/procurementService.js`).
+- **Migrasi Database Formal (Sequelize CLI)**: Menambahkan skema migrasi database (`server/migrations/`) untuk standarisasi skema database tanpa dependensi sync paksa di produksi.
+- **Sliding Window Rate Limiter**: Rate limiter tangguh berbasis Redis (ZSET) dengan mekanisme fallback otomatis ke memori lokal jika koneksi Redis terputus (fail-safe).
+- **Rangkaian Uji Integrasi (30 Vitest Tests)**: Penambahan suite pengujian integrasi lengkap mencakup alur CRUD inventaris, pemeliharaan aset, stok BHP, dan alur pengadaan barang.
+
+### Changed
+
+- **Kompatibilitas Mundur Context**: Mengemas ulang context provider lama (`store-context.jsx`) sebagai wrapper di atas Zustand store untuk mencegah kerusakan pada komponen UI yang sudah ada.
+- **Pembersihan Logika Controller**: Menyederhanakan controller Express (`maintenanceController.js` dan `procurementController.js`) untuk hanya menangani HTTP request dan response.
+
+---
+
 ## [3.0.0] - 2026-06-14
 
 Versi rilis ini berfokus pada penguatan arsitektur keamanan, peningkatan kriptografi, integrasi validasi data backend, serta pembersihan antarmuka dashboard pengguna secara menyeluruh.

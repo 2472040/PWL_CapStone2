@@ -104,11 +104,17 @@ npm run dev:all
 
 ---
 
-## 🧪 Validasi Keamanan & Pengujian Keamanan Terotomatisasi
+## 🧪 Pengujian Terotomatisasi (Unit & Keamanan)
 
-LokaLab Suite dilengkapi dengan rangkaian uji keamanan terotomatisasi (_Automated Security Tests_) untuk memverifikasi fungsionalitas RBAC, algoritma enkripsi backup, proteksi _Rate Limiting_, dan integritas rantai audit log.
+LokaLab Suite dilengkapi dengan rangkaian uji terotomatisasi (Vitest) untuk memverifikasi fungsionalitas CRUD inventaris, siklus pemeliharaan & draf pengadaan, logika backend, RBAC, algoritma enkripsi backup, proteksi _Rate Limiting_, dan integritas rantai audit log.
 
-Jalankan perintah pengujian berikut di terminal:
+Jalankan seluruh 30 unit & integration test dengan perintah berikut:
+
+```bash
+npm run test
+```
+
+Untuk menjalankan khusus pengujian keamanan dan integritas enkripsi cadangan saja:
 
 ```bash
 npm run security-test
@@ -144,6 +150,8 @@ npm run seed
 | :---------------------- | :---------------------------------------------------------------------------------------------- |
 | `npm run dev:all`       | Menjalankan server backend Express dan frontend Vite secara bersamaan dalam mode _development_. |
 | `npm run seed`          | Melakukan reset database dan mengisi ulang data standar akun demo.                              |
-| `npm run security-test` | Mengeksekusi rangkaian uji unit keamanan dan integritas enkripsi sistem.                        |
+| `npm run db:migrate`    | Menjalankan seluruh berkas migrasi database Sequelize secara berurutan.                         |
+| `npm run test`          | Mengeksekusi seluruh 30 unit & integration test menggunakan Vitest.                             |
+| `npm run security-test` | Mengeksekusi rangkaian uji unit keamanan dan integritas enkripsi cadangan menggunakan Vitest.   |
 | `npm run build`         | Melakukan kompilasi (_compile_) kode frontend menjadi berkas siap produksi pada folder `/dist`. |
 | `npm run preview`       | Menjalankan server lokal untuk melakukan peninjauan hasil build produksi frontend.              |
