@@ -35,10 +35,6 @@ export default defineConfig({
         cookieDomainRewrite: '',
         cookiePathRewrite: '/',
       },
-      '/login': {
-        target: process.env.VITE_API_URL || 'http://localhost:3000',
-        changeOrigin: true,
-      },
       '/print': {
         target: process.env.VITE_API_URL || 'http://localhost:3000',
         changeOrigin: true,

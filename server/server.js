@@ -144,10 +144,15 @@ async function start() {
       const authHeader = socket.handshake.auth?.token || socket.handshake.headers?.authorization;
       let token = null;
 
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        token = authHeader.substring(7);
-      } else if (authHeader) {
-        token = authHeader;
+      if (authHeader && typeof authHeader === 'string') {
+        if (authHeader.startsWith('Bearer ')) {
+          const bearerToken = authHeader.substring(7);
+          if (bearerToken && bearerToken !== 'true') {
+            token = bearerToken;
+          }
+        } else if (authHeader !== 'true') {
+          token = authHeader;
+        }
       }
 
       // Fallback: parse token from cookie header

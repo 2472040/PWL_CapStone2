@@ -129,9 +129,6 @@ app.use('/api/v1/dashboard', require('./routes/dashboard'));
 // =============================================
 // Pug Routes (Server-rendered pages)
 // =============================================
-app.get('/login', (req, res) => {
-  res.render('login', { title: 'Login — LokaLab' });
-});
 
 app.get(
   '/print/label/:id',
