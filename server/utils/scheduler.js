@@ -105,13 +105,14 @@ const runAutoBackup = async () => {
     // Log in AuditLog under the active sysadmin (dynamically resolved)
     const sysadminId = await getSysadminId();
     if (sysadminId) {
-      await AuditLog.create({
-        user_id: sysadminId,
-        action: 'backup.auto',
-        target: `auto-backup-${dateStr}`,
-        ip: '127.0.0.1',
-        details: 'Automated scheduled daily backup (AES-256-GCM)',
-      });
+      const { logAudit } = require('../middleware/audit');
+      await logAudit(
+        sysadminId,
+        'backup.auto',
+        `auto-backup-${dateStr}`,
+        '127.0.0.1',
+        'Automated scheduled daily backup (AES-256-GCM)'
+      );
     } else {
       console.warn('⚠️  [SCHEDULER] No active sysadmin found — backup audit log skipped.');
     }

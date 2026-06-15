@@ -16,7 +16,7 @@ const {
   RevokedToken,
   sequelize,
 } = require('../models');
-const { logAudit } = require('../middleware/audit');
+const { logAudit, resetAuditCache } = require('../middleware/audit');
 
 const ALGORITHM = 'aes-256-gcm';
 
@@ -208,6 +208,10 @@ const restoreBackup = async (req, res) => {
       await sequelize.query('SET FOREIGN_KEY_CHECKS = 1', { transaction });
 
       await transaction.commit();
+
+      // Reset the in-memory audit hash cache so the next logAudit() chains
+      // from the correct (restored) last hash instead of the stale pre-restore value
+      resetAuditCache();
 
       await logAudit(req.user.id, 'backup.restore', 'database_restore', req.ip);
 

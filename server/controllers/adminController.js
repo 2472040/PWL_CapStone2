@@ -333,23 +333,25 @@ const deleteRoom = async (req, res) => {
 
 const getAuditLogs = async (req, res) => {
   try {
-    const { page = 1, limit = 50 } = req.query;
-    const offset = (page - 1) * limit;
+    const { page, limit } = req.query;
+    const parsedLimit = Math.min(parseInt(limit, 10) || 50, 1000);
+    const parsedPage = Math.max(parseInt(page, 10) || 1, 1);
+    const offset = (parsedPage - 1) * parsedLimit;
 
     const { count, rows } = await AuditLog.findAndCountAll({
       include: [{ model: User, attributes: ['id', 'name', 'role'] }],
       order: [['created_at', 'DESC']],
-      limit: parseInt(limit),
-      offset: parseInt(offset),
+      limit: parsedLimit,
+      offset,
     });
 
     res.json({
       data: rows,
       pagination: {
         total: count,
-        page: parseInt(page),
-        limit: parseInt(limit),
-        pages: Math.ceil(count / limit),
+        page: parsedPage,
+        limit: parsedLimit,
+        pages: Math.ceil(count / parsedLimit),
       },
     });
   } catch (err) {

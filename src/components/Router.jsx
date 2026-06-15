@@ -1,76 +1,21 @@
-import React, { Suspense, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore, PageBar, PageHost, D } from './app-shell.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Delayed fallback to prevent visual blinking for fast page transitions
-function DelayedFallback() {
-  const [show, setShow] = useState(false);
-  useEffect(() => {
-    const timer = setTimeout(() => setShow(true), 180);
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (!show) return <div className="grow" />;
-  return (
-    <div className="grow flex items-center justify-center min-h-[300px]" style={{ opacity: 0.4 }}>
-      <div
-        className="w-6 h-6 rounded-full border-2 border-current border-t-transparent animate-spin"
-        style={{ color: 'var(--role-accent, var(--color-ink-3))' }}
-      />
-    </div>
-  );
-}
-
-// Lazy loaded page components
-const Dashboard = React.lazy(() =>
-  import('../screens/dashboard/Dashboard.jsx').then((m) => ({ default: m.Dashboard }))
-);
-const PengadaanKalab = React.lazy(() =>
-  import('../screens/dashboard/procurement/PengadaanKalab.jsx').then((m) => ({
-    default: m.PengadaanKalab,
-  }))
-);
-const ReviewKaprodi = React.lazy(() =>
-  import('../screens/dashboard/procurement/ReviewKaprodi.jsx').then((m) => ({
-    default: m.ReviewKaprodi,
-  }))
-);
-const ReceivingAdmin = React.lazy(() =>
-  import('../screens/dashboard/procurement/ReceivingAdmin.jsx').then((m) => ({
-    default: m.ReceivingAdmin,
-  }))
-);
-const HistoryKaprodi = React.lazy(() =>
-  import('../screens/dashboard/procurement/HistoryKaprodi.jsx').then((m) => ({
-    default: m.HistoryKaprodi,
-  }))
-);
-const Inventory = React.lazy(() =>
-  import('../screens/dashboard/inventory/Inventory.jsx').then((m) => ({ default: m.Inventory }))
-);
-const Maintenance = React.lazy(() =>
-  import('../screens/dashboard/maintenance/Maintenance.jsx').then((m) => ({
-    default: m.Maintenance,
-  }))
-);
-const BHP = React.lazy(() =>
-  import('../screens/dashboard/maintenance/BHP.jsx').then((m) => ({ default: m.BHP }))
-);
-const Users = React.lazy(() =>
-  import('../screens/dashboard/admin/Users.jsx').then((m) => ({ default: m.Users }))
-);
-const Rooms = React.lazy(() =>
-  import('../screens/dashboard/admin/Rooms.jsx').then((m) => ({ default: m.Rooms }))
-);
-const Audit = React.lazy(() =>
-  import('../screens/dashboard/admin/Audit.jsx').then((m) => ({ default: m.Audit }))
-);
-const Labels = React.lazy(() =>
-  import('../screens/dashboard/admin/Labels.jsx').then((m) => ({ default: m.Labels }))
-);
-const Settings = React.lazy(() =>
-  import('../screens/dashboard/settings/Settings.jsx').then((m) => ({ default: m.Settings }))
-);
+// Statically loaded page components for instant transitions
+import { Dashboard } from '../screens/dashboard/Dashboard.jsx';
+import { PengadaanKalab } from '../screens/dashboard/procurement/PengadaanKalab.jsx';
+import { ReviewKaprodi } from '../screens/dashboard/procurement/ReviewKaprodi.jsx';
+import { ReceivingAdmin } from '../screens/dashboard/procurement/ReceivingAdmin.jsx';
+import { HistoryKaprodi } from '../screens/dashboard/procurement/HistoryKaprodi.jsx';
+import { Inventory } from '../screens/dashboard/inventory/Inventory.jsx';
+import { Maintenance } from '../screens/dashboard/maintenance/Maintenance.jsx';
+import { BHP } from '../screens/dashboard/maintenance/BHP.jsx';
+import { Users } from '../screens/dashboard/admin/Users.jsx';
+import { Rooms } from '../screens/dashboard/admin/Rooms.jsx';
+import { Audit } from '../screens/dashboard/admin/Audit.jsx';
+import { Labels } from '../screens/dashboard/admin/Labels.jsx';
+import { Settings } from '../screens/dashboard/settings/Settings.jsx';
 
 export function Router() {
   const { state } = useStore();
@@ -105,14 +50,14 @@ export function Router() {
         <AnimatePresence mode="wait">
           <motion.div
             key={role + ':' + screen}
-            initial={{ opacity: 0, y: 15, filter: 'blur(8px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, y: -15, filter: 'blur(8px)' }}
-            transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
-            style={{ width: '100%', minHeight: '100%', display: 'flex', flexDirection: 'column' }}
+            initial={{ opacity: 0, filter: 'blur(6px)' }}
+            animate={{ opacity: 1, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, filter: 'blur(6px)' }}
+            transition={{ duration: 0.35, ease: [0.25, 0.8, 0.25, 1] }}
+            style={{ width: '100%', display: 'flex', flexDirection: 'column', flexGrow: 1 }}
           >
             <PageHost role={role} screen={screen}>
-              <Suspense fallback={<DelayedFallback />}>{Comp ? <Comp /> : <Dashboard />}</Suspense>
+              {Comp ? <Comp /> : <Dashboard />}
             </PageHost>
           </motion.div>
         </AnimatePresence>

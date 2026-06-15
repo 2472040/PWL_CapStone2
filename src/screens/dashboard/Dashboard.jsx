@@ -201,6 +201,69 @@ export function Dashboard() {
 
   const firstName = me.name.replace(/^(Dr\.|Prof\.|Drs\.|Dra\.|Ir\.)\s+/, '').split(' ')[0];
 
+  const handleExportCSV = () => {
+    try {
+      const roleTitle = role?.title || state.role;
+      const userName = me?.name || 'Pengguna';
+      const dateStr = new Date().toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+
+      const csvRows = [];
+      csvRows.push(`"LAPORAN DASHBOARD LOKALAB"`);
+      csvRows.push(`"Peran","${roleTitle.replace(/"/g, '""')}"`);
+      csvRows.push(`"Nama Pengguna","${userName.replace(/"/g, '""')}"`);
+      csvRows.push(`"Tanggal Ekspor","${dateStr.replace(/"/g, '""')}"`);
+      csvRows.push(''); // Baris kosong
+
+      // Tambahkan KPI Metrik Utama
+      csvRows.push(`"METRIK UTAMA"`);
+      csvRows.push(`"Nama Metrik","Nilai"`);
+      const currentTiles = tilesByRole[state.role] || [];
+      currentTiles.forEach((tile) => {
+        let val = tile.v;
+        if (tile.f === 'rp') {
+          val = `Rp ${new Intl.NumberFormat('id-ID').format(val)}`;
+        }
+        csvRows.push(`"${tile.l.replace(/"/g, '""')}","${String(val).replace(/"/g, '""')}"`);
+      });
+      csvRows.push(''); // Baris kosong
+
+      // Tambahkan Aktivitas Terbaru
+      csvRows.push(`"AKTIVITAS TERBARU"`);
+      csvRows.push(`"Nama","Peran","Aktivitas","Target","Waktu"`);
+      activities.forEach((act) => {
+        csvRows.push(
+          `"${act.who.replace(/"/g, '""')}","${act.role.replace(/"/g, '""')}","${act.act.replace(/"/g, '""')}","${act.target.replace(/"/g, '""')}","${act.when.replace(/"/g, '""')}"`
+        );
+      });
+
+      const csvContent = '\uFEFF' + csvRows.join('\n'); // Add BOM for Excel UTF-8 support
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute(
+        'download',
+        `Dashboard_${state.role}_${new Date().toISOString().substring(0, 10)}.csv`
+      );
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      if (window.showToast) {
+        window.showToast('Dashboard berhasil diekspor ke CSV!', 'ok', 'download');
+      }
+    } catch (err) {
+      console.error('Failed to export CSV', err);
+      if (window.showToast) {
+        window.showToast('Gagal mengekspor data: ' + err.message, 'warn');
+      }
+    }
+  };
+
   return (
     <div ref={containerRef} className="page" style={{ '--role-accent': role.accent }}>
       <div className="page-head" data-reveal>
@@ -221,9 +284,7 @@ export function Dashboard() {
         <div className="flex gap-2">
           <button
             className="btn"
-            onClick={() =>
-              window.showToast && window.showToast('Mengekspor data ke CSV…', 'info', 'download')
-            }
+            onClick={handleExportCSV}
             title="Export ke CSV"
           >
             <Icon name="download" size={13} /> Export
@@ -304,19 +365,22 @@ export function Dashboard() {
             — Ringkasan ruangan
           </div>
           <h3 className="text-xl fw-5 mb-4 tracking-tight">{state.rooms.length} laboratorium</h3>
-          <div className="flex-col gap-2.5">
-            {state.rooms.slice(0, 5).map((r) => {
+          <div
+            className="flex flex-col gap-4 overflow-y-auto"
+            style={{ maxHeight: '250px', paddingRight: '6px', marginTop: '4px' }}
+          >
+            {state.rooms.map((r) => {
               const pct = Math.min(100, ((Number(r.assets) || 0) / 35) * 100);
               return (
-                <div key={r.code}>
-                  <div className="flex between aic mb-2">
+                <div key={r.code} className="flex flex-col gap-2">
+                  <div className="flex between aic">
                     <div className="text-[13px]">
                       <b>{r.name}</b> <span className="text-3 mono text-xs">· {r.code}</span>
                     </div>
                     <div className="mono text-xs text-2">{r.assets} aset</div>
                   </div>
                   <div
-                    className="h-[3px]"
+                    className="h-[3px] w-full"
                     style={{ background: 'var(--surface)', borderRadius: 2, overflow: 'hidden' }}
                   >
                     <div

@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from './store-context.jsx';
 import { useSearch } from './search-context.jsx';
-import { useRevealFallback } from './effects.jsx';
+import { useRevealFallback, useStaggerReveal } from './effects.jsx';
 import { Icon } from './app-icons.jsx';
 
 // =========================================================
@@ -64,7 +64,14 @@ export function PageBar({ breadcrumbs, rightContent }) {
 // =========================================================
 export function PageHost({ children, role, screen }) {
   const ref = useRef();
+  const [isRevealed, setIsRevealed] = useState(false);
+
+  useEffect(() => {
+    setIsRevealed(false);
+  }, [role, screen]);
+
   useRevealFallback();
+  useStaggerReveal(ref, [role, screen], () => setIsRevealed(true));
 
   useEffect(() => {
     if (!window.gsap || !ref.current) return;
@@ -93,7 +100,7 @@ export function PageHost({ children, role, screen }) {
   }, [role, screen]);
 
   return (
-    <div ref={ref} className="page-enter in">
+    <div ref={ref} className={`grow flex flex-col w-full${isRevealed ? ' revealed' : ''}`}>
       {children}
     </div>
   );

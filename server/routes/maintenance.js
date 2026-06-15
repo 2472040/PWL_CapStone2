@@ -19,8 +19,6 @@ router.use(authenticate);
  *   description: Manajemen Pemeliharaan Aset & Barang Habis Pakai (BHP)
  */
 
-router.use(authenticate);
-
 /**
  * @swagger
  * /maintenance:

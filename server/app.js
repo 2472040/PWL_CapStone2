@@ -94,7 +94,6 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api', require('./routes/admin'));
 app.use('/api/inventory', require('./routes/inventory'));
 app.use('/api/procurement', require('./routes/procurement'));
-app.use('/api/procurement', require('./routes/pdf'));
 app.use('/api', require('./routes/maintenance'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 
@@ -107,7 +106,7 @@ app.get('/login', (req, res) => {
 
 app.get(
   '/print/label/:id',
-  (req, res, next) => {
+  async (req, res, next) => {
     // Lightweight auth gate for server-rendered page: redirect to login if no token cookie
     const cookies = req.headers.cookie
       ? req.headers.cookie.split(';').reduce((acc, c) => {
@@ -119,10 +118,27 @@ app.get(
     if (!cookies.token) {
       return res.redirect('/login');
     }
-    // Verify the JWT token to ensure the user is actually authenticated
+    // Verify the JWT token with full security checks (blacklist, status, tokenVersion)
     const jwt = require('jsonwebtoken');
+    const { User: LabelUser } = require('./models');
+    const { tokenBlacklist } = require('./middleware/auth');
     try {
-      jwt.verify(cookies.token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(cookies.token, process.env.JWT_SECRET);
+
+      // Check blacklist (JTI revocation)
+      if (decoded.jti && (await tokenBlacklist.has(decoded.jti))) {
+        return res.redirect('/login');
+      }
+
+      // Verify user exists, is active, and token version matches
+      const labelUser = await LabelUser.findByPk(decoded.id);
+      if (!labelUser || labelUser.status !== 'active') {
+        return res.redirect('/login');
+      }
+      if (decoded.tokenVersion === undefined || decoded.tokenVersion !== labelUser.token_version) {
+        return res.redirect('/login');
+      }
+
       next();
     } catch (err) {
       return res.redirect('/login');

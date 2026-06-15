@@ -19,6 +19,7 @@ const {
   completeDraft,
   requestRevision,
 } = require('../controllers/procurementController');
+const { generateBastPdf } = require('../controllers/pdfController');
 
 /**
  * @swagger
@@ -397,5 +398,31 @@ router.post('/receiving', authorize('admin'), receiveItem);
  *         description: Pengadaan selesai
  */
 router.post('/drafts/:id/complete', authorize('admin'), completeDraft);
+
+/**
+ * @swagger
+ * /procurement/drafts/{id}/pdf:
+ *   get:
+ *     summary: Unduh dokumen resmi BAST PDF
+ *     tags: [Procurement]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Berhasil membuat dan mengirimkan berkas PDF
+ *       404:
+ *         description: Draf pengadaan tidak ditemukan
+ */
+router.get(
+  '/drafts/:id/pdf',
+  authorize('sysadmin', 'kalab', 'kaprodi', 'admin'),
+  generateBastPdf
+);
 
 module.exports = router;

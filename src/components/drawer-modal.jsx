@@ -84,7 +84,7 @@ export function Drawer() {
     return () => drawerEl.removeEventListener('keydown', trap);
   }, [activeDrawer, isClosing]);
 
-  // Entrance animation
+  // Entrance animation + form field stagger
   useEffect(() => {
     if (!activeDrawer || isClosing || !ref.current || !window.gsap) return;
     window.gsap.killTweensOf([ref.current, backdropRef.current]);
@@ -96,7 +96,28 @@ export function Drawer() {
     window.gsap.fromTo(
       ref.current,
       { x: 80, opacity: 0 },
-      { x: 0, opacity: 1, duration: 0.45, ease: 'power4.out' }
+      {
+        x: 0,
+        opacity: 1,
+        duration: 0.45,
+        ease: 'power4.out',
+        onComplete: () => {
+          // Stagger form fields after drawer settles
+          const fields = ref.current.querySelectorAll(
+            '.form-group, .form-row, .form-actions, .settings-row'
+          );
+          if (fields.length > 0) {
+            window.gsap.from(fields, {
+              y: 10,
+              opacity: 0,
+              duration: 0.35,
+              ease: 'power3.out',
+              stagger: 0.04,
+              clearProps: 'transform',
+            });
+          }
+        },
+      }
     );
   }, [activeDrawer, isClosing]);
 
@@ -192,7 +213,7 @@ export function Modal() {
     return () => modalEl.removeEventListener('keydown', trap);
   }, [activeModal, isClosing]);
 
-  // Entrance animation
+  // Entrance animation + form field stagger
   useEffect(() => {
     if (!activeModal || isClosing || !ref.current || !window.gsap) return;
     window.gsap.killTweensOf([ref.current, backdropRef.current]);
@@ -204,7 +225,29 @@ export function Modal() {
     window.gsap.fromTo(
       ref.current,
       { y: 20, scale: 0.96, opacity: 0 },
-      { y: 0, scale: 1, opacity: 1, duration: 0.4, ease: 'power4.out' }
+      {
+        y: 0,
+        scale: 1,
+        opacity: 1,
+        duration: 0.4,
+        ease: 'power4.out',
+        onComplete: () => {
+          // Stagger form fields after modal settles
+          const fields = ref.current.querySelectorAll(
+            '.form-group, .form-row, .form-actions, .settings-row'
+          );
+          if (fields.length > 0) {
+            window.gsap.from(fields, {
+              y: 8,
+              opacity: 0,
+              duration: 0.3,
+              ease: 'power3.out',
+              stagger: 0.04,
+              clearProps: 'transform',
+            });
+          }
+        },
+      }
     );
   }, [activeModal, isClosing]);
 

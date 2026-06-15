@@ -21,6 +21,120 @@ export function useRevealFallback() {
 }
 
 // =========================================================
+// Stagger Reveal Engine — Apple-like entrance for dashboard
+// Animates [data-reveal] elements with staggered fade+translate
+// Animates [data-reveal-children] container children sequentially
+// =========================================================
+export function useStaggerReveal(ref, deps = [], onComplete = null) {
+  useEffect(() => {
+    if (!window.gsap || !ref?.current) return;
+
+    // Respect prefers-reduced-motion
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (mq.matches) {
+      // Instantly reveal everything without animation
+      ref.current.querySelectorAll('[data-reveal]').forEach((el) => el.classList.add('revealed'));
+      ref.current
+        .querySelectorAll('[data-reveal-children]')
+        .forEach((el) => el.classList.add('revealed'));
+      if (onComplete) onComplete();
+      return;
+    }
+
+    const ctx = window.gsap.context(() => {
+      // Stagger [data-reveal] elements
+      const reveals = ref.current.querySelectorAll('[data-reveal]');
+      let activeAnimations = 0;
+
+      const checkComplete = () => {
+        activeAnimations--;
+        if (activeAnimations <= 0 && onComplete) {
+          onComplete();
+        }
+      };
+
+      if (reveals.length > 0) {
+        activeAnimations++;
+        window.gsap.fromTo(
+          reveals,
+          { opacity: 0 },
+          {
+            opacity: 1,
+            duration: 0.75,
+            ease: 'power4.out',
+            stagger: 0.05,
+            delay: 0.05,
+            onComplete: () => {
+              reveals.forEach((el) => el.classList.add('revealed'));
+              checkComplete();
+            },
+          }
+        );
+      }
+
+      // Stagger children inside [data-reveal-children] containers
+      const childContainers = ref.current.querySelectorAll('[data-reveal-children]');
+      childContainers.forEach((container) => {
+        const children = container.children;
+        if (children.length === 0) return;
+        activeAnimations++;
+        window.gsap.fromTo(
+          children,
+          { opacity: 0 },
+          {
+            opacity: 1,
+            duration: 0.65,
+            ease: 'power4.out',
+            stagger: 0.04,
+            delay: 0.1,
+            onComplete: () => {
+              container.classList.add('revealed');
+              checkComplete();
+            },
+          }
+        );
+      });
+
+      if (activeAnimations === 0 && onComplete) {
+        onComplete();
+      }
+    }, ref);
+
+    return () => ctx.revert();
+  }, deps); // eslint-disable-line react-hooks/exhaustive-deps
+}
+
+// =========================================================
+// Table/List row stagger — animates visible rows on mount
+// =========================================================
+export function useListStagger(ref, selector, deps = []) {
+  useEffect(() => {
+    if (!window.gsap || !ref?.current) return;
+
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (mq.matches) return;
+
+    // Small delay to allow React to finish rendering rows
+    const timer = setTimeout(() => {
+      if (!ref.current) return;
+      const rows = ref.current.querySelectorAll(selector);
+      if (rows.length === 0) return;
+
+      // Limit to first 30 rows for performance
+      const target = Array.from(rows).slice(0, 30);
+      window.gsap.from(target, {
+        opacity: 0,
+        duration: 0.35,
+        ease: 'power2.out',
+        stagger: 0.025,
+      });
+    }, 80);
+
+    return () => clearTimeout(timer);
+  }, deps); // eslint-disable-line react-hooks/exhaustive-deps
+}
+
+// =========================================================
 // Keyboard shortcuts hook
 // =========================================================
 export function useKeyboardShortcuts(dispatch) {
@@ -131,6 +245,7 @@ export function TiltEngine() {
               duration: 0.6,
               ease: 'power3.out',
               overwrite: 'auto',
+              clearProps: 'transform',
             });
             const shine = c.querySelector('.tilt-shine');
             if (shine) {
@@ -138,6 +253,7 @@ export function TiltEngine() {
                 background: 'transparent',
                 duration: 0.6,
                 ease: 'power3.out',
+                clearProps: 'background',
               });
             }
           } else {
@@ -202,6 +318,7 @@ export function TiltEngine() {
             duration: 0.6,
             ease: 'power3.out',
             overwrite: 'auto',
+            clearProps: 'transform',
           });
           const shine = card.querySelector('.tilt-shine');
           if (shine) {
@@ -209,6 +326,7 @@ export function TiltEngine() {
               background: 'transparent',
               duration: 0.6,
               ease: 'power3.out',
+              clearProps: 'background',
             });
           }
         } else {
@@ -297,3 +415,60 @@ export function CardHoverEngine() {
 
   return null;
 }
+
+// =========================================================
+// List Stagger Engine — auto-animate table rows & list items
+// Uses MutationObserver to detect newly inserted elements
+// =========================================================
+export function ListStaggerEngine() {
+  useEffect(() => {
+    if (!window.gsap) return;
+
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (mq.matches) return;
+
+    const SELECTORS = '.tbl tbody tr, .act-row, .bhp-row, .draft-card, .inv-card';
+    const animated = new WeakSet();
+
+    const observer = new MutationObserver((mutations) => {
+      const newNodes = [];
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (node.nodeType !== 1) continue;
+          // Check if the node itself matches or contains matching elements
+          if (node.matches?.(SELECTORS)) {
+            if (!animated.has(node)) newNodes.push(node);
+          } else if (node.querySelectorAll) {
+            node.querySelectorAll(SELECTORS).forEach((el) => {
+              if (!animated.has(el)) newNodes.push(el);
+            });
+          }
+        }
+      }
+
+      if (newNodes.length === 0) return;
+
+      // Limit to 30 for performance
+      const targets = newNodes.slice(0, 30);
+      targets.forEach((el) => animated.add(el));
+
+      window.gsap.from(targets, {
+        opacity: 0,
+        duration: 0.3,
+        ease: 'power2.out',
+        stagger: 0.02,
+        delay: 0.05,
+      });
+    });
+
+    // Observe the main content area for DOM changes
+    const main = document.querySelector('.main');
+    if (main) {
+      observer.observe(main, { childList: true, subtree: true });
+    }
+
+    return () => observer.disconnect();
+  }, []);
+  return null;
+}
+

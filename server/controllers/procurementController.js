@@ -112,7 +112,7 @@ const updateDraft = async (req, res) => {
     if (!draft) return res.status(404).json({ error: 'Draf tidak ditemukan.' });
     if (draft.status !== 'draft' && draft.status !== 'revision')
       return res.status(400).json({ error: 'Draf sudah tidak dapat diubah.' });
-    if (draft.created_by !== req.user.id)
+    if (draft.created_by !== req.user.id && req.user.role !== 'kalab')
       return res.status(403).json({ error: 'Anda tidak berhak mengubah draf ini.' });
 
     if (req.body.title) draft.title = req.body.title;
@@ -136,7 +136,7 @@ const submitDraft = async (req, res) => {
     if (!draft) return res.status(404).json({ error: 'Draf tidak ditemukan.' });
     if (draft.status !== 'draft' && draft.status !== 'revision')
       return res.status(400).json({ error: 'Draf sudah disubmit.' });
-    if (draft.created_by !== req.user.id)
+    if (draft.created_by !== req.user.id && req.user.role !== 'kalab')
       return res.status(403).json({ error: 'Anda tidak berhak mengirim draf ini.' });
     if (draft.items.length === 0)
       return res.status(400).json({ error: 'Draf harus memiliki minimal 1 item.' });
@@ -169,7 +169,7 @@ const addDraftItem = async (req, res) => {
     if (!draft) return res.status(404).json({ error: 'Draf tidak ditemukan.' });
     if (draft.status !== 'draft' && draft.status !== 'revision' && draft.status !== 'submitted')
       return res.status(400).json({ error: 'Draf sudah tidak dapat diubah.' });
-    if (draft.created_by !== req.user.id)
+    if (draft.created_by !== req.user.id && req.user.role !== 'kalab')
       return res
         .status(403)
         .json({ error: 'Anda tidak berhak mengubah item pada draf orang lain.' });
@@ -467,6 +467,15 @@ const receiveItem = async (req, res) => {
       return res.status(400).json({ error: 'Item belum disetujui.' });
     }
 
+    const existingReceiving = await Receiving.findOne({
+      where: { draft_item_id },
+      transaction: t,
+    });
+    if (existingReceiving) {
+      await t.rollback();
+      return res.status(400).json({ error: 'Item draf ini sudah diterima sebelumnya.' });
+    }
+
     // Validate qty_received does not exceed ordered quantity
     const orderedQty = parseInt(draftItem.qty, 10);
     if (parsedQty !== null && parsedQty > orderedQty) {
@@ -565,7 +574,7 @@ const deleteDraftItem = async (req, res) => {
       include: [{ model: Draft, as: 'draft' }],
     });
     if (!item) return res.status(404).json({ error: 'Item draf tidak ditemukan.' });
-    if (item.draft.created_by !== req.user.id)
+    if (item.draft.created_by !== req.user.id && req.user.role !== 'kalab')
       return res
         .status(403)
         .json({ error: 'Anda tidak berhak menghapus item dari draf orang lain.' });
@@ -601,7 +610,7 @@ const updateDraftItem = async (req, res) => {
       include: [{ model: Draft, as: 'draft' }],
     });
     if (!item) return res.status(404).json({ error: 'Item draf tidak ditemukan.' });
-    if (item.draft.created_by !== req.user.id)
+    if (item.draft.created_by !== req.user.id && req.user.role !== 'kalab')
       return res
         .status(403)
         .json({ error: 'Anda tidak berhak mengubah item pada draf orang lain.' });

@@ -8,12 +8,15 @@ export { themeTransition } from './theme-transition.jsx';
 export { Drawer, Modal, DrawerContent, ModalContent } from './drawer-modal.jsx';
 export {
   useRevealFallback,
+  useStaggerReveal,
+  useListStagger,
   useKeyboardShortcuts,
   SoundIntegration,
   MouseTracker,
   CursorEnabler,
   TiltEngine,
   CardHoverEngine,
+  ListStaggerEngine,
 } from './effects.jsx';
 export {
   PageBar,

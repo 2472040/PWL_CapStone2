@@ -110,4 +110,13 @@ const auditMiddleware = (actionPrefix) => {
   };
 };
 
-module.exports = { logAudit, auditMiddleware };
+/**
+ * Resets the in-memory hash cache. Must be called after operations that
+ * modify the audit_logs table outside of logAudit() (e.g. backup restore)
+ * to prevent hash chain corruption.
+ */
+const resetAuditCache = () => {
+  lastHashPromise = null;
+};
+
+module.exports = { logAudit, auditMiddleware, resetAuditCache };

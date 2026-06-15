@@ -21,6 +21,7 @@ import {
   CursorEnabler,
   TiltEngine,
   CardHoverEngine,
+  ListStaggerEngine,
   D,
 } from './components/app-shell.jsx';
 import { CustomCursor } from './components/app-cursor.jsx';
@@ -225,6 +226,7 @@ function Shell({ onLogout }) {
       <SoundIntegration />
       <TiltEngine />
       <CardHoverEngine />
+      <ListStaggerEngine />
       <MobileSidebarToggle />
       <Sidebar />
       <main className="main">
@@ -242,7 +244,8 @@ function Shell({ onLogout }) {
 function App() {
   const [view, setView] = useState(() => {
     try {
-      if (getToken()) {
+      const isLoggedIn = getToken() || localStorage.getItem('loka_logged_in') === 'true';
+      if (isLoggedIn) {
         return localStorage.getItem('loka-view') || 'app';
       }
       return 'landing';
@@ -253,7 +256,8 @@ function App() {
   const [pendingRole, setPendingRole] = useState(null);
 
   useEffect(() => {
-    if (view === 'app' && !getToken()) {
+    const isLoggedIn = getToken() || localStorage.getItem('loka_logged_in') === 'true';
+    if (view === 'app' && !isLoggedIn) {
       setView('landing');
       try {
         localStorage.removeItem('loka-view');

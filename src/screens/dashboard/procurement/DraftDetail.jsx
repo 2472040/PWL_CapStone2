@@ -21,6 +21,47 @@ export function DraftDetail({ draft, onBack, mode }) {
   const d = draft;
   const isStaflab = mode === 'staflab';
 
+  const exportToCSV = () => {
+    const headers = ['ID', 'Tipe', 'Nama Item', 'Jumlah', 'Satuan', 'Harga Satuan', 'Subtotal', 'Link Pembelian', 'Mengganti Aset', 'Status Persetujuan'];
+    const data = d.items.map((it) => [
+      it.id,
+      it.kind,
+      it.name,
+      it.qty,
+      it.unit,
+      it.price,
+      it.qty * it.price,
+      it.link || '',
+      it.replaces || '',
+      it.approval === 'ok' ? 'Disetujui' : it.approval === 'no' ? 'Ditolak' : 'Pending',
+    ]);
+
+    const csvRows = [
+      headers.join(','),
+      ...data.map((row) =>
+        row
+          .map((val) => {
+            const escaped = String(val).replace(/"/g, '""');
+            return `"${escaped}"`;
+          })
+          .join(',')
+      ),
+    ];
+    const csvContent = '\uFEFF' + csvRows.join('\n'); // Add BOM for Excel UTF-8 support
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute(
+      'download',
+      `Detail_Pengadaan_${d.code}_${new Date().toISOString().substring(0, 10)}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast('Data CSV berhasil diunduh!', 'ok');
+  };
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [addingItem, setAddingItem] = useState(false);
   const [newItem, setNewItem] = useState({
@@ -367,6 +408,19 @@ export function DraftDetail({ draft, onBack, mode }) {
           </p>
         </div>
         <div className="flex gap-2 items-center">
+          <button
+            className="btn"
+            onClick={exportToCSV}
+            style={{
+              background: 'var(--glass)',
+              borderColor: 'rgba(255,255,255,0.1)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <Icon name="download" size={13} /> Ekspor CSV
+          </button>
           {d.status === 'completed' && (
             <a
               href={`/api/procurement/drafts/${d.id}/pdf`}
@@ -877,8 +931,19 @@ export function KalabKaprodiItems({
                 <div className="item-name">{it.name}</div>
                 <div className="item-sub">
                   <span className="mono">{it.id}</span>
-                  <span>·</span>
-                  <span>{it.link}</span>
+                  {it.link && (
+                    <>
+                      <span>·</span>
+                      <a
+                        href={it.link.startsWith('http') ? it.link : `https://${it.link}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: 'var(--role-accent, var(--color-violet))', textDecoration: 'underline' }}
+                      >
+                        Link Pembelian
+                      </a>
+                    </>
+                  )}
                   {it.replaces && (
                     <>
                       <span>·</span>
@@ -888,7 +953,10 @@ export function KalabKaprodiItems({
                 </div>
               </div>
               <div className="item-qty">
-                {it.qty} <span className="text-3">{it.unit}</span>
+                {it.qty}{' '}
+                <span className="text-3" style={{ fontSize: '11px', opacity: 0.75, fontWeight: 'normal' }}>
+                  ({it.unit})
+                </span>
               </div>
               <div>
                 <div className="item-price">{window.fmtRp(it.qty * it.price)}</div>

@@ -431,6 +431,7 @@ body:has(.app) {
   max-width: 1400px;
   margin: 0 auto;
   min-height: 100%;
+  width: 100%;
 }
 .page-title {
   font-size: 32px;
@@ -570,7 +571,8 @@ body:has(.app) {
   transform: translateY(-1px);
 }
 .btn:active {
-  transform: translateY(0);
+  transform: scale(0.97);
+  transition: transform 0.1s ease-out;
 }
 .btn.primary {
   background: var(--color-ink);
@@ -674,6 +676,9 @@ body:has(.app) {
   transform: translate(-50%, -50%);
   width: 480px;
   max-width: calc(100vw - 40px);
+  max-height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
   background: rgba(20, 20, 24, 0.8);
   backdrop-filter: blur(40px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -682,7 +687,7 @@ body:has(.app) {
     inset 0 1px 0 rgba(255, 255, 255, 0.1),
     0 24px 80px rgba(0, 0, 0, 0.6);
   overflow: hidden;
-  padding: 32px;
+  padding: 24px 28px;
 }
 .drawer {
   position: fixed;
@@ -759,6 +764,34 @@ html[data-theme='light'] .drawer {
     opacity 0.6s var(--ease-spring),
     transform 0.8s var(--ease-spring),
     filter 0.6s var(--ease-smooth);
+}
+
+/* ── Stagger Reveal States (Apple-like entrance) ── */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(12px);
+  will-change: opacity, transform;
+}
+[data-reveal].revealed,
+.revealed [data-reveal] {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 0.6s var(--ease-smooth),
+    transform 0.6s var(--ease-smooth);
+}
+[data-reveal-children] > * {
+  opacity: 0;
+  transform: translateY(8px);
+  will-change: opacity, transform;
+}
+[data-reveal-children].revealed > *,
+.revealed [data-reveal-children] > * {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 0.5s var(--ease-smooth),
+    transform 0.5s var(--ease-smooth);
 }
 
 /* Utility classes mapped from React */

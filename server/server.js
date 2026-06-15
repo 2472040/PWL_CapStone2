@@ -13,61 +13,71 @@ const PORT = process.env.PORT || 3000;
  * Ensures critical secrets exist in production. If missing, automatically generates
  * cryptographically secure keys and permanently writes them to the .env file.
  */
-function ensureProductionSecrets() {
+function hardenSecrets() {
   const criticalSecrets = [
     'JWT_SECRET',
     'JWT_REFRESH_SECRET',
     'BACKUP_ENCRYPTION_SECRET',
     'AUDIT_LOG_SECRET',
   ];
-  const missing = criticalSecrets.filter((secret) => !process.env[secret]);
+  const defaultSecrets = [
+    'lokalab-super-secure-jwt-secret-key-2026',
+    'lokalab-refresh-secret-key-separate-from-access-2026',
+    'eb5f0e6264ffbc28019083f3763ac0f9c0947988a5fd86cb67c13f78be35e5cd',
+    'b87b24b57409f1268e3b5a55ec1348a5aa4a770687c97bd05772e5df8a92b249',
+    'your-super-secure-jwt-access-secret-key',
+    'your-super-secure-jwt-refresh-secret-key',
+    'your-32-byte-hex-secret-for-backups',
+    'your-32-byte-hex-secret-for-audit-logs',
+  ];
 
-  if (missing.length > 0) {
-    if (process.env.NODE_ENV === 'production') {
-      console.log(
-        `\n⚙️  [AUTO-CONFIG] Mendeteksi variabel lingkungan keamanan yang hilang di produksi: ${missing.join(', ')}`
-      );
-      console.log('⚙️  Membuat rahasia kriptografi aman secara otomatis...');
+  const envPath = path.join(__dirname, '.env');
+  const parentEnvPath = path.join(__dirname, '../.env');
+  const targetEnvPath = fs.existsSync(parentEnvPath)
+    ? parentEnvPath
+    : fs.existsSync(envPath)
+      ? envPath
+      : parentEnvPath;
 
-      const envPath = path.join(__dirname, '.env');
-      const parentEnvPath = path.join(__dirname, '../.env');
-      const targetEnvPath = fs.existsSync(parentEnvPath)
-        ? parentEnvPath
-        : fs.existsSync(envPath)
-          ? envPath
-          : parentEnvPath;
+  let envContent = '';
+  if (fs.existsSync(targetEnvPath)) {
+    envContent = fs.readFileSync(targetEnvPath, 'utf8');
+  }
 
-      let envContent = '';
-      if (fs.existsSync(targetEnvPath)) {
-        envContent = fs.readFileSync(targetEnvPath, 'utf8');
-      }
+  let modified = false;
+  const lines = envContent.split(/\r?\n/);
 
-      missing.forEach((secret) => {
-        const secureVal = crypto.randomBytes(32).toString('hex');
-        process.env[secret] = secureVal;
+  criticalSecrets.forEach((secret) => {
+    const val = process.env[secret];
+    const isDefault = defaultSecrets.includes(val);
+    const isMissing = !val;
 
-        if (envContent && !envContent.endsWith('\n')) {
-          envContent += '\n';
+    if (isMissing || isDefault) {
+      const secureVal = crypto.randomBytes(32).toString('hex');
+      process.env[secret] = secureVal;
+      modified = true;
+
+      let found = false;
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].trim().startsWith(`${secret}=`)) {
+          lines[i] = `${secret}=${secureVal}`;
+          found = true;
+          break;
         }
-        envContent += `${secret}=${secureVal}\n`;
-      });
-
-      try {
-        fs.writeFileSync(targetEnvPath, envContent, 'utf8');
-        console.log(
-          `✅ [AUTO-CONFIG] Variabel keamanan berhasil disimpan secara permanen di: ${targetEnvPath}\n`
-        );
-      } catch (err) {
-        console.error(`⚠️  [AUTO-CONFIG ERROR] Gagal menulis ke file .env:`, err.message);
-        console.warn(
-          'Aplikasi akan tetap berjalan menggunakan rahasia memori sementara untuk sesi ini.\n'
-        );
       }
-    } else {
-      // Development warning
-      console.warn('\n⚠️ [SECURITY WARNING] BERJALAN DENGAN DEFAULT SECRET!');
-      console.warn(`Variabel berikut menggunakan fallback dev: ${missing.join(', ')}`);
-      console.warn('Sangat tidak disarankan untuk lingkungan produksi.\n');
+      if (!found) {
+        lines.push(`${secret}=${secureVal}`);
+      }
+      console.log(`⚙️  [SECURITY HARDENING] Auto-generated secure replacement for ${secret}`);
+    }
+  });
+
+  if (modified) {
+    try {
+      fs.writeFileSync(targetEnvPath, lines.join('\n'), 'utf8');
+      console.log(`✅ [SECURITY HARDENING] Hardened secrets saved to: ${targetEnvPath}\n`);
+    } catch (err) {
+      console.error(`⚠️  [SECURITY HARDENING ERROR] Gagal menulis ke file .env:`, err.message);
     }
   }
 }
@@ -75,7 +85,7 @@ function ensureProductionSecrets() {
 async function start() {
   try {
     // Validate or auto-generate critical security secrets
-    ensureProductionSecrets();
+    hardenSecrets();
 
     // Test database connection
     await sequelize.authenticate();
@@ -140,7 +150,8 @@ async function start() {
 
     // WebSocket authentication middleware — verify JWT before allowing connection
     const jwt = require('jsonwebtoken');
-    io.use((socket, next) => {
+    const { User } = require('./models');
+    io.use(async (socket, next) => {
       // Try Authorization header first (Bearer token)
       const authHeader = socket.handshake.auth?.token || socket.handshake.headers?.authorization;
       let token = null;
@@ -167,6 +178,27 @@ async function start() {
 
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        // 1. Verify blacklist (JTI revocation)
+        if (decoded.jti && (await tokenBlacklist.has(decoded.jti))) {
+          return next(new Error('Session revoked'));
+        }
+
+        // 2. Fetch user to verify status and token version
+        const user = await User.findByPk(decoded.id);
+        if (!user) {
+          return next(new Error('User not found'));
+        }
+
+        if (user.status !== 'active') {
+          return next(new Error('User account is deactivated'));
+        }
+
+        // 3. Verify token version
+        if (decoded.tokenVersion === undefined || decoded.tokenVersion !== user.token_version) {
+          return next(new Error('Session invalid (credentials changed)'));
+        }
+
         socket.user = decoded;
         next();
       } catch (err) {
