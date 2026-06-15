@@ -388,6 +388,7 @@ const getReceiving = async (req, res) => {
       order: [['finalized_at', 'DESC']],
       limit: parsedLimit,
       offset,
+      subQuery: false,
     });
 
     res.json({

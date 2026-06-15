@@ -267,11 +267,10 @@ function AppRoutes() {
       localStorage.removeItem('loka-role');
     } catch (e) {}
 
-    fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' })
-      .catch(() => {})
-      .finally(() => {
-        navigate('/');
-      });
+    // Navigate to landing page synchronously to prevent temporary redirect to /login
+    navigate('/', { replace: true });
+
+    fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
   }
 
   return (
