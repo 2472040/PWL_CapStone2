@@ -31,7 +31,7 @@ function hardenSecrets() {
     'your-32-byte-hex-secret-for-audit-logs',
   ];
 
-  const envPath = path.join(__dirname, '.env');
+  const envPath = path.join(__dirname, '..', '.env');
   const parentEnvPath = path.join(__dirname, '../.env');
   const targetEnvPath = fs.existsSync(parentEnvPath)
     ? parentEnvPath
@@ -154,7 +154,11 @@ async function start() {
       if (!token && socket.handshake.headers?.cookie) {
         const cookies = socket.handshake.headers.cookie.split(';').reduce((acc, c) => {
           const [k, ...v] = c.split('=');
-          acc[k.trim()] = decodeURI(v.join('='));
+          try {
+            acc[k.trim()] = decodeURI(v.join('='));
+          } catch {
+            acc[k.trim()] = v.join('=');
+          }
           return acc;
         }, {});
         token = cookies.token || null;
@@ -216,19 +220,26 @@ async function start() {
     // =============================================
     // Graceful Shutdown — clean up connections on SIGTERM/SIGINT
     // =============================================
+    // Track active connections to drain in-flight requests before closing DB
+    const activeConnections = new Set();
+    server.on('connection', (conn) => {
+      activeConnections.add(conn);
+      conn.on('close', () => activeConnections.delete(conn));
+    });
+
     const gracefulShutdown = async (signal) => {
       console.log(`\n🛑 Received ${signal}. Starting graceful shutdown...`);
 
       // Stop accepting new connections
       server.close(async () => {
-        console.log('✅ HTTP server closed.');
+        console.log('✅ HTTP server closed (all in-flight requests drained).');
 
         // Close WebSocket connections
         io.close(() => {
           console.log('✅ WebSocket server closed.');
         });
 
-        // Close database connection
+        // Close database connection — safe because all requests are drained
         try {
           await sequelize.close();
           console.log('✅ Database connection closed.');
@@ -243,6 +254,8 @@ async function start() {
       // Force shutdown after 10 seconds if graceful shutdown fails
       setTimeout(() => {
         console.error('⚠️  Forced shutdown after timeout.');
+        // Destroy lingering connections before force-exit
+        activeConnections.forEach((conn) => conn.destroy());
         process.exit(1);
       }, 10000).unref();
     };

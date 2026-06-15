@@ -13,7 +13,7 @@ describe('Procurement Workflow Integration Test', () => {
 
   beforeAll(async () => {
     // Sync database schema changes (like revision_notes column)
-    await sequelize.sync({ alter: true });
+    await sequelize.sync();
 
     // 1. Login as Kalab
     const resKalab = await request(app)

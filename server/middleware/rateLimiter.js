@@ -1,4 +1,10 @@
-const Redis = require('ioredis');
+// Lazy-load ioredis to prevent startup crash if the package is not installed
+let Redis;
+try {
+  Redis = require('ioredis');
+} catch {
+  Redis = null;
+}
 
 const ipAttempts = new Map();
 const userAttempts = new Map();
@@ -23,7 +29,7 @@ setInterval(() => {
 
 // Initialize Redis client if REDIS_URL is provided, with a graceful fallback to in-memory maps
 let redisClient = null;
-if (process.env.REDIS_URL || process.env.USE_REDIS === 'true') {
+if (Redis && (process.env.REDIS_URL || process.env.USE_REDIS === 'true')) {
   try {
     redisClient = new Redis(process.env.REDIS_URL || 'redis://redis:6379', {
       maxRetriesPerRequest: 1,

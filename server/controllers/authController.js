@@ -6,6 +6,7 @@ const { logAudit } = require('../middleware/audit');
 const { tokenBlacklist } = require('../middleware/auth');
 const { clearLoginAttempts } = require('../middleware/rateLimiter');
 const asyncHandler = require('../utils/asyncHandler');
+const { parseCookies } = require('../utils/cookies');
 const {
   BadRequestError,
   UnauthorizedError,
@@ -129,7 +130,9 @@ const login = asyncHandler(async (req, res) => {
  * Returns current authenticated user info
  */
 const me = asyncHandler(async (req, res) => {
-  res.json({ data: req.user });
+  // Explicitly exclude sensitive fields — req.user is a Sequelize instance that includes password hash
+  const { password, ...safeUser } = req.user.toJSON ? req.user.toJSON() : req.user;
+  res.json({ data: safeUser });
 });
 
 const updateProfile = asyncHandler(async (req, res) => {
@@ -172,6 +175,9 @@ const updateProfile = asyncHandler(async (req, res) => {
   }
 
   if (password) {
+    if (password.length < 8) {
+      throw new BadRequestError('Password baru minimal 8 karakter.');
+    }
     user.password = await bcrypt.hash(password, 10);
     user.token_version = (user.token_version || 0) + 1; // Invalidate active sessions on password change
   }
@@ -205,11 +211,7 @@ const logout = asyncHandler(async (req, res) => {
   }
 
   if (req.headers.cookie) {
-    const cookies = {};
-    req.headers.cookie.split(';').forEach((c) => {
-      const parts = c.split('=');
-      cookies[parts.shift().trim()] = decodeURI(parts.join('='));
-    });
+    const cookies = parseCookies(req.headers.cookie);
     if (!token) token = cookies.token;
     refreshToken = cookies.refreshToken;
   }
@@ -278,11 +280,7 @@ const refresh = asyncHandler(async (req, res) => {
   let refreshToken = null;
 
   if (req.headers.cookie) {
-    const cookies = {};
-    req.headers.cookie.split(';').forEach((c) => {
-      const parts = c.split('=');
-      cookies[parts.shift().trim()] = decodeURI(parts.join('='));
-    });
+    const cookies = parseCookies(req.headers.cookie);
     refreshToken = cookies.refreshToken;
   }
 

@@ -49,7 +49,15 @@ const globalErrorHandler = (err, req, res, next) => {
     );
   }
 
-  // Standar JSON response
+  // Standar JSON response — guard against double-send if headers already flushed
+  // (e.g. error during streaming). Without this check, res.status() throws and crashes the process.
+  if (res.headersSent) {
+    logger.error(
+      `[${statusCode}] Headers already sent — cannot send error JSON for ${req.method} ${req.originalUrl}`
+    );
+    return next(err);
+  }
+
   res.status(statusCode).json({
     status,
     error: message, // keep "error" key for backward compatibility with frontend

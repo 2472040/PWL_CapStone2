@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { AuditLog } = require('../models');
+const { logger } = require('../utils/logger');
 
 // In-memory Promise-based sequential queue to completely eliminate audit log race conditions
 let writeQueue = Promise.resolve();
@@ -61,7 +62,12 @@ const logAudit = async (userId, action, target, ip, details = '') => {
         });
         resolve();
       } catch (err) {
-        console.error('[Audit Log Error]', err.message);
+        logger.error(`[Audit Log Error] Failed to persist audit entry: ${err.message}`, {
+          action,
+          target,
+          userId,
+          stack: err.stack,
+        });
         // Reset the cache to force refetching from database on next write since this one failed
         lastHashPromise = null;
         resolve(); // Always resolve the queue chain to prevent blocking subsequent logs

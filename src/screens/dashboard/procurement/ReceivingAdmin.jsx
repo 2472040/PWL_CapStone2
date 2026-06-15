@@ -492,8 +492,8 @@ export function AdminReceiveGrid({ draft, totals, onToggle }) {
                 {card.kind === 'Inventaris' ? `(Unit ${card.unitIndex}/${card.qty})` : ''}
               </div>
               <div className="text-3 text-xs mono mb-4 tracking-[0.04em]">
-                {card.kind === 'Inventaris' ? `1 ${card.unit}` : `${card.qty} ${card.unit}`} · @{' '}
-                {window.fmtRpShort(card.price)}
+                {card.kind === 'Inventaris' ? `1 ${!card.unit || card.unit.trim() === '1' || card.unit.trim() === '' ? 'unit' : card.unit}` : `${card.qty} ${!card.unit || card.unit.trim() === '1' || card.unit.trim() === '' ? 'unit' : card.unit}`} · @{' '}
+                {window.fmtRp(card.price)}
               </div>
               {card.replaces && (
                 <div className="text-xs" style={{ color: 'var(--gold)', marginBottom: 12 }}>

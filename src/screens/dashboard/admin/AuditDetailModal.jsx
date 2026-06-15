@@ -2,8 +2,6 @@ import React, { useRef, useEffect } from 'react';
 import { Icon } from '../../../components/app-shell.jsx';
 
 export function AuditDetailModal({ payload: selectedLog, close }) {
-  if (!selectedLog) return null;
-
   const scrollRef = useRef(null);
 
   // Smooth Y-axis scrolling implementation for the modal content
@@ -46,6 +44,8 @@ export function AuditDetailModal({ payload: selectedLog, close }) {
       if (animationFrameId) cancelAnimationFrame(animationFrameId);
     };
   }, []);
+
+  if (!selectedLog) return null;
 
   return (
     <div

@@ -113,8 +113,9 @@ export async function apiFetch(endpoint, options = {}) {
     clearApiCache();
   }
 
-  // Handle dynamic caching for GET requests
-  const cacheKey = `${endpoint}?${JSON.stringify(options.body || '')}`;
+  // Handle dynamic caching for GET requests — use endpoint only as cache key
+  // (GET requests shouldn't have bodies; including body in key risks collisions)
+  const cacheKey = endpoint;
   if (method === 'GET') {
     const cached = _apiCache.get(cacheKey);
     const now = Date.now();

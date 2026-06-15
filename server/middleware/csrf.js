@@ -18,7 +18,11 @@ const csrfProtection = (req, res, next) => {
     cleanPath === '/api/v1/auth/login' ||
     cleanPath === '/auth/login' ||
     cleanOriginalUrl === '/api/v1/auth/login' ||
-    cleanOriginalUrl === '/auth/login'
+    cleanOriginalUrl === '/auth/login' ||
+    cleanPath === '/api/v1/auth/refresh' ||
+    cleanPath === '/auth/refresh' ||
+    cleanOriginalUrl === '/api/v1/auth/refresh' ||
+    cleanOriginalUrl === '/auth/refresh'
   ) {
     return next();
   }

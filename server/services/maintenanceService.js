@@ -92,7 +92,10 @@ async function createMaintenanceLog({
       }
 
       for (const bhp_id of Object.keys(totalBhpUsage)) {
-        const bhp = await Bhp.findByPk(bhp_id, { transaction: t });
+        const bhp = await Bhp.findByPk(bhp_id, {
+          transaction: t,
+          lock: t.LOCK.UPDATE,
+        });
         if (bhp) {
           bhp.stock = Math.max(0, parseFloat(bhp.stock) - totalBhpUsage[bhp_id]);
           await bhp.save({ transaction: t });

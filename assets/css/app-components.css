@@ -606,13 +606,13 @@ select option {
 /* ── Items Table (Draft detail) ── */
 .items-table.with-actions .items-table-head {
   display: grid;
-  grid-template-columns: 60px 1fr 80px 120px 80px;
+  grid-template-columns: 100px 1fr 80px 145px 80px;
   gap: 12px;
   align-items: center;
 }
 .items-table.with-actions .item-row {
   display: grid;
-  grid-template-columns: 60px 1fr 80px 120px 80px;
+  grid-template-columns: 100px 1fr 80px 145px 80px;
   gap: 12px;
   align-items: center;
 }

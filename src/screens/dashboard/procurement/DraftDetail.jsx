@@ -799,10 +799,10 @@ export function KalabKaprodiItems({
     <>
       <div className="items-table with-actions" data-reveal>
         <div className="items-table-head">
-          <div>Tipe</div>
+          <div>Tipe Barang</div>
           <div>Nama Item</div>
           <div>Jumlah</div>
-          <div className="ar">Subtotal</div>
+          <div className="ar">Subtotal (Harga Satuan)</div>
           <div className="ar">{mode === 'kaprodi' && !locked ? 'Keputusan' : 'Aksi'}</div>
         </div>
         {draft.items.map((it) => {
@@ -831,7 +831,7 @@ export function KalabKaprodiItems({
                       onChange={(e) => setEditFields((prev) => ({ ...prev, kind: e.target.value }))}
                       style={{ width: '100%' }}
                     >
-                      <option value="Inventaris">INV</option>
+                      <option value="Inventaris">Inventaris</option>
                       <option value="BHP">BHP</option>
                     </select>
                   ) : (
@@ -929,18 +929,20 @@ export function KalabKaprodiItems({
             );
           }
 
+          const displayUnit = !it.unit || it.unit.trim() === '1' || it.unit.trim() === '' ? 'unit' : it.unit;
+
           return (
             <div
               key={it.id}
               className={`item-row ${st === 'ok' ? 'approved' : ''} ${st === 'no' ? 'rejected' : ''}`}
             >
               <div className={`item-kind ${it.kind === 'Inventaris' ? 'inv' : 'bhp'}`}>
-                {it.kind === 'Inventaris' ? 'INV' : 'BHP'}
+                {it.kind === 'Inventaris' ? 'Inventaris' : 'BHP'}
               </div>
               <div>
                 <div className="item-name">{it.name}</div>
                 <div className="item-sub">
-                  <span className="mono">{it.id}</span>
+                  <span className="mono" title="ID Item Database">ID: #{it.id}</span>
                   {it.link && (
                     <>
                       <span>·</span>
@@ -971,13 +973,13 @@ export function KalabKaprodiItems({
                   className="text-3"
                   style={{ fontSize: '11px', opacity: 0.75, fontWeight: 'normal' }}
                 >
-                  ({it.unit})
+                  {displayUnit}
                 </span>
               </div>
               <div>
                 <div className="item-price">{window.fmtRp(it.qty * it.price)}</div>
                 <div className="item-price">
-                  <span className="sub">@ {window.fmtRpShort(it.price)}</span>
+                  <span className="sub">@ {window.fmtRp(it.price)}</span>
                 </div>
               </div>
               <div className="item-actions">
@@ -1030,25 +1032,25 @@ export function KalabKaprodiItems({
       <div className="summary-row" data-reveal>
         <div className="summary-tile">
           <div className="summary-tile-lbl">Total Inventaris</div>
-          <div className="summary-tile-val violet">{window.fmtRpShort(totals.inv)}</div>
+          <div className="summary-tile-val violet">{window.fmtRp(totals.inv)}</div>
         </div>
         <div className="summary-tile">
           <div className="summary-tile-lbl">Total BHP</div>
-          <div className="summary-tile-val cyan">{window.fmtRpShort(totals.bhp)}</div>
+          <div className="summary-tile-val cyan">{window.fmtRp(totals.bhp)}</div>
         </div>
         <div className="summary-tile">
           <div className="summary-tile-lbl">{mode === 'kaprodi' ? 'Disetujui' : 'Grand total'}</div>
           <div className="summary-tile-val green">
             {mode === 'kaprodi'
-              ? window.fmtRpShort(totals.approved)
-              : window.fmtRpShort(totals.all)}
+              ? window.fmtRp(totals.approved)
+              : window.fmtRp(totals.all)}
           </div>
         </div>
         {mode === 'kaprodi' && (
           <div className="summary-tile">
             <div className="summary-tile-lbl">Δ Penghematan</div>
             <div className="summary-tile-val gold">
-              {window.fmtRpShort(totals.all - totals.approved)}
+              {window.fmtRp(totals.all - totals.approved)}
             </div>
           </div>
         )}

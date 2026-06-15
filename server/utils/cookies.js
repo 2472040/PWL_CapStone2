@@ -14,7 +14,13 @@ function parseCookies(cookieHeader) {
     const parts = cookie.split('=');
     const name = parts.shift().trim();
     if (name) {
-      list[name] = decodeURIComponent(parts.join('='));
+      const rawValue = parts.join('=');
+      try {
+        list[name] = decodeURIComponent(rawValue);
+      } catch {
+        // Malformed cookie value (e.g. invalid percent-encoding) — use raw value as fallback
+        list[name] = rawValue;
+      }
     }
   });
   return list;

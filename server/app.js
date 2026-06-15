@@ -194,8 +194,12 @@ app.get(
 );
 
 // 404 handler — in production, fallback to SPA index for client-side routing
+// but NOT for API requests (they should get a proper JSON 404)
 if (process.env.NODE_ENV === 'production') {
-  app.get('*', (req, res) => {
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+      return next(); // Let the JSON 404 handler below catch it
+    }
     res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
   });
 }
