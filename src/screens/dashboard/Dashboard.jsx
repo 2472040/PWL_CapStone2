@@ -310,7 +310,7 @@ export function Dashboard() {
         ))}
       </div>
 
-      <div className="gap-3.5 grid">
+      <div className="grid gap-3.5 mb-6">
         <div className="card glow" style={{ '--role-accent': role.accent }} data-reveal>
           <div className="flex between aic mb-4">
             <div>
@@ -516,7 +516,7 @@ export function Dashboard() {
 
       {/* ── Team Collaboration & Synergy Tracker (Kaprodi & Kalab only) ── */}
       {(state.role === 'kaprodi' || state.role === 'kalab') && (
-        <div className="grid md:grid-cols-2 gap-3.5 mt-3.5" data-reveal>
+        <div className="grid md:grid-cols-2 gap-3.5 mt-6" data-reveal>
           {/* Average Approval Card */}
           <div className="card glow" style={{ '--role-accent': 'var(--color-violet)' }}>
             <div className="text-3 text-xs mono mb-3 tracking-[0.1em] uppercase">
@@ -587,7 +587,7 @@ export function Dashboard() {
 
       {/* ── Laboratory Maintenance Load Heatmap (Staf Lab & Kalab only) ── */}
       {(state.role === 'staflab' || state.role === 'kalab') && (
-        <div className="card mt-3.5" data-reveal style={{ '--role-accent': 'var(--color-violet)' }}>
+        <div className="card mt-6" data-reveal style={{ '--role-accent': 'var(--color-violet)' }}>
           <div className="text-3 text-xs mono mb-3 tracking-[0.1em] uppercase">
             — Beban Kerusakan Ruangan
           </div>

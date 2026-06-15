@@ -55,23 +55,37 @@ export function Users() {
     }
   }
 
-  async function handleDeleteUser(user) {
+  function handleDeleteUser(user) {
     const neverLoggedIn = !user.last_login && !user.lastLogin;
     const msg = neverLoggedIn
       ? `Apakah Anda yakin ingin menghapus permanen pengguna "${user.name}" yang belum pernah login ini?`
       : `Apakah Anda yakin ingin menonaktifkan pengguna "${user.name}"? Sesi aktif pengguna akan dicabut.`;
 
-    if (!confirm(msg)) return;
-    try {
-      const res = await apiFetch(`/users/${user.id}`, { method: 'DELETE' });
-      const refresh = await apiFetch('/users');
-      if (refresh.data) {
-        dispatch({ type: 'SET_USERS', users: refresh.data });
-      }
-      toast(res.message || `Pengguna "${user.name}" berhasil diproses.`, 'ok');
-    } catch (err) {
-      toast('Gagal menghapus pengguna: ' + err.message, 'warn');
-    }
+    dispatch({
+      type: 'OPEN_MODAL',
+      modal: {
+        kind: 'confirm',
+        payload: {
+          title: neverLoggedIn ? 'Hapus Pengguna' : 'Nonaktifkan Pengguna',
+          message: msg,
+          isDanger: true,
+          confirmText: neverLoggedIn ? 'Ya, Hapus' : 'Ya, Nonaktifkan',
+          cancelText: 'Batal',
+          onConfirm: async () => {
+            try {
+              const res = await apiFetch(`/users/${user.id}`, { method: 'DELETE' });
+              const refresh = await apiFetch('/users');
+              if (refresh.data) {
+                dispatch({ type: 'SET_USERS', users: refresh.data });
+              }
+              toast(res.message || `Pengguna "${user.name}" berhasil diproses.`, 'ok');
+            } catch (err) {
+              toast('Gagal menghapus pengguna: ' + err.message, 'warn');
+            }
+          },
+        },
+      },
+    });
   }
 
   function exportToCSV() {

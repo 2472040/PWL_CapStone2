@@ -87,6 +87,9 @@ import { LoginScreen } from './screens/auth/LoginScreen.jsx';
 const AiPredictiveModal = React.lazy(() =>
   import('./components/AiPredictiveModal.jsx').then((m) => ({ default: m.AiPredictiveModal }))
 );
+const ConfirmModal = React.lazy(() =>
+  import('./components/ConfirmModal.jsx').then((m) => ({ default: m.ConfirmModal }))
+);
 
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -125,6 +128,7 @@ Object.assign(ModalContent, {
   changePassword: ChangePasswordModal,
   aiPredictive: AiPredictiveModal,
   auditDetail: AuditDetailModal,
+  confirm: ConfirmModal,
 });
 
 function Shell({ onLogout }) {

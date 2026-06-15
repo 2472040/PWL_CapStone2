@@ -168,7 +168,10 @@ export function SoundIntegration() {
 
     const onClick = (e) => {
       const el = e.target.closest('button, [role="button"], a, .sb-item, .act-btn');
-      if (el) snd.click();
+      if (el) {
+        if (el.hasAttribute('data-no-sound') || el.closest('[data-no-sound]')) return;
+        snd.click();
+      }
     };
     const onMouseEnter = (e) => {
       const el = e.target.closest(

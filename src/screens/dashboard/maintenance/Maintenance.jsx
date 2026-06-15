@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useStore, D, Icon, StatTile, useSearch } from '../../../components/app-shell.jsx';
+import { useStore, D, Icon, StatTile, useSearch, useToast } from '../../../components/app-shell.jsx';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../../../services/api.js';
 import pdfMake from 'pdfmake/build/pdfmake';
@@ -13,6 +13,7 @@ try {
 
 export function Maintenance() {
   const { state, dispatch } = useStore();
+  const toast = useToast();
   const { query, setQuery } = useSearch();
   const navigate = useNavigate();
   const role = D.roles.find((r) => r.id === 'staflab');
@@ -76,78 +77,87 @@ export function Maintenance() {
     loadBhpData();
   }, [dispatch]);
 
-  async function handleQuickResolve(inventoryId, code, condition, actionText) {
-    if (
-      !confirm(`Apakah Anda yakin ingin memperbarui kondisi aset ${code} menjadi "${condition}"?`)
-    )
-      return;
+  function handleQuickResolve(inventoryId, code, condition, actionText) {
+    dispatch({
+      type: 'OPEN_MODAL',
+      modal: {
+        kind: 'confirm',
+        payload: {
+          title: 'Perbarui Kondisi Aset',
+          message: `Apakah Anda yakin ingin memperbarui kondisi aset ${code} menjadi "${condition}"?`,
+          confirmText: 'Ya, Perbarui',
+          cancelText: 'Batal',
+          onConfirm: async () => {
+            try {
+              const res = await apiFetch('/maintenance', {
+                method: 'POST',
+                body: JSON.stringify({
+                  inventory_id: inventoryId,
+                  action: actionText,
+                  condition_after: condition,
+                  date: new Date().toISOString().substring(0, 10),
+                  bhp_used: [],
+                }),
+              });
+              if (res.data) {
+                // Reload maintenance logs
+                const resLogs = await apiFetch('/maintenance');
+                if (resLogs.data) {
+                  const formattedLogs = resLogs.data.map((l) => ({
+                    id: l.code || l.id,
+                    dbId: l.id,
+                    date: new Date(l.date).toLocaleDateString('id-ID', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    }),
+                    rawDate: l.date,
+                    asset: l.Inventory?.code,
+                    name: l.Inventory?.name,
+                    action: l.action,
+                    tech: l.technician?.name || 'Teknisi',
+                    cond: l.condition_after,
+                    bhp:
+                      l.bhpUsed?.map((bu) => ({
+                        id: bu.Bhp?.code || bu.bhp_id,
+                        qty: parseFloat(bu.qty_used) || 0,
+                        unit: bu.Bhp?.unit || 'pcs',
+                      })) || [],
+                  }));
+                  dispatch({ type: 'SET_MAINT_LOGS', logs: formattedLogs });
+                }
 
-    try {
-      const res = await apiFetch('/maintenance', {
-        method: 'POST',
-        body: JSON.stringify({
-          inventory_id: inventoryId,
-          action: actionText,
-          condition_after: condition,
-          date: new Date().toISOString().substring(0, 10),
-          bhp_used: [],
-        }),
-      });
-      if (res.data) {
-        // Reload maintenance logs
-        const resLogs = await apiFetch('/maintenance');
-        if (resLogs.data) {
-          const formattedLogs = resLogs.data.map((l) => ({
-            id: l.code || l.id,
-            dbId: l.id,
-            date: new Date(l.date).toLocaleDateString('id-ID', {
-              day: 'numeric',
-              month: 'short',
-              year: 'numeric',
-            }),
-            rawDate: l.date,
-            asset: l.Inventory?.code,
-            name: l.Inventory?.name,
-            action: l.action,
-            tech: l.technician?.name || 'Teknisi',
-            cond: l.condition_after,
-            bhp:
-              l.bhpUsed?.map((bu) => ({
-                id: bu.Bhp?.code || bu.bhp_id,
-                qty: parseFloat(bu.qty_used) || 0,
-                unit: bu.Bhp?.unit || 'pcs',
-              })) || [],
-          }));
-          dispatch({ type: 'SET_MAINT_LOGS', logs: formattedLogs });
-        }
+                // Reload inventory condition in store
+                const resInv = await apiFetch('/inventory');
+                if (resInv.data) {
+                  const formattedInv = resInv.data.map((i) => ({
+                    id: i.id,
+                    code: i.code,
+                    name: i.name,
+                    cat: i.category,
+                    room: i.Room?.name || 'Gudang',
+                    roomId: i.room_id || (i.Room ? i.Room.id : null),
+                    cond: i.condition || 'Baik',
+                    last: i.last_checked
+                      ? new Date(i.last_checked).toLocaleDateString('id-ID')
+                      : 'Baru saja',
+                    acquired: i.acquired_date ? i.acquired_date.substring(0, 7) : '2025-01',
+                    value: i.value || 0,
+                    serial: i.serial || '-',
+                    specs: i.specs || '-',
+                  }));
+                  dispatch({ type: 'SET_INVENTORY', inventory: formattedInv });
+                }
 
-        // Reload inventory condition in store
-        const resInv = await apiFetch('/inventory');
-        if (resInv.data) {
-          const formattedInv = resInv.data.map((i) => ({
-            id: i.id,
-            code: i.code,
-            name: i.name,
-            cat: i.category,
-            room: i.Room?.name || 'Gudang',
-            roomId: i.room_id || (i.Room ? i.Room.id : null),
-            cond: i.condition || 'Baik',
-            last: i.last_checked
-              ? new Date(i.last_checked).toLocaleDateString('id-ID')
-              : 'Baru saja',
-            acquired: i.acquired_date ? i.acquired_date.substring(0, 7) : '2025-01',
-            value: i.value || 0,
-            serial: i.serial || '-',
-            specs: i.specs || '-',
-          }));
-          dispatch({ type: 'SET_INVENTORY', inventory: formattedInv });
-        }
-
-        alert(`Kondisi aset ${code} berhasil diperbarui menjadi "${condition}"!`);
-      }
-    } catch (err) {
-      alert(`Gagal memperbarui kondisi aset: ${err.message}`);
-    }
+                toast(`Kondisi aset ${code} berhasil diperbarui menjadi "${condition}"!`, 'ok');
+              }
+            } catch (err) {
+              toast(`Gagal memperbarui kondisi aset: ${err.message}`, 'warn');
+            }
+          },
+        },
+      },
+    });
   }
 
   const filteredLogs = state.maintLog.filter((l) => {

@@ -5,6 +5,8 @@ import { apiFetch } from '../../../services/api.js';
 function CustomDatePicker({ value, onChange, placeholder }) {
   const [open, setOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [viewMode, setViewMode] = useState('day'); // 'day', 'year', 'month'
+  const [decadeStart, setDecadeStart] = useState(() => Math.floor(new Date().getFullYear() / 12) * 12);
   const ref = useRef(null);
 
   useEffect(() => {
@@ -16,6 +18,12 @@ function CustomDatePicker({ value, onChange, placeholder }) {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!open) {
+      setViewMode('day');
+    }
+  }, [open]);
 
   const displayValue = useMemo(() => {
     if (!value) return '';
@@ -65,6 +73,7 @@ function CustomDatePicker({ value, onChange, placeholder }) {
     <div className="relative inline-block" ref={ref} style={{ zIndex: 99 }}>
       <button
         type="button"
+        data-no-sound
         onClick={() => setOpen(!open)}
         className="btn sm border border-line flex items-center gap-2"
         style={{
@@ -95,77 +104,196 @@ function CustomDatePicker({ value, onChange, placeholder }) {
         >
           {/* Header */}
           <div className="flex justify-between items-center mb-3">
-            <button
-              type="button"
-              className="p-1 hover:bg-white/10 rounded-lg text-ink-2 hover:text-white cursor-pointer"
-              style={{ minWidth: 'auto', background: 'transparent', border: 0 }}
-              onClick={handlePrevMonth}
-            >
-              <Icon name="chevL" size={14} />
-            </button>
-            <span className="text-xs font-semibold text-ink">
-              {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
-            </span>
-            <button
-              type="button"
-              className="p-1 hover:bg-white/10 rounded-lg text-ink-2 hover:text-white cursor-pointer"
-              style={{ minWidth: 'auto', background: 'transparent', border: 0 }}
-              onClick={handleNextMonth}
-            >
-              <Icon name="chevR" size={14} />
-            </button>
-          </div>
-
-          {/* Weekday Names */}
-          <div className="grid grid-cols-7 gap-1 text-center mb-1.5">
-            {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map((d) => (
-              <span key={d} className="text-[10px] text-ink-3 font-semibold">
-                {d}
-              </span>
-            ))}
-          </div>
-
-          {/* Day Grid */}
-          <div className="grid grid-cols-7 gap-1">
-            {daysInMonth.map((day, idx) => {
-              if (!day) return <div key={`empty-${idx}`} />;
-              const y = day.getFullYear();
-              const m = String(day.getMonth() + 1).padStart(2, '0');
-              const d = String(day.getDate()).padStart(2, '0');
-              const formattedStr = `${y}-${m}-${d}`;
-              const isSelected = value === formattedStr;
-              const isToday = new Date().toDateString() === day.toDateString();
-
-              return (
+            {viewMode === 'day' && (
+              <>
                 <button
-                  key={formattedStr}
                   type="button"
-                  onClick={() => handleSelectDay(day)}
-                  className="h-7 w-7 text-[11px] rounded-lg transition-all flex items-center justify-center font-medium cursor-pointer"
-                  style={{
-                    background: isSelected
-                      ? 'var(--color-violet, #a78bfa)'
-                      : isToday
-                        ? 'rgba(255,255,255,0.08)'
-                        : 'transparent',
-                    color: isSelected
-                      ? '#000'
-                      : isToday
-                        ? 'var(--color-ink)'
-                        : 'var(--color-ink-2)',
-                    border: isToday ? '1px solid rgba(255,255,255,0.15)' : 'none',
-                  }}
+                  data-no-sound
+                  className="p-1 hover:bg-white/10 rounded-lg text-ink-2 hover:text-white cursor-pointer"
+                  style={{ minWidth: 'auto', background: 'transparent', border: 0 }}
+                  onClick={handlePrevMonth}
                 >
-                  {day.getDate()}
+                  <Icon name="chevL" size={14} />
                 </button>
-              );
-            })}
+                <button
+                  type="button"
+                  data-no-sound
+                  onClick={() => {
+                    setDecadeStart(Math.floor(currentMonth.getFullYear() / 12) * 12);
+                    setViewMode('year');
+                  }}
+                  className="text-xs font-semibold text-ink px-2 py-1 rounded hover:bg-white/10 transition-all cursor-pointer bg-transparent border-0"
+                >
+                  {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+                </button>
+                <button
+                  type="button"
+                  data-no-sound
+                  className="p-1 hover:bg-white/10 rounded-lg text-ink-2 hover:text-white cursor-pointer"
+                  style={{ minWidth: 'auto', background: 'transparent', border: 0 }}
+                  onClick={handleNextMonth}
+                >
+                  <Icon name="chevR" size={14} />
+                </button>
+              </>
+            )}
+
+            {viewMode === 'year' && (
+              <>
+                <button
+                  type="button"
+                  data-no-sound
+                  className="p-1 hover:bg-white/10 rounded-lg text-ink-2 hover:text-white cursor-pointer"
+                  style={{ minWidth: 'auto', background: 'transparent', border: 0 }}
+                  onClick={() => setDecadeStart(decadeStart - 12)}
+                >
+                  <Icon name="chevL" size={14} />
+                </button>
+                <span className="text-xs font-semibold text-ink">
+                  {decadeStart} - {decadeStart + 11}
+                </span>
+                <button
+                  type="button"
+                  data-no-sound
+                  className="p-1 hover:bg-white/10 rounded-lg text-ink-2 hover:text-white cursor-pointer"
+                  style={{ minWidth: 'auto', background: 'transparent', border: 0 }}
+                  onClick={() => setDecadeStart(decadeStart + 12)}
+                >
+                  <Icon name="chevR" size={14} />
+                </button>
+              </>
+            )}
+
+            {viewMode === 'month' && (
+              <>
+                <button
+                  type="button"
+                  data-no-sound
+                  className="p-1 hover:bg-white/10 rounded-lg text-ink-2 hover:text-white cursor-pointer"
+                  style={{ minWidth: 'auto', background: 'transparent', border: 0 }}
+                  onClick={() => setViewMode('year')}
+                >
+                  <Icon name="chevL" size={14} />
+                </button>
+                <span className="text-xs font-semibold text-ink">
+                  Pilih Bulan ({currentMonth.getFullYear()})
+                </span>
+                <div style={{ width: 22 }} /> {/* Balancer */}
+              </>
+            )}
           </div>
+
+          {/* Body */}
+          {viewMode === 'day' && (
+            <>
+              {/* Weekday Names */}
+              <div className="grid grid-cols-7 gap-1 text-center mb-1.5">
+                {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map((d) => (
+                  <span key={d} className="text-[10px] text-ink-3 font-semibold">
+                    {d}
+                  </span>
+                ))}
+              </div>
+
+              {/* Day Grid */}
+              <div className="grid grid-cols-7 gap-1">
+                {daysInMonth.map((day, idx) => {
+                  if (!day) return <div key={`empty-${idx}`} />;
+                  const y = day.getFullYear();
+                  const m = String(day.getMonth() + 1).padStart(2, '0');
+                  const d = String(day.getDate()).padStart(2, '0');
+                  const formattedStr = `${y}-${m}-${d}`;
+                  const isSelected = value === formattedStr;
+                  const isToday = new Date().toDateString() === day.toDateString();
+
+                  return (
+                    <button
+                      key={formattedStr}
+                      type="button"
+                      data-no-sound
+                      onClick={() => handleSelectDay(day)}
+                      className="h-7 w-7 text-[11px] rounded-lg transition-all flex items-center justify-center font-medium cursor-pointer"
+                      style={{
+                        background: isSelected
+                          ? 'var(--color-violet, #a78bfa)'
+                          : isToday
+                            ? 'rgba(255,255,255,0.08)'
+                            : 'transparent',
+                        color: isSelected
+                          ? '#000'
+                          : isToday
+                            ? 'var(--color-ink)'
+                            : 'var(--color-ink-2)',
+                        border: isToday ? '1px solid rgba(255,255,255,0.15)' : 'none',
+                      }}
+                    >
+                      {day.getDate()}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {viewMode === 'year' && (
+            <div className="grid grid-cols-3 gap-2 py-2">
+              {Array.from({ length: 12 }, (_, i) => decadeStart + i).map((yr) => {
+                const isSelected = currentMonth.getFullYear() === yr;
+                return (
+                  <button
+                    key={yr}
+                    type="button"
+                    data-no-sound
+                    onClick={() => {
+                      setCurrentMonth(new Date(yr, currentMonth.getMonth(), 1));
+                      setViewMode('month');
+                    }}
+                    className="py-2 text-xs rounded-lg transition-all text-ink-2 hover:bg-white/10 hover:text-white cursor-pointer bg-transparent border-0"
+                    style={{
+                      background: isSelected ? 'var(--color-violet, #a78bfa)' : 'transparent',
+                      color: isSelected ? '#000' : 'var(--color-ink-2)',
+                      fontWeight: isSelected ? '600' : 'normal',
+                    }}
+                  >
+                    {yr}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {viewMode === 'month' && (
+            <div className="grid grid-cols-3 gap-2 py-2">
+              {monthNames.map((name, idx) => {
+                const isSelected = currentMonth.getMonth() === idx;
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    data-no-sound
+                    onClick={() => {
+                      setCurrentMonth(new Date(currentMonth.getFullYear(), idx, 1));
+                      setViewMode('day');
+                    }}
+                    className="py-2 text-xs rounded-lg transition-all text-ink-2 hover:bg-white/10 hover:text-white cursor-pointer bg-transparent border-0"
+                    style={{
+                      background: isSelected ? 'var(--color-violet, #a78bfa)' : 'transparent',
+                      color: isSelected ? '#000' : 'var(--color-ink-2)',
+                      fontWeight: isSelected ? '600' : 'normal',
+                    }}
+                  >
+                    {name.substring(0, 3)}
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           {/* Footer Actions */}
           <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/5">
             <button
               type="button"
+              data-no-sound
               className="text-[10px] text-rose font-medium hover:underline cursor-pointer bg-transparent border-0"
               onClick={() => {
                 onChange('');
@@ -176,6 +304,7 @@ function CustomDatePicker({ value, onChange, placeholder }) {
             </button>
             <button
               type="button"
+              data-no-sound
               className="text-[10px] text-cyan font-medium hover:underline cursor-pointer bg-transparent border-0"
               onClick={() => {
                 const today = new Date();
@@ -202,6 +331,20 @@ export function Audit() {
   const [endDate, setEndDate] = useState('');
   const [actionType, setActionType] = useState('all');
   const [loading, setLoading] = useState(false);
+  const [actionDropdownOpen, setActionDropdownOpen] = useState(false);
+  const actionDropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (actionDropdownRef.current && !actionDropdownRef.current.contains(e.target)) {
+        setActionDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const tableWrapRef = useRef(null);
 
   useEffect(() => {
     async function loadLogs() {
@@ -219,6 +362,49 @@ export function Audit() {
     }
     loadLogs();
   }, [toast]);
+
+  // Buttery-smooth X-axis horizontal scrolling implementation for the table
+  useEffect(() => {
+    const el = tableWrapRef.current;
+    if (!el) return;
+
+    let targetScrollLeft = el.scrollLeft;
+    let currentScrollLeft = el.scrollLeft;
+    let animationFrameId = null;
+
+    const handleWheel = (e) => {
+      // Determine if scrolling horizontally (e.deltaX) or vertically with Shift key
+      const delta = e.shiftKey ? e.deltaY : e.deltaX || (Math.abs(e.deltaY) > Math.abs(e.deltaX) ? 0 : e.deltaX);
+
+      // Only smooth horizontal scrolling, let vertical scrolls propagate to Lenis
+      if (delta === 0) return;
+
+      e.preventDefault();
+      targetScrollLeft = Math.max(0, Math.min(el.scrollWidth - el.clientWidth, targetScrollLeft + delta));
+
+      if (!animationFrameId) {
+        const animate = () => {
+          const diff = targetScrollLeft - currentScrollLeft;
+          if (Math.abs(diff) > 0.5) {
+            currentScrollLeft += diff * 0.15; // lerp interpolation speed
+            el.scrollLeft = currentScrollLeft;
+            animationFrameId = requestAnimationFrame(animate);
+          } else {
+            el.scrollLeft = targetScrollLeft;
+            currentScrollLeft = targetScrollLeft;
+            animationFrameId = null;
+          }
+        };
+        animationFrameId = requestAnimationFrame(animate);
+      }
+    };
+
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', handleWheel);
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
 
   function exportAuditToCSV() {
     if (logs.length === 0) {
@@ -412,6 +598,7 @@ export function Audit() {
           {['all', 'kalab', 'kaprodi', 'admin', 'staf', 'sys'].map((f) => (
             <button
               key={f}
+              data-no-sound
               onClick={() => setFilter(f)}
               className={`btn sm ${filter === f ? 'primary' : ''}`}
               style={{ textTransform: 'capitalize' }}
@@ -421,27 +608,84 @@ export function Audit() {
           ))}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" ref={actionDropdownRef} style={{ position: 'relative' }}>
           <span className="text-xs text-ink-3 fw-5">Aksi:</span>
-          <select
-            value={actionType}
-            onChange={(e) => setActionType(e.target.value)}
-            className="btn sm border border-line"
+          <button
+            type="button"
+            data-no-sound
+            onClick={() => setActionDropdownOpen(!actionDropdownOpen)}
+            className="btn sm border border-line flex items-center gap-2"
             style={{
               background: 'var(--color-surface-2, rgba(255, 255, 255, 0.08))',
               color: 'var(--color-ink)',
               borderRadius: '8px',
-              padding: '4px 8px',
+              padding: '4px 12px',
               fontSize: '12px',
+              height: '32px',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              minWidth: '130px',
             }}
           >
-            <option value="all">Semua Aksi</option>
-            <option value="auth">Autentikasi</option>
-            <option value="draft">Pengadaan</option>
-            <option value="maintenance">Maintenance</option>
-            <option value="admin">Administrasi</option>
-            <option value="backup">Pencadangan</option>
-          </select>
+            <span>
+              {actionType === 'all'
+                ? 'Semua Aksi'
+                : actionType === 'auth'
+                ? 'Autentikasi'
+                : actionType === 'draft'
+                ? 'Pengadaan'
+                : actionType === 'maintenance'
+                ? 'Maintenance'
+                : actionType === 'admin'
+                ? 'Administrasi'
+                : actionType === 'backup'
+                ? 'Pencadangan'
+                : actionType}
+            </span>
+            <Icon name="chevD" size={12} className="opacity-60" />
+          </button>
+
+          {actionDropdownOpen && (
+            <div
+              className="absolute mt-1.5 p-1 rounded-xl border border-line z-[999] animate-fade-in text-left"
+              style={{
+                background: '#121214', // Solid dark charcoal, fully opaque
+                width: '180px',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
+                top: '100%',
+                left: 'auto',
+                right: 0,
+              }}
+            >
+              {[
+                { value: 'all', label: 'Semua Aksi' },
+                { value: 'auth', label: 'Autentikasi' },
+                { value: 'draft', label: 'Pengadaan' },
+                { value: 'maintenance', label: 'Maintenance' },
+                { value: 'admin', label: 'Administrasi' },
+                { value: 'backup', label: 'Pencadangan' },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  data-no-sound
+                  onClick={() => {
+                    setActionType(opt.value);
+                    setActionDropdownOpen(false);
+                  }}
+                  className="w-full text-left px-3 py-2 text-xs rounded-lg transition-all hover:bg-white/10 text-ink-2 hover:text-white cursor-pointer bg-transparent border-0"
+                  style={{
+                    display: 'block',
+                    background: actionType === opt.value ? 'rgba(255,255,255,0.08)' : 'transparent',
+                    color: actionType === opt.value ? 'var(--color-ink)' : 'var(--color-ink-2)',
+                    fontWeight: actionType === opt.value ? '600' : 'normal',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Custom Themed Date Picker Filter */}
@@ -462,6 +706,7 @@ export function Audit() {
           {(startDate || endDate || actionType !== 'all' || filter !== 'all') && (
             <button
               className="btn sm text-xs border border-line cursor-pointer"
+              data-no-sound
               onClick={() => {
                 setStartDate('');
                 setEndDate('');
@@ -490,8 +735,9 @@ export function Audit() {
         </div>
       )}
 
-      {/* Added data-lenis-prevent to enable native horizontal scroll without Lenis intercepting */}
-      <div className="table-wrap" data-lenis-prevent data-reveal>
+      {/* Removed data-lenis-prevent so vertical scroll propagates to Lenis (smooth), 
+          and bound tableWrapRef for smooth custom X scroll */}
+      <div ref={tableWrapRef} className="table-wrap" data-reveal>
         <table className="tbl" style={{ minWidth: '1100px' }}>
           <thead>
             <tr>

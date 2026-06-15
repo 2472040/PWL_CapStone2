@@ -21,23 +21,32 @@ export function Rooms() {
     loadRooms();
   }, [dispatch]);
 
-  async function handleDeleteRoom(room) {
-    if (
-      !confirm(
-        `Apakah Anda yakin ingin menghapus ruangan "${room.name}"? Semua aset di dalamnya akan diatur ke ruangan 'Gudang' secara otomatis.`
-      )
-    )
-      return;
-    try {
-      await apiFetch(`/rooms/${room.id}`, { method: 'DELETE' });
-      const res = await apiFetch('/rooms');
-      if (res.data) {
-        dispatch({ type: 'SET_ROOMS', rooms: res.data });
-      }
-      toast(`Ruangan "${room.name}" berhasil dihapus.`, 'ok');
-    } catch (err) {
-      toast('Gagal menghapus ruangan: ' + err.message, 'warn');
-    }
+  function handleDeleteRoom(room) {
+    dispatch({
+      type: 'OPEN_MODAL',
+      modal: {
+        kind: 'confirm',
+        payload: {
+          title: 'Hapus Ruangan',
+          message: `Apakah Anda yakin ingin menghapus ruangan "${room.name}"? Semua aset di dalamnya akan diatur ke ruangan 'Gudang' secara otomatis.`,
+          isDanger: true,
+          confirmText: 'Ya, Hapus',
+          cancelText: 'Batal',
+          onConfirm: async () => {
+            try {
+              await apiFetch(`/rooms/${room.id}`, { method: 'DELETE' });
+              const res = await apiFetch('/rooms');
+              if (res.data) {
+                dispatch({ type: 'SET_ROOMS', rooms: res.data });
+              }
+              toast(`Ruangan "${room.name}" berhasil dihapus.`, 'ok');
+            } catch (err) {
+              toast('Gagal menghapus ruangan: ' + err.message, 'warn');
+            }
+          },
+        },
+      },
+    });
   }
 
   return (
