@@ -70,6 +70,11 @@ const ChangePasswordModal = React.lazy(() =>
     default: m.ChangePasswordModal,
   }))
 );
+const AuditDetailModal = React.lazy(() =>
+  import('./screens/dashboard/admin/AuditDetailModal.jsx').then((m) => ({
+    default: m.AuditDetailModal,
+  }))
+);
 
 import LandingPage from './screens/landing/index.jsx';
 
@@ -119,6 +124,7 @@ Object.assign(ModalContent, {
   logout: LogoutModal,
   changePassword: ChangePasswordModal,
   aiPredictive: AiPredictiveModal,
+  auditDetail: AuditDetailModal,
 });
 
 function Shell({ onLogout }) {

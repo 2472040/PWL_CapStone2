@@ -1,10 +1,201 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useStore, useToast, D, Icon, useSearch } from '../../../components/app-shell.jsx';
 import { apiFetch } from '../../../services/api.js';
+
+function CustomDatePicker({ value, onChange, placeholder }) {
+  const [open, setOpen] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const ref = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (ref.current && !ref.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const displayValue = useMemo(() => {
+    if (!value) return '';
+    const [y, m, d] = value.split('-');
+    return `${d}/${m}/${y}`;
+  }, [value]);
+
+  const daysInMonth = useMemo(() => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    
+    const days = [];
+    for (let i = 0; i < firstDay; i++) {
+      days.push(null);
+    }
+    for (let d = 1; d <= totalDays; d++) {
+      days.push(new Date(year, month, d));
+    }
+    return days;
+  }, [currentMonth]);
+
+  const monthNames = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+
+  const handlePrevMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+  };
+
+  const handleSelectDay = (date) => {
+    if (!date) return;
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    onChange(`${y}-${m}-${d}`);
+    setOpen(false);
+  };
+
+  return (
+    <div className="relative inline-block" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="btn sm border border-line flex items-center gap-2"
+        style={{
+          background: 'var(--color-surface-2, rgba(255, 255, 255, 0.08))',
+          color: value ? 'var(--color-ink)' : 'var(--color-ink-3)',
+          borderRadius: '8px',
+          padding: '4px 12px',
+          fontSize: '12px',
+          height: '32px',
+          minWidth: '120px',
+          justifyContent: 'space-between',
+        }}
+      >
+        <span>{displayValue || placeholder}</span>
+        <Icon name="cal" size={13} className="opacity-60" />
+      </button>
+
+      {open && (
+        <div
+          className="absolute mt-1.5 p-4 rounded-xl border border-line z-[99] animate-fade-in text-left"
+          style={{
+            background: 'rgba(15, 15, 20, 0.95)',
+            backdropFilter: 'blur(24px)',
+            WebkitBackdropFilter: 'blur(24px)',
+            width: '260px',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
+            left: 0,
+          }}
+        >
+          {/* Header */}
+          <div className="flex justify-between items-center mb-3">
+            <button
+              type="button"
+              className="p-1 hover:bg-white/10 rounded-lg text-ink-2 hover:text-white cursor-pointer"
+              style={{ minWidth: 'auto', background: 'transparent', border: 0 }}
+              onClick={handlePrevMonth}
+            >
+              <Icon name="chevL" size={14} />
+            </button>
+            <span className="text-xs font-semibold text-ink">
+              {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+            </span>
+            <button
+              type="button"
+              className="p-1 hover:bg-white/10 rounded-lg text-ink-2 hover:text-white cursor-pointer"
+              style={{ minWidth: 'auto', background: 'transparent', border: 0 }}
+              onClick={handleNextMonth}
+            >
+              <Icon name="chevR" size={14} />
+            </button>
+          </div>
+
+          {/* Weekday Names */}
+          <div className="grid grid-cols-7 gap-1 text-center mb-1.5">
+            {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map((d) => (
+              <span key={d} className="text-[10px] text-ink-3 font-semibold">
+                {d}
+              </span>
+            ))}
+          </div>
+
+          {/* Day Grid */}
+          <div className="grid grid-cols-7 gap-1">
+            {daysInMonth.map((day, idx) => {
+              if (!day) return <div key={`empty-${idx}`} />;
+              const y = day.getFullYear();
+              const m = String(day.getMonth() + 1).padStart(2, '0');
+              const d = String(day.getDate()).padStart(2, '0');
+              const formattedStr = `${y}-${m}-${d}`;
+              const isSelected = value === formattedStr;
+              const isToday = new Date().toDateString() === day.toDateString();
+
+              return (
+                <button
+                  key={formattedStr}
+                  type="button"
+                  onClick={() => handleSelectDay(day)}
+                  className="h-7 w-7 text-[11px] rounded-lg transition-all flex items-center justify-center font-medium cursor-pointer"
+                  style={{
+                    background: isSelected
+                      ? 'var(--color-violet, #a78bfa)'
+                      : isToday
+                        ? 'rgba(255,255,255,0.08)'
+                        : 'transparent',
+                    color: isSelected
+                      ? '#000'
+                      : isToday
+                        ? 'var(--color-ink)'
+                        : 'var(--color-ink-2)',
+                    border: isToday ? '1px solid rgba(255,255,255,0.15)' : 'none',
+                  }}
+                >
+                  {day.getDate()}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Footer Actions */}
+          <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/5">
+            <button
+              type="button"
+              className="text-[10px] text-rose font-medium hover:underline cursor-pointer bg-transparent border-0"
+              onClick={() => {
+                onChange('');
+                setOpen(false);
+              }}
+            >
+              Hapus
+            </button>
+            <button
+              type="button"
+              className="text-[10px] text-cyan font-medium hover:underline cursor-pointer bg-transparent border-0"
+              onClick={() => {
+                const today = new Date();
+                handleSelectDay(today);
+              }}
+            >
+              Hari ini
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function Audit() {
   const role = D.roles.find((r) => r.id === 'sysadmin');
   const { query } = useSearch();
+  const { dispatch } = useStore();
   const toast = useToast();
   const [logs, setLogs] = useState([]);
   const [filter, setFilter] = useState('all');
@@ -12,7 +203,6 @@ export function Audit() {
   const [endDate, setEndDate] = useState('');
   const [actionType, setActionType] = useState('all');
   const [loading, setLoading] = useState(false);
-  const [selectedLog, setSelectedLog] = useState(null);
 
   useEffect(() => {
     async function loadLogs() {
@@ -38,7 +228,6 @@ export function Audit() {
     }
 
     try {
-      // CSV headers
       const headers = [
         'ID',
         'User ID',
@@ -58,7 +247,6 @@ export function Audit() {
         return isNaN(date.getTime()) ? String(d) : date.toISOString();
       };
 
-      // CSV rows
       const rows = logs.map((l) => {
         const userName = l.User?.name || 'Sistem';
         const cleanName = String(userName).replace(/"/g, '""');
@@ -136,7 +324,6 @@ export function Audit() {
 
   const filtered = useMemo(() => {
     return formattedLogs.filter((a) => {
-      // 1. Role Filter
       if (filter !== 'all') {
         const mappedFilter = filter === 'staf' ? 'staflab' : filter === 'sys' ? 'sysadmin' : filter;
         if (!a.role.toLowerCase().includes(mappedFilter.toLowerCase())) {
@@ -144,7 +331,6 @@ export function Audit() {
         }
       }
 
-      // 2. Action Type Filter
       if (actionType !== 'all') {
         const act = a.action.toLowerCase();
         if (actionType === 'auth') {
@@ -171,7 +357,6 @@ export function Audit() {
         }
       }
 
-      // 3. Date Range Filter
       if (startDate && a.rawDate) {
         const start = new Date(startDate);
         start.setHours(0, 0, 0, 0);
@@ -183,7 +368,6 @@ export function Audit() {
         if (a.rawDate > end) return false;
       }
 
-      // 4. Global Search Query
       if (query) {
         const q = query.toLowerCase();
         return (
@@ -222,7 +406,6 @@ export function Audit() {
           backdropFilter: 'blur(10px)',
         }}
       >
-        {/* Role Filters (Original buttons) */}
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-xs text-ink-3 fw-5 mr-1">Role:</span>
           {['all', 'kalab', 'kaprodi', 'admin', 'staf', 'sys'].map((f) => (
@@ -237,7 +420,6 @@ export function Audit() {
           ))}
         </div>
 
-        {/* Action Type Filter */}
         <div className="flex items-center gap-2">
           <span className="text-xs text-ink-3 fw-5">Aksi:</span>
           <select
@@ -245,8 +427,8 @@ export function Audit() {
             onChange={(e) => setActionType(e.target.value)}
             className="btn sm border border-line"
             style={{
-              background: 'var(--surface)',
-              color: 'var(--ink)',
+              background: 'var(--color-surface-2, rgba(255, 255, 255, 0.08))',
+              color: 'var(--color-ink)',
               borderRadius: '8px',
               padding: '4px 8px',
               fontSize: '12px',
@@ -261,42 +443,24 @@ export function Audit() {
           </select>
         </div>
 
-        {/* Date Filter */}
+        {/* Custom Themed Date Picker Filter */}
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs text-ink-3 fw-5">Tanggal:</span>
-          <input
-            type="date"
+          <CustomDatePicker
             value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="btn sm border border-line"
-            style={{
-              background: 'var(--surface)',
-              color: 'var(--ink)',
-              borderRadius: '8px',
-              padding: '4px 8px',
-              fontSize: '12px',
-            }}
+            onChange={setStartDate}
             placeholder="Mulai"
           />
           <span className="text-xs text-ink-3">—</span>
-          <input
-            type="date"
+          <CustomDatePicker
             value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="btn sm border border-line"
-            style={{
-              background: 'var(--surface)',
-              color: 'var(--ink)',
-              borderRadius: '8px',
-              padding: '4px 8px',
-              fontSize: '12px',
-            }}
+            onChange={setEndDate}
             placeholder="Selesai"
           />
 
           {(startDate || endDate || actionType !== 'all' || filter !== 'all') && (
             <button
-              className="btn sm text-xs border border-line"
+              className="btn sm text-xs border border-line cursor-pointer"
               onClick={() => {
                 setStartDate('');
                 setEndDate('');
@@ -305,7 +469,7 @@ export function Audit() {
               }}
               style={{
                 background: 'rgba(239, 68, 68, 0.1)',
-                color: 'var(--rose)',
+                color: 'var(--color-rose)',
                 borderColor: 'rgba(239, 68, 68, 0.2)',
               }}
             >
@@ -326,7 +490,7 @@ export function Audit() {
       )}
 
       <div className="table-wrap" data-reveal>
-        <table className="tbl">
+        <table className="tbl" style={{ minWidth: '1000px' }}>
           <thead>
             <tr>
               <th>Waktu</th>
@@ -343,7 +507,7 @@ export function Audit() {
               <tr
                 key={a.id}
                 className="hover:bg-white/5 cursor-pointer"
-                onClick={() => setSelectedLog(a)}
+                onClick={() => dispatch({ type: 'OPEN_MODAL', modal: { kind: 'auditDetail', payload: a } })}
               >
                 <td className="mono text-xs">{a.ts}</td>
                 <td>
@@ -356,7 +520,7 @@ export function Audit() {
                 <td className="text-sm">{a.target}</td>
                 <td
                   className="text-xs"
-                  style={{ maxWidth: 260, wordBreak: 'break-word', color: 'var(--ink-2)' }}
+                  style={{ maxWidth: 320, wordBreak: 'break-word', color: 'var(--color-ink-2)' }}
                 >
                   {a.details || <span style={{ opacity: 0.3 }}>—</span>}
                 </td>
@@ -366,133 +530,6 @@ export function Audit() {
           </tbody>
         </table>
       </div>
-
-      {/* Dinamis Detail Modal Popup */}
-      {selectedLog && (
-        <div
-          className="modal-overlay"
-          onClick={() => setSelectedLog(null)}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(9, 9, 11, 0.85)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-            backdropFilter: 'blur(8px)',
-          }}
-        >
-          <div
-            className="card max-w-lg w-full mx-4 overflow-hidden flex flex-col"
-            style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--color-line)',
-              borderRadius: '16px',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Head */}
-            <div className="p-5 border-b border-[#27272A] flex between aic">
-              <div>
-                <h3 className="text-lg fw-6 tracking-tight flex items-center gap-2">
-                  <Icon name="log" size={18} className="text-cyan" />
-                  Detail Log Aktivitas #{selectedLog.id}
-                </h3>
-              </div>
-              <button
-                className="btn sm border-0 bg-transparent text-ink hover:text-white"
-                onClick={() => setSelectedLog(null)}
-              >
-                <Icon name="x" size={16} />
-              </button>
-            </div>
-
-            {/* Modal Content */}
-            <div className="p-6 space-y-4 text-sm overflow-y-auto" style={{ maxHeight: '70vh' }}>
-              <div className="grid grid-cols-3 gap-2 py-2 border-b border-white/5">
-                <span className="text-ink-3">Waktu</span>
-                <span className="col-span-2 mono text-xs fw-5">{selectedLog.ts}</span>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2 py-2 border-b border-white/5">
-                <span className="text-ink-3">Pengguna</span>
-                <span className="col-span-2">
-                  <b>{selectedLog.user}</b>
-                  {selectedLog.role && (
-                    <span className="chip ml-2" style={{ verticalAlign: 'middle' }}>
-                      {selectedLog.role}
-                    </span>
-                  )}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2 py-2 border-b border-white/5">
-                <span className="text-ink-3">Aksi</span>
-                <span className="col-span-2 mono text-xs text-cyan fw-6">{selectedLog.action}</span>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2 py-2 border-b border-white/5">
-                <span className="text-ink-3">Target</span>
-                <span className="col-span-2 fw-5">{selectedLog.target || '—'}</span>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2 py-2 border-b border-white/5">
-                <span className="text-ink-3">IP Address</span>
-                <span className="col-span-2 mono text-xs text-ink-2">{selectedLog.ip}</span>
-              </div>
-
-              <div className="py-2 border-b border-white/5">
-                <span className="text-ink-3 block mb-1">Rincian / Detail</span>
-                <div
-                  className="p-3 rounded-lg border border-line text-xs whitespace-pre-wrap leading-relaxed"
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.01)',
-                    color: 'var(--ink-2)',
-                  }}
-                >
-                  {selectedLog.details || 'Tidak ada detail tambahan.'}
-                </div>
-              </div>
-
-              {/* Cryptographic Integrity Section */}
-              {selectedLog.hash && (
-                <div
-                  className="p-3.5 rounded-xl border border-cyan/20"
-                  style={{
-                    background: 'rgba(6, 182, 212, 0.03)',
-                  }}
-                >
-                  <div className="flex items-center gap-1.5 text-xs text-cyan fw-6 mb-2">
-                    <Icon name="check" size={12} strokeWidth={2.4} /> Integritas Rantai Blok
-                    Kriptografi Terverifikasi
-                  </div>
-                  <div className="space-y-1.5 text-[10px] mono">
-                    <div className="truncate">
-                      <span className="text-ink-3">Current Hash:</span>{' '}
-                      <span className="text-ink-2" title={selectedLog.hash}>
-                        {selectedLog.hash}
-                      </span>
-                    </div>
-                    {selectedLog.previousHash && (
-                      <div className="truncate">
-                        <span className="text-ink-3">Prev Hash:</span>{' '}
-                        <span className="text-ink-2" title={selectedLog.previousHash}>
-                          {selectedLog.previousHash}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
