@@ -1,7 +1,9 @@
+const Redis = require('ioredis');
+
 const ipAttempts = new Map();
 const userAttempts = new Map();
 
-// Periodically prune stale entries every 15 minutes to prevent memory leaks
+// Periodically prune stale entries every 15 minutes to prevent memory leaks in the local fallback
 const CLEANUP_INTERVAL = 15 * 60 * 1000;
 const ENTRY_TTL = 15 * 60 * 1000;
 
@@ -19,6 +21,26 @@ setInterval(() => {
   }
 }, CLEANUP_INTERVAL).unref();
 
+// Initialize Redis client if REDIS_URL is provided, with a graceful fallback to in-memory maps
+let redisClient = null;
+if (process.env.REDIS_URL || process.env.USE_REDIS === 'true') {
+  try {
+    redisClient = new Redis(process.env.REDIS_URL || 'redis://redis:6379', {
+      maxRetriesPerRequest: 1,
+      retryStrategy: (times) => {
+        // Stop retrying after 3 attempts to fallback to in-memory rate limiting
+        if (times > 3) return null;
+        return Math.min(times * 200, 1000);
+      },
+    });
+    redisClient.on('error', (err) => {
+      console.warn('[Rate Limiter] Redis down, using in-memory fallback:', err.message);
+    });
+  } catch (err) {
+    console.error('[Rate Limiter] Failed to initialize Redis client:', err.message);
+  }
+}
+
 /**
  * Custom Rate Limiter and Progressive Delay Middleware for Login
  * 1. IP-based limit: 5 attempts per 15 minutes.
@@ -32,6 +54,78 @@ const loginRateLimiter = async (req, res, next) => {
   const timeframe = 15 * 60 * 1000; // 15 minutes
   const maxAttempts = 5;
 
+  const cleanEmail = email ? String(email).trim().toLowerCase() : null;
+
+  // Check if we should use Redis or local fallback
+  const useRedis = redisClient && redisClient.status === 'ready';
+
+  if (useRedis) {
+    try {
+      const ipKey = `rate:ip:${ip}`;
+      const userKey = cleanEmail ? `rate:user:${cleanEmail}` : null;
+
+      // 1. IP check
+      await redisClient.zremrangebyscore(ipKey, 0, now - timeframe);
+      const ipAttemptsCount = await redisClient.zcard(ipKey);
+
+      if (ipAttemptsCount >= maxAttempts) {
+        const oldestIpAttempt = await redisClient.zrange(ipKey, 0, 0);
+        const oldestTime = oldestIpAttempt.length ? parseInt(oldestIpAttempt[0], 10) : now;
+        const minutesLeft = Math.ceil((oldestTime + timeframe - now) / 60000);
+        return res.status(429).json({
+          error: `Terlalu banyak percobaan login dari IP ini. Silakan coba lagi dalam ${minutesLeft} menit.`,
+        });
+      }
+
+      // 2. User check
+      let userAttemptsCount = 0;
+      if (userKey) {
+        await redisClient.zremrangebyscore(userKey, 0, now - timeframe);
+        userAttemptsCount = await redisClient.zcard(userKey);
+
+        if (userAttemptsCount >= maxAttempts) {
+          const oldestUserAttempt = await redisClient.zrange(userKey, 0, 0);
+          const oldestTime = oldestUserAttempt.length ? parseInt(oldestUserAttempt[0], 10) : now;
+          const minutesLeft = Math.ceil((oldestTime + timeframe - now) / 60000);
+          return res.status(429).json({
+            error: `Terlalu banyak percobaan login untuk akun ini. Silakan coba lagi dalam ${minutesLeft} menit.`,
+          });
+        }
+      }
+
+      // 3. Progressive delay (if there were previous attempts, introduce a delay)
+      const recentAttemptsCount = Math.max(ipAttemptsCount, userAttemptsCount);
+      if (recentAttemptsCount > 0 && process.env.NODE_ENV !== 'test') {
+        const delayMs = Math.min(recentAttemptsCount * 1000, 5000);
+        console.log(
+          `[Rate Limiter - Redis] Introducing progressive delay of ${delayMs}ms for ${cleanEmail || 'unknown'} from ${ip}`
+        );
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+
+      // Track attempt
+      const multi = redisClient.multi();
+      multi.zadd(ipKey, now, now);
+      multi.expire(ipKey, 900); // 15 mins
+      if (userKey) {
+        multi.zadd(userKey, now, now);
+        multi.expire(userKey, 900);
+      }
+      await multi.exec();
+
+      return next();
+    } catch (err) {
+      console.warn(
+        '[Rate Limiter] Redis error in rate limiter, using in-memory fallback:',
+        err.message
+      );
+      // Fall through to in-memory fallback logic
+    }
+  }
+
+  // =============================================
+  // In-Memory Fallback Logic (used if Redis is offline)
+  // =============================================
   // 1. IP check
   if (!ipAttempts.has(ip)) {
     ipAttempts.set(ip, []);
@@ -47,12 +141,12 @@ const loginRateLimiter = async (req, res, next) => {
   }
 
   // 2. Username check
-  if (email) {
-    const cleanEmail = String(email).trim().toLowerCase();
+  let userHistory = [];
+  if (cleanEmail) {
     if (!userAttempts.has(cleanEmail)) {
       userAttempts.set(cleanEmail, []);
     }
-    const userHistory = userAttempts.get(cleanEmail).filter((t) => now - t < timeframe);
+    userHistory = userAttempts.get(cleanEmail).filter((t) => now - t < timeframe);
     userAttempts.set(cleanEmail, userHistory);
 
     if (userHistory.length >= maxAttempts) {
@@ -61,23 +155,21 @@ const loginRateLimiter = async (req, res, next) => {
         error: `Terlalu banyak percobaan login untuk akun ini. Silakan coba lagi dalam ${minutesLeft} menit.`,
       });
     }
+  }
 
-    // 3. Progressive delay (if there were previous attempts, introduce a delay)
-    // Delay = consecutive attempts * 1000ms (max 5000ms)
-    const recentAttemptsCount = Math.max(ipHistory.length, userHistory.length);
-    if (recentAttemptsCount > 0) {
-      const delayMs = Math.min(recentAttemptsCount * 1000, 5000);
-      console.log(
-        `[Rate Limiter] Introducing progressive delay of ${delayMs}ms for ${cleanEmail} from ${ip}`
-      );
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
-    }
+  // 3. Progressive delay
+  const recentAttemptsCount = Math.max(ipHistory.length, userHistory.length);
+  if (recentAttemptsCount > 0 && process.env.NODE_ENV !== 'test') {
+    const delayMs = Math.min(recentAttemptsCount * 1000, 5000);
+    console.log(
+      `[Rate Limiter - Local Memory] Introducing progressive delay of ${delayMs}ms for ${cleanEmail || 'unknown'} from ${ip}`
+    );
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
   }
 
   // Track attempt
   ipHistory.push(now);
-  if (email) {
-    const cleanEmail = String(email).trim().toLowerCase();
+  if (cleanEmail) {
     userAttempts.get(cleanEmail).push(now);
   }
 
@@ -88,10 +180,23 @@ const loginRateLimiter = async (req, res, next) => {
  * Clear tracking for successful logins
  */
 const clearLoginAttempts = (ip, email) => {
+  const cleanEmail = email ? String(email).trim().toLowerCase() : null;
+
+  // Clear in memory
   if (ip) ipAttempts.delete(ip);
-  if (email) {
-    const cleanEmail = String(email).trim().toLowerCase();
-    userAttempts.delete(cleanEmail);
+  if (cleanEmail) userAttempts.delete(cleanEmail);
+
+  // Clear in Redis
+  const useRedis = redisClient && redisClient.status === 'ready';
+  if (useRedis) {
+    try {
+      const ipKey = `rate:ip:${ip}`;
+      const userKey = cleanEmail ? `rate:user:${cleanEmail}` : null;
+      if (ip) redisClient.del(ipKey).catch(() => {});
+      if (userKey) redisClient.del(userKey).catch(() => {});
+    } catch (err) {
+      console.warn('[Rate Limiter] Redis error in clearLoginAttempts:', err.message);
+    }
   }
 };
 

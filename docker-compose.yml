@@ -35,6 +35,18 @@ services:
         reservations:
           memory: 256M
 
+  redis:
+    image: redis:7-alpine
+    container_name: lokalab_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+
   app:
     build:
       context: .
@@ -57,10 +69,13 @@ services:
       - DB_NAME=lokalab_db
       - DB_USER=lokalab_user
       - DB_PASS=lokalab_password
+      - REDIS_URL=redis://redis:6379
       - VITE_API_URL=http://localhost:3000
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
     volumes:
       - .:/app
       - /app/node_modules

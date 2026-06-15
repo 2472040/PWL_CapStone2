@@ -61,7 +61,12 @@ const createDraft = async (req, res) => {
     const year = new Date().getFullYear();
     // Lock the last draft row to prevent concurrent duplicate code generation
     const lastDraft = await Draft.findOne({
-      order: [['id', 'DESC']],
+      where: {
+        code: {
+          [Op.like]: `PRC-${year}-LK%`,
+        },
+      },
+      order: [['code', 'DESC']],
       transaction: t,
       lock: t.LOCK.UPDATE,
     });

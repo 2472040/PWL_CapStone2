@@ -91,24 +91,12 @@ async function start() {
     await sequelize.authenticate();
     console.log('✅ Database terhubung ke MySQL');
 
-    // Safe conditional sync for production
+    // In production, sync is disabled for enterprise database stability.
+    // Database schema changes must be applied via migrations (sequelize-cli db:migrate).
     if (process.env.NODE_ENV === 'production') {
-      try {
-        const tables = await sequelize.getQueryInterface().showAllTables();
-        const hasUsersTable = tables.some((t) => t.toLowerCase() === 'users');
-        if (hasUsersTable) {
-          console.log(
-            '✅ Tabel database sudah ada, melewati sequelize.sync() untuk stabilitas produksi'
-          );
-        } else {
-          console.log('⚙️  Database kosong di produksi. Melakukan sinkronisasi tabel awal...');
-          await sequelize.sync();
-          console.log('✅ Semua tabel berhasil di-sync');
-        }
-      } catch (err) {
-        console.error('⚠️  Gagal mengecek tabel database. Melakukan fallback sync...', err.message);
-        await sequelize.sync();
-      }
+      console.log(
+        '🔒 Production environment: sequelize.sync() is disabled. Database schema is managed via migrations.'
+      );
     } else {
       // Always sync in development/testing for schema alignment ease
       await sequelize.sync();

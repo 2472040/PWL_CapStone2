@@ -1,6 +1,7 @@
 const { MaintenanceLog, MaintenanceBhp, Bhp, Inventory, User } = require('../models');
 const { logAudit } = require('../middleware/audit');
 const sequelize = require('../config/database');
+const { Op } = require('sequelize');
 
 // =============================================
 // MAINTENANCE (Staf Lab)
@@ -58,7 +59,12 @@ const createMaintenance = async (req, res) => {
     // Initial count for code generation — lock the last row to prevent concurrent duplicate codes
     const year = new Date().getFullYear();
     const lastLog = await MaintenanceLog.findOne({
-      order: [['id', 'DESC']],
+      where: {
+        code: {
+          [Op.like]: `M-${year}-%`,
+        },
+      },
+      order: [['code', 'DESC']],
       transaction: t,
       lock: t.LOCK.UPDATE,
     });
@@ -173,8 +179,12 @@ const createMaintenance = async (req, res) => {
     });
     res.status(201).json({ data: result });
   } catch (err) {
-    await t.rollback();
-    console.error(err);
+    console.error('Actual database error in createMaintenance:', err);
+    try {
+      await t.rollback();
+    } catch (rollbackErr) {
+      // Ignore double rollback error
+    }
     res.status(500).json({ error: 'Gagal membuat log maintenance.' });
   }
 };

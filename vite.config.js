@@ -48,6 +48,10 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['server/tests/**/*.test.js'],
+    fileParallelism: false,
+    sequence: {
+      concurrent: false,
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

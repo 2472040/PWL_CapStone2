@@ -101,16 +101,20 @@ describe('Security Middleware & Utilities', () => {
   describe('Login Rate Limiter Middleware', () => {
     beforeEach(() => {
       vi.resetModules();
+      const { clearLoginAttempts } = require('../middleware/rateLimiter');
+      clearLoginAttempts('127.0.0.1');
     });
 
-    it('should permit up to 5 repeated login attempts from same IP', () => {
+    it('should permit up to 5 repeated login attempts from same IP', async () => {
       const req = { ip: '127.0.0.1' };
       const res = createMockResponse();
       let allowedAttempts = 0;
 
+      const { loginRateLimiter } = require('../middleware/rateLimiter');
+
       for (let i = 0; i < 5; i++) {
         let nextCalled = false;
-        loginRateLimiter(req, res, () => {
+        await loginRateLimiter(req, res, () => {
           nextCalled = true;
         });
         if (nextCalled) allowedAttempts++;
@@ -119,17 +123,19 @@ describe('Security Middleware & Utilities', () => {
       expect(allowedAttempts).toBe(5);
     });
 
-    it('should block 6th login attempt with 429 Too Many Requests', () => {
+    it('should block 6th login attempt with 429 Too Many Requests', async () => {
       const req = { ip: '127.0.0.1' };
       const res = createMockResponse();
 
+      const { loginRateLimiter } = require('../middleware/rateLimiter');
+
       // Consume first 5 attempts
       for (let i = 0; i < 5; i++) {
-        loginRateLimiter(req, res, () => {});
+        await loginRateLimiter(req, res, () => {});
       }
 
       let nextCalled = false;
-      loginRateLimiter(req, res, () => {
+      await loginRateLimiter(req, res, () => {
         nextCalled = true;
       });
 
