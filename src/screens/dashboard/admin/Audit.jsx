@@ -6,7 +6,9 @@ function CustomDatePicker({ value, onChange, placeholder }) {
   const [open, setOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [viewMode, setViewMode] = useState('day'); // 'day', 'year', 'month'
-  const [decadeStart, setDecadeStart] = useState(() => Math.floor(new Date().getFullYear() / 12) * 12);
+  const [decadeStart, setDecadeStart] = useState(
+    () => Math.floor(new Date().getFullYear() / 12) * 12
+  );
   const ref = useRef(null);
 
   useEffect(() => {
@@ -36,7 +38,7 @@ function CustomDatePicker({ value, onChange, placeholder }) {
     const month = currentMonth.getMonth();
     const firstDay = new Date(year, month, 1).getDay();
     const totalDays = new Date(year, month + 1, 0).getDate();
-    
+
     const days = [];
     for (let i = 0; i < firstDay; i++) {
       days.push(null);
@@ -48,8 +50,18 @@ function CustomDatePicker({ value, onChange, placeholder }) {
   }, [currentMonth]);
 
   const monthNames = [
-    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
   ];
 
   const handlePrevMonth = () => {
@@ -374,13 +386,18 @@ export function Audit() {
 
     const handleWheel = (e) => {
       // Determine if scrolling horizontally (e.deltaX) or vertically with Shift key
-      const delta = e.shiftKey ? e.deltaY : e.deltaX || (Math.abs(e.deltaY) > Math.abs(e.deltaX) ? 0 : e.deltaX);
+      const delta = e.shiftKey
+        ? e.deltaY
+        : e.deltaX || (Math.abs(e.deltaY) > Math.abs(e.deltaX) ? 0 : e.deltaX);
 
       // Only smooth horizontal scrolling, let vertical scrolls propagate to Lenis
       if (delta === 0) return;
 
       e.preventDefault();
-      targetScrollLeft = Math.max(0, Math.min(el.scrollWidth - el.clientWidth, targetScrollLeft + delta));
+      targetScrollLeft = Math.max(
+        0,
+        Math.min(el.scrollWidth - el.clientWidth, targetScrollLeft + delta)
+      );
 
       if (!animationFrameId) {
         const animate = () => {
@@ -608,7 +625,11 @@ export function Audit() {
           ))}
         </div>
 
-        <div className="flex items-center gap-2" ref={actionDropdownRef} style={{ position: 'relative' }}>
+        <div
+          className="flex items-center gap-2"
+          ref={actionDropdownRef}
+          style={{ position: 'relative' }}
+        >
           <span className="text-xs text-ink-3 fw-5">Aksi:</span>
           <button
             type="button"
@@ -631,16 +652,16 @@ export function Audit() {
               {actionType === 'all'
                 ? 'Semua Aksi'
                 : actionType === 'auth'
-                ? 'Autentikasi'
-                : actionType === 'draft'
-                ? 'Pengadaan'
-                : actionType === 'maintenance'
-                ? 'Maintenance'
-                : actionType === 'admin'
-                ? 'Administrasi'
-                : actionType === 'backup'
-                ? 'Pencadangan'
-                : actionType}
+                  ? 'Autentikasi'
+                  : actionType === 'draft'
+                    ? 'Pengadaan'
+                    : actionType === 'maintenance'
+                      ? 'Maintenance'
+                      : actionType === 'admin'
+                        ? 'Administrasi'
+                        : actionType === 'backup'
+                          ? 'Pencadangan'
+                          : actionType}
             </span>
             <Icon name="chevD" size={12} className="opacity-60" />
           </button>
@@ -691,17 +712,9 @@ export function Audit() {
         {/* Custom Themed Date Picker Filter */}
         <div className="flex items-center gap-2 flex-wrap" style={{ position: 'relative' }}>
           <span className="text-xs text-ink-3 fw-5">Tanggal:</span>
-          <CustomDatePicker
-            value={startDate}
-            onChange={setStartDate}
-            placeholder="Mulai"
-          />
+          <CustomDatePicker value={startDate} onChange={setStartDate} placeholder="Mulai" />
           <span className="text-xs text-ink-3">—</span>
-          <CustomDatePicker
-            value={endDate}
-            onChange={setEndDate}
-            placeholder="Selesai"
-          />
+          <CustomDatePicker value={endDate} onChange={setEndDate} placeholder="Selesai" />
 
           {(startDate || endDate || actionType !== 'all' || filter !== 'all') && (
             <button
@@ -755,7 +768,9 @@ export function Audit() {
               <tr
                 key={a.id}
                 className="hover:bg-white/5 cursor-pointer"
-                onClick={() => dispatch({ type: 'OPEN_MODAL', modal: { kind: 'auditDetail', payload: a } })}
+                onClick={() =>
+                  dispatch({ type: 'OPEN_MODAL', modal: { kind: 'auditDetail', payload: a } })
+                }
               >
                 <td className="mono text-xs">{a.ts}</td>
                 <td>
@@ -768,7 +783,13 @@ export function Audit() {
                 <td className="text-sm">{a.target}</td>
                 <td
                   className="text-xs"
-                  style={{ minWidth: '320px', width: '320px', wordBreak: 'break-word', color: 'var(--color-ink-2)', lineHeight: '1.5' }}
+                  style={{
+                    minWidth: '320px',
+                    width: '320px',
+                    wordBreak: 'break-word',
+                    color: 'var(--color-ink-2)',
+                    lineHeight: '1.5',
+                  }}
                 >
                   {a.details || <span style={{ opacity: 0.3 }}>—</span>}
                 </td>

@@ -200,11 +200,14 @@ export function AdminReceiveGrid({ draft, totals, onToggle }) {
   const handleSubmit = (card) => {
     const data = formsData[card.cardId];
     if (card.kind === 'Inventaris' && (!data.code || !data.qr_photo)) {
-      alert('Untuk inventaris, Penomoran Label Internal dan Foto QR dari Universitas wajib diisi.');
+      toast(
+        'Untuk inventaris, Penomoran Label Internal dan Foto QR dari Universitas wajib diisi.',
+        'warn'
+      );
       return;
     }
     if (card.kind !== 'Inventaris' && (!data.qty_received || data.qty_received <= 0)) {
-      alert('Jumlah diterima harus lebih dari 0.');
+      toast('Jumlah diterima harus lebih dari 0.', 'warn');
       return;
     }
     onToggle(card.id, data);

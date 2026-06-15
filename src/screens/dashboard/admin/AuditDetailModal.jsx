@@ -18,7 +18,10 @@ export function AuditDetailModal({ payload: selectedLog, close }) {
     const handleWheel = (e) => {
       e.preventDefault();
       const delta = e.deltaY;
-      targetScrollTop = Math.max(0, Math.min(el.scrollHeight - el.clientHeight, targetScrollTop + delta));
+      targetScrollTop = Math.max(
+        0,
+        Math.min(el.scrollHeight - el.clientHeight, targetScrollTop + delta)
+      );
 
       if (!animationFrameId) {
         const animate = () => {
@@ -60,9 +63,15 @@ export function AuditDetailModal({ payload: selectedLog, close }) {
       onClick={(e) => e.stopPropagation()}
     >
       {/* Modal Head */}
-      <div className="p-5 border-b border-white/10 flex justify-between items-center" style={{ background: 'rgba(255, 255, 255, 0.01)' }}>
+      <div
+        className="p-5 border-b border-white/10 flex justify-between items-center"
+        style={{ background: 'rgba(255, 255, 255, 0.01)' }}
+      >
         <div>
-          <h3 className="text-lg font-semibold tracking-tight flex items-center gap-2 m-0" style={{ color: 'var(--color-ink)' }}>
+          <h3
+            className="text-lg font-semibold tracking-tight flex items-center gap-2 m-0"
+            style={{ color: 'var(--color-ink)' }}
+          >
             <Icon name="log" size={18} className="text-cyan" />
             Detail Log Aktivitas #{selectedLog.id}
           </h3>
@@ -77,7 +86,12 @@ export function AuditDetailModal({ payload: selectedLog, close }) {
       </div>
 
       {/* Modal Content */}
-      <div ref={scrollRef} className="p-6 space-y-4 text-sm overflow-y-auto" style={{ maxHeight: '70vh' }} data-lenis-prevent>
+      <div
+        ref={scrollRef}
+        className="p-6 space-y-4 text-sm overflow-y-auto"
+        style={{ maxHeight: '70vh' }}
+        data-lenis-prevent
+      >
         <div className="grid grid-cols-3 gap-2 py-2.5 border-b border-white/5">
           <span className="text-ink-3">Waktu</span>
           <span className="col-span-2 mono text-xs font-medium text-ink-2">{selectedLog.ts}</span>
@@ -97,7 +111,9 @@ export function AuditDetailModal({ payload: selectedLog, close }) {
 
         <div className="grid grid-cols-3 gap-2 py-2.5 border-b border-white/5">
           <span className="text-ink-3">Aksi</span>
-          <span className="col-span-2 mono text-xs text-cyan font-semibold">{selectedLog.action}</span>
+          <span className="col-span-2 mono text-xs text-cyan font-semibold">
+            {selectedLog.action}
+          </span>
         </div>
 
         <div className="grid grid-cols-3 gap-2 py-2.5 border-b border-white/5">
@@ -132,7 +148,8 @@ export function AuditDetailModal({ payload: selectedLog, close }) {
             }}
           >
             <div className="flex items-center gap-1.5 text-xs text-cyan font-semibold mb-2">
-              <Icon name="check" size={12} strokeWidth={2.4} /> Integritas Rantai Blok Kriptografi Terverifikasi
+              <Icon name="check" size={12} strokeWidth={2.4} /> Integritas Rantai Blok Kriptografi
+              Terverifikasi
             </div>
             <div className="space-y-1.5 text-[10px] mono">
               <div className="truncate">

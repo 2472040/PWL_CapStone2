@@ -46,9 +46,7 @@ export function ConfirmModal({ payload, close }) {
         >
           {title}
         </div>
-        <div className="text-sm text-ink-3 leading-[1.5] max-w-[360px] mx-auto">
-          {message}
-        </div>
+        <div className="text-sm text-ink-3 leading-[1.5] max-w-[360px] mx-auto">{message}</div>
       </div>
       <div
         style={{
@@ -63,7 +61,10 @@ export function ConfirmModal({ payload, close }) {
         <button className="btn flex-1 justify-center" onClick={handleCancel}>
           {cancelText}
         </button>
-        <button className={`btn flex-1 justify-center ${isDanger ? 'danger' : 'primary'}`} onClick={handleConfirm}>
+        <button
+          className={`btn flex-1 justify-center ${isDanger ? 'danger' : 'primary'}`}
+          onClick={handleConfirm}
+        >
           {confirmText}
         </button>
       </div>

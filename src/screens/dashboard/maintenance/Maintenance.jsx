@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { useStore, D, Icon, StatTile, useSearch, useToast } from '../../../components/app-shell.jsx';
+import {
+  useStore,
+  D,
+  Icon,
+  StatTile,
+  useSearch,
+  useToast,
+} from '../../../components/app-shell.jsx';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../../../services/api.js';
 import pdfMake from 'pdfmake/build/pdfmake';
