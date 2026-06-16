@@ -1,7 +1,21 @@
-import React, { useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import gsap from 'gsap';
-import { D, fmtRp, fmtRpShort, FakeQR, AuRise, ScrambleText } from './LandingUtils.jsx';
-import TimelineRail from './TimelineRail.jsx';
+import { D, fmtRp, fmtRpShort, FakeQR, AuRise, ScrambleText } from './LandingUtils';
+import TimelineRail from './TimelineRail';
+
+interface FlowSectionProps {
+  step: number;
+  setStep: (s: number) => void;
+  approvals: Record<string, 'ok' | 'no' | null>;
+  setApproval: (id: string, val: 'ok' | 'no') => void;
+  approveAll: () => void;
+  received: Record<string, boolean>;
+  setReceive: (id: string) => void;
+  totals: {
+    all: number;
+    approved: number;
+  };
+}
 
 export default function FlowSection({
   step,
@@ -12,13 +26,13 @@ export default function FlowSection({
   received,
   setReceive,
   totals,
-}) {
+}: FlowSectionProps) {
   const steps = [
     { n: 1, label: 'Kalab', sub: 'Draf pengadaan' },
     { n: 2, label: 'Kaprodi', sub: 'Review & approval' },
     { n: 3, label: 'Admin', sub: 'Receive & label' },
   ];
-  const flowBarRef = useRef(null);
+  const flowBarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (step > 0 && flowBarRef.current) {
@@ -101,7 +115,7 @@ export default function FlowSection({
   );
 }
 
-function KalabView({ setStep }) {
+function KalabView({ setStep }: { setStep: (s: number) => void }) {
   return (
     <div>
       <div className="au-draft-head">
@@ -226,7 +240,19 @@ function KalabView({ setStep }) {
   );
 }
 
-function KaprodiView({ approvals, setApproval, approveAll, totals, setStep }) {
+function KaprodiView({
+  approvals,
+  setApproval,
+  approveAll,
+  totals,
+  setStep,
+}: {
+  approvals: Record<string, 'ok' | 'no' | null>;
+  setApproval: (id: string, val: 'ok' | 'no') => void;
+  approveAll: () => void;
+  totals: { all: number; approved: number };
+  setStep: (s: number) => void;
+}) {
   const approvedCount = Object.values(approvals).filter((v) => v === 'ok').length;
   const rejectedCount = Object.values(approvals).filter((v) => v === 'no').length;
   const pending = D.draft.items.length - approvedCount - rejectedCount;
@@ -370,10 +396,15 @@ function KaprodiView({ approvals, setApproval, approveAll, totals, setStep }) {
   );
 }
 
-function AdminView({ approvals, received, setReceive }) {
-  const approvedItems = D.draft.items.filter(
-    (it) => approvals[it.id] === 'ok' || approvals[it.id] === null
-  );
+function AdminView({
+  approvals,
+  received,
+  setReceive,
+}: {
+  approvals: Record<string, 'ok' | 'no' | null>;
+  received: Record<string, boolean>;
+  setReceive: (id: string) => void;
+}) {
   const eligible = D.draft.items.filter((it) => approvals[it.id] !== 'no');
   const receivedCount = Object.values(received).filter(Boolean).length;
   return (

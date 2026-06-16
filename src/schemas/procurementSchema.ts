@@ -2,22 +2,22 @@ import { z } from 'zod';
 
 export const draftItemSchema = z.object({
   kind: z.enum(['Inventaris', 'BHP'], {
-    errorMap: () => ({ message: "Kategori item harus 'Inventaris' atau 'BHP'." }),
+    message: "Kategori item harus 'Inventaris' atau 'BHP'.",
   }),
   name: z
     .string()
     .min(3, { message: 'Nama barang minimal 3 karakter.' })
     .max(200, { message: 'Nama barang maksimal 200 karakter.' }),
   qty: z
-    .number({ invalid_type_error: 'Jumlah barang harus berupa angka.' })
+    .number({ message: 'Jumlah barang harus berupa angka.' })
     .int({ message: 'Jumlah barang harus berupa angka bulat.' })
     .positive({ message: 'Jumlah barang harus lebih besar dari 0.' }),
   unit: z
-    .string({ required_error: 'Satuan barang wajib diisi.' })
+    .string({ message: 'Satuan barang wajib diisi.' })
     .min(1, { message: 'Satuan barang wajib diisi.' })
     .max(50, { message: 'Satuan barang maksimal 50 karakter.' }),
   price: z
-    .number({ invalid_type_error: 'Harga barang harus berupa angka.' })
+    .number({ message: 'Harga barang harus berupa angka.' })
     .positive({ message: 'Harga barang harus lebih besar dari 0.' }),
   link: z
     .string()

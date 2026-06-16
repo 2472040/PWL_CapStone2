@@ -1,5 +1,16 @@
 import React, { useEffect } from 'react';
-import { useStore } from './store-context.jsx';
+import { useStore } from './store-context';
+
+declare global {
+  interface Window {
+    gsap?: any;
+    LokaSounds?: {
+      click: () => void;
+      hover: () => void;
+      toggle: () => void;
+    };
+  }
+}
 
 // =========================================================
 // IntersectionObserver reveal fallback (when GSAP unavailable)
@@ -25,7 +36,11 @@ export function useRevealFallback() {
 // Animates [data-reveal] elements with staggered fade+translate
 // Animates [data-reveal-children] container children sequentially
 // =========================================================
-export function useStaggerReveal(ref, deps = [], onComplete = null) {
+export function useStaggerReveal(
+  ref: React.RefObject<HTMLElement | null>,
+  deps: any[] = [],
+  onComplete: (() => void) | null = null
+) {
   useEffect(() => {
     if (!window.gsap || !ref?.current) return;
 
@@ -43,7 +58,7 @@ export function useStaggerReveal(ref, deps = [], onComplete = null) {
 
     const ctx = window.gsap.context(() => {
       // Stagger [data-reveal] elements
-      const reveals = ref.current.querySelectorAll('[data-reveal]');
+      const reveals = ref.current?.querySelectorAll('[data-reveal]');
       let activeAnimations = 0;
 
       const checkComplete = () => {
@@ -53,7 +68,7 @@ export function useStaggerReveal(ref, deps = [], onComplete = null) {
         }
       };
 
-      if (reveals.length > 0) {
+      if (reveals && reveals.length > 0) {
         activeAnimations++;
         window.gsap.fromTo(
           reveals,
@@ -73,8 +88,8 @@ export function useStaggerReveal(ref, deps = [], onComplete = null) {
       }
 
       // Stagger children inside [data-reveal-children] containers
-      const childContainers = ref.current.querySelectorAll('[data-reveal-children]');
-      childContainers.forEach((container) => {
+      const childContainers = ref.current?.querySelectorAll('[data-reveal-children]');
+      childContainers?.forEach((container) => {
         const children = container.children;
         if (children.length === 0) return;
         activeAnimations++;
@@ -107,7 +122,11 @@ export function useStaggerReveal(ref, deps = [], onComplete = null) {
 // =========================================================
 // Table/List row stagger — animates visible rows on mount
 // =========================================================
-export function useListStagger(ref, selector, deps = []) {
+export function useListStagger(
+  ref: React.RefObject<HTMLElement | null>,
+  selector: string,
+  deps: any[] = []
+) {
   useEffect(() => {
     if (!window.gsap || !ref?.current) return;
 
@@ -137,13 +156,13 @@ export function useListStagger(ref, selector, deps = []) {
 // =========================================================
 // Keyboard shortcuts hook
 // =========================================================
-export function useKeyboardShortcuts(dispatch) {
+export function useKeyboardShortcuts(dispatch: (action: any) => void) {
   useEffect(() => {
-    const handler = (e) => {
+    const handler = (e: KeyboardEvent) => {
       // ⌘K or Ctrl+K -> focus search
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        const searchInput = document.querySelector('.searchbox input');
+        const searchInput = document.querySelector('.searchbox input') as HTMLInputElement | null;
         if (searchInput) searchInput.focus();
       }
       // Escape -> close drawer/modal/mobile sidebar
@@ -166,21 +185,27 @@ export function SoundIntegration() {
     const snd = window.LokaSounds;
     if (!snd) return;
 
-    const onClick = (e) => {
-      const el = e.target.closest('button, [role="button"], a, .sb-item, .act-btn');
+    const onClick = (e: MouseEvent) => {
+      const targetEl = e.target as HTMLElement | null;
+      if (!targetEl) return;
+      const el = targetEl.closest('button, [role="button"], a, .sb-item, .act-btn');
       if (el) {
         if (el.hasAttribute('data-no-sound') || el.closest('[data-no-sound]')) return;
         snd.click();
       }
     };
-    const onMouseEnter = (e) => {
-      const el = e.target.closest(
+    const onMouseEnter = (e: MouseEvent) => {
+      const targetEl = e.target as HTMLElement | null;
+      if (!targetEl) return;
+      const el = targetEl.closest(
         'button, [role="button"], a, .card, .draft-card, .inv-card, .sb-item'
       );
       if (el) snd.hover();
     };
-    const onToggle = (e) => {
-      if (e.target.closest('.toggle, input[type="checkbox"]')) snd.toggle();
+    const onToggle = (e: Event) => {
+      const targetEl = e.target as HTMLElement | null;
+      if (!targetEl) return;
+      if (targetEl.closest('.toggle, input[type="checkbox"]')) snd.toggle();
     };
 
     document.addEventListener('click', onClick, true);
@@ -200,8 +225,10 @@ export function SoundIntegration() {
 // =========================================================
 export function MouseTracker() {
   useEffect(() => {
-    const handler = (e) => {
-      const btn = e.target.closest('.btn');
+    const handler = (e: MouseEvent) => {
+      const targetEl = e.target as HTMLElement | null;
+      if (!targetEl) return;
+      const btn = targetEl.closest('.btn') as HTMLElement | null;
       if (!btn) return;
       const rect = btn.getBoundingClientRect();
       btn.style.setProperty('--mx', ((e.clientX - rect.left) / rect.width) * 100 + '%');
@@ -238,10 +265,12 @@ export function TiltEngine() {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
     if (mq.matches) return;
 
-    const onMove = (e) => {
-      const card = e.target.closest('.tilt-card');
+    const onMove = (e: MouseEvent) => {
+      const targetEl = e.target as HTMLElement | null;
+      if (!targetEl) return;
+      const card = targetEl.closest('.tilt-card') as HTMLElement | null;
       if (!card) {
-        document.querySelectorAll('.tilt-card').forEach((c) => {
+        document.querySelectorAll('.tilt-card').forEach((c: any) => {
           if (window.gsap) {
             window.gsap.to(c, {
               transform: 'perspective(1800px) rotateX(0deg) rotateY(0deg)',
@@ -250,7 +279,7 @@ export function TiltEngine() {
               overwrite: 'auto',
               clearProps: 'transform',
             });
-            const shine = c.querySelector('.tilt-shine');
+            const shine = c.querySelector('.tilt-shine') as HTMLElement | null;
             if (shine) {
               window.gsap.to(shine, {
                 background: 'transparent',
@@ -261,14 +290,14 @@ export function TiltEngine() {
             }
           } else {
             c.style.transform = '';
-            const shine = c.querySelector('.tilt-shine');
+            const shine = c.querySelector('.tilt-shine') as HTMLElement | null;
             if (shine) shine.style.background = '';
           }
         });
         return;
       }
 
-      const interactive = e.target.closest('button, a, input, select, textarea, [role="button"]');
+      const interactive = targetEl.closest('button, a, input, select, textarea, [role="button"]');
       if (interactive) {
         if (window.gsap) {
           window.gsap.to(card, {
@@ -277,7 +306,7 @@ export function TiltEngine() {
             ease: 'power3.out',
             overwrite: 'auto',
           });
-          const shine = card.querySelector('.tilt-shine');
+          const shine = card.querySelector('.tilt-shine') as HTMLElement | null;
           if (shine) {
             window.gsap.to(shine, {
               background: 'transparent',
@@ -287,7 +316,7 @@ export function TiltEngine() {
           }
         } else {
           card.style.transform = '';
-          const shine = card.querySelector('.tilt-shine');
+          const shine = card.querySelector('.tilt-shine') as HTMLElement | null;
           if (shine) shine.style.background = '';
         }
         return;
@@ -296,24 +325,26 @@ export function TiltEngine() {
       const rect = card.getBoundingClientRect();
       const x = (e.clientX - rect.left) / rect.width;
       const y = (e.clientY - rect.top) / rect.height;
-      const rotateX = (y - 0.5) * -7; // deg — slightly more active but still elegant
+      const rotateX = (y - 0.5) * -7; // deg
       const rotateY = (x - 0.5) * 7;
 
       // Responsive direct transform on move, kill active tweens first
       if (window.gsap) {
         window.gsap.killTweensOf([card]);
-        const shine = card.querySelector('.tilt-shine');
+        const shine = card.querySelector('.tilt-shine') as HTMLElement | null;
         if (shine) window.gsap.killTweensOf([shine]);
       }
       card.style.transform = `perspective(1800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
-      const shine = card.querySelector('.tilt-shine');
+      const shine = card.querySelector('.tilt-shine') as HTMLElement | null;
       if (shine) {
         shine.style.background = `linear-gradient(${135 + rotateY * 2}deg, rgba(255,255,255,${0.04 + Math.abs(x - 0.5) * 0.03}) 0%, transparent 60%)`;
       }
     };
 
-    const onLeave = (e) => {
-      const card = e.target.closest('.tilt-card');
+    const onLeave = (e: MouseEvent) => {
+      const targetEl = e.target as HTMLElement | null;
+      if (!targetEl) return;
+      const card = targetEl.closest('.tilt-card') as HTMLElement | null;
       if (card) {
         if (window.gsap) {
           window.gsap.to(card, {
@@ -323,7 +354,7 @@ export function TiltEngine() {
             overwrite: 'auto',
             clearProps: 'transform',
           });
-          const shine = card.querySelector('.tilt-shine');
+          const shine = card.querySelector('.tilt-shine') as HTMLElement | null;
           if (shine) {
             window.gsap.to(shine, {
               background: 'transparent',
@@ -334,7 +365,7 @@ export function TiltEngine() {
           }
         } else {
           card.style.transform = '';
-          const shine = card.querySelector('.tilt-shine');
+          const shine = card.querySelector('.tilt-shine') as HTMLElement | null;
           if (shine) shine.style.background = '';
         }
       }
@@ -359,12 +390,16 @@ export function CardHoverEngine() {
   useEffect(() => {
     if (!window.gsap) return;
 
-    const onEnter = (e) => {
-      const card = e.target.closest('.card, .stat-tile, .draft-card, .inv-card');
+    const onEnter = (e: MouseEvent) => {
+      const targetEl = e.target as HTMLElement | null;
+      if (!targetEl) return;
+      const card = targetEl.closest(
+        '.card, .stat-tile, .draft-card, .inv-card'
+      ) as HTMLElement | null;
       if (!card) return;
       if (card.classList.contains('tilt-card')) return;
 
-      const interactive = e.target.closest('button, a, input, select, textarea, [role="button"]');
+      const interactive = targetEl.closest('button, a, input, select, textarea, [role="button"]');
       if (interactive) {
         window.gsap.to(card, {
           y: 0,
@@ -392,8 +427,12 @@ export function CardHoverEngine() {
       });
     };
 
-    const onLeave = (e) => {
-      const card = e.target.closest('.card, .stat-tile, .draft-card, .inv-card');
+    const onLeave = (e: MouseEvent) => {
+      const targetEl = e.target as HTMLElement | null;
+      if (!targetEl) return;
+      const card = targetEl.closest(
+        '.card, .stat-tile, .draft-card, .inv-card'
+      ) as HTMLElement | null;
       if (!card) return;
       if (card.classList.contains('tilt-card')) return;
 
@@ -431,19 +470,20 @@ export function ListStaggerEngine() {
     if (mq.matches) return;
 
     const SELECTORS = '.tbl tbody tr, .act-row, .bhp-row, .draft-card, .inv-card';
-    const animated = new WeakSet();
+    const animated = new WeakSet<HTMLElement>();
 
     const observer = new MutationObserver((mutations) => {
-      const newNodes = [];
+      const newNodes: HTMLElement[] = [];
       for (const mutation of mutations) {
-        for (const node of mutation.addedNodes) {
+        for (const node of mutation.addedNodes as any) {
           if (node.nodeType !== 1) continue;
+          const el = node as HTMLElement;
           // Check if the node itself matches or contains matching elements
-          if (node.matches?.(SELECTORS)) {
-            if (!animated.has(node)) newNodes.push(node);
-          } else if (node.querySelectorAll) {
-            node.querySelectorAll(SELECTORS).forEach((el) => {
-              if (!animated.has(el)) newNodes.push(el);
+          if (el.matches?.(SELECTORS)) {
+            if (!animated.has(el)) newNodes.push(el);
+          } else if (el.querySelectorAll) {
+            el.querySelectorAll(SELECTORS).forEach((subEl: any) => {
+              if (!animated.has(subEl)) newNodes.push(subEl);
             });
           }
         }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useStore, D, useSearch, useToast, Icon } from '../../../components/app-shell';
 import { apiFetch } from '../../../services/api';
-import { DraftDetail } from './DraftDetail.jsx';
+import { DraftDetail } from './DraftDetail';
 
 function formatThousand(val) {
   if (!val) return '0';

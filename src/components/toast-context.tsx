@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, createContext, useContext, ReactNode } from 'react';
-import { Icon } from './app-icons.jsx';
+import { useState, useEffect, useRef, createContext, useContext, ReactNode } from 'react';
+import { Icon } from './app-icons';
 
 export interface ToastItem {
   id: string;

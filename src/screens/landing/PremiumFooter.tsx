@@ -1,8 +1,5 @@
-import React from 'react';
-import ShinyButton from './ShinyButton.jsx';
-
 export default function PremiumFooter() {
-  const scrollToSection = (id) => {
+  const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });

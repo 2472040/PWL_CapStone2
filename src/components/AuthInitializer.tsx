@@ -6,7 +6,7 @@ import { io, Socket } from 'socket.io-client';
 declare global {
   interface Window {
     clearApiCache?: () => void;
-    showToast?: (msg: string, kind: 'ok' | 'warn' | 'info') => void;
+    showToast?: (msg: string, kind?: 'ok' | 'warn' | 'info', icon?: string) => void;
   }
 }
 

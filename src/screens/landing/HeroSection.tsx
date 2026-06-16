@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, RefObject } from 'react';
 import gsap from 'gsap';
-import { D, RoleIcon } from './LandingUtils.jsx';
-import ShinyButton from './ShinyButton.jsx';
-import DynamicGridBackground from './DynamicGridBackground.jsx';
+import { D, RoleIcon } from './LandingUtils';
+import ShinyButton from './ShinyButton';
+import DynamicGridBackground from './DynamicGridBackground';
 
-import TextReveal from './TextReveal.jsx';
+import TextReveal from './TextReveal';
 
-export function Stat({ n, l }) {
+export function Stat({ n, l }: { n: string | number; l: string }) {
   return (
     <div className="au-preview-stat">
       <div className="au-preview-stat-num">{n}</div>
@@ -58,10 +58,16 @@ export function Sparkline() {
   );
 }
 
-export default function HeroSection({ onEnterApp, ctaRef }) {
+export default function HeroSection({
+  onEnterApp,
+  ctaRef,
+}: {
+  onEnterApp: () => void;
+  ctaRef: RefObject<HTMLDivElement>;
+}) {
   const [tab, setTab] = useState('draft');
-  const previewRef = useRef(null);
-  const bodyRef = useRef(null);
+  const previewRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
 
   // Tab switch animation
   useEffect(() => {
@@ -77,7 +83,7 @@ export default function HeroSection({ onEnterApp, ctaRef }) {
   useEffect(() => {
     const el = previewRef.current;
     if (!el) return;
-    const handleMove = (e) => {
+    const handleMove = (e: MouseEvent) => {
       const rect = el.getBoundingClientRect();
       const x = e.clientX - rect.left - rect.width / 2;
       const y = e.clientY - rect.top - rect.height / 2;

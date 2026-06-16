@@ -1,28 +1,28 @@
 // Aurora — visionOS-flavored dark concept site (Modularized)
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
-import { CustomCursor } from '../../components/app-cursor.jsx';
+import { CustomCursor } from '../../components/app-cursor';
 import { CursorEnabler } from '../../components/app-shell';
 
-import { D, AuRise } from './LandingUtils.jsx';
-import HeroSection from './HeroSection.jsx';
-import AdvancedMarquee from './AdvancedMarquee.jsx';
-import FlowSection from './FlowSection.jsx';
-import InventorySection from './InventorySection.jsx';
-import ActivitySection from './ActivitySection.jsx';
-import BentoFeatures from './BentoFeatures.jsx';
-import StatsCounter from './StatsCounter.jsx';
-import Testimonials from './Testimonials.jsx';
-import PremiumFooter from './PremiumFooter.jsx';
+import { D, AuRise } from './LandingUtils';
+import HeroSection from './HeroSection';
+import AdvancedMarquee from './AdvancedMarquee';
+import FlowSection from './FlowSection';
+import InventorySection from './InventorySection';
+import ActivitySection from './ActivitySection';
+import BentoFeatures from './BentoFeatures';
+import StatsCounter from './StatsCounter';
+import Testimonials from './Testimonials';
+import PremiumFooter from './PremiumFooter';
 import { motion, AnimatePresence } from 'framer-motion';
 
 gsap.registerPlugin(ScrollTrigger);
 
-export default function AuroraSite({ onEnterApp }) {
-  const rootRef = useRef(null);
-  const heroCtaRef = useRef(null);
+export default function AuroraSite({ onEnterApp }: { onEnterApp: () => void }) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const heroCtaRef = useRef<HTMLDivElement>(null);
   const [showNavSignIn, setShowNavSignIn] = useState(false);
   // Flow state: 0=Kalab draft, 1=Kaprodi review, 2=Admin receive
   const [step, setStep] = useState(0);
@@ -38,21 +38,25 @@ export default function AuroraSite({ onEnterApp }) {
     observer.observe(target);
     return () => observer.disconnect();
   }, []);
-  const [approvals, setApprovals] = useState(() => {
-    const o = {};
-    D.draft.items.forEach((it) => (o[it.id] = null));
+  const [approvals, setApprovals] = useState<Record<string, 'ok' | 'no' | null>>(() => {
+    const o: Record<string, 'ok' | 'no' | null> = {};
+    D.draft.items.forEach((it) => {
+      o[it.id] = null;
+    });
     return o;
   });
-  const [received, setReceive] = useState({});
+  const [received, setReceive] = useState<Record<string, boolean>>({});
 
-  const setApproval = (id, val) =>
+  const setApproval = (id: string, val: 'ok' | 'no') =>
     setApprovals((p) => ({ ...p, [id]: p[id] === val ? null : val }));
   const approveAll = () => {
-    const o = {};
-    D.draft.items.forEach((it) => (o[it.id] = 'ok'));
+    const o: Record<string, 'ok' | 'no' | null> = {};
+    D.draft.items.forEach((it) => {
+      o[it.id] = 'ok';
+    });
     setApprovals(o);
   };
-  const toggleReceive = (id) => setReceive((p) => ({ ...p, [id]: !p[id] }));
+  const toggleReceive = (id: string) => setReceive((p) => ({ ...p, [id]: !p[id] }));
 
   const totals = {
     all: D.draft.items.reduce((s, i) => s + i.qty * i.price, 0),
@@ -65,7 +69,7 @@ export default function AuroraSite({ onEnterApp }) {
   useEffect(() => {
     const lenis = new Lenis({
       duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // https://www.desmos.com/calculator/brs54l4xou
+      easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // https://www.desmos.com/calculator/brs54l4xou
       direction: 'vertical',
       gestureDirection: 'vertical',
       smooth: true,
@@ -73,7 +77,7 @@ export default function AuroraSite({ onEnterApp }) {
       smoothTouch: false,
       touchMultiplier: 2,
       infinite: false,
-    });
+    } as any);
 
     lenis.on('scroll', ScrollTrigger.update);
 
@@ -147,7 +151,7 @@ export default function AuroraSite({ onEnterApp }) {
       });
 
       // Section headings with 3D Flip reveal
-      root.querySelectorAll('.au-section-h2').forEach((el) => {
+      root.querySelectorAll('.au-section-h2').forEach((el: any) => {
         gsap.fromTo(
           el,
           { y: 50, opacity: 0, rotationX: -30, transformPerspective: 800 },
@@ -163,7 +167,7 @@ export default function AuroraSite({ onEnterApp }) {
       });
 
       // Section subs
-      root.querySelectorAll('.au-section-sub').forEach((el) => {
+      root.querySelectorAll('.au-section-sub').forEach((el: any) => {
         gsap.fromTo(
           el,
           { y: 24, opacity: 0 },
@@ -386,8 +390,8 @@ export default function AuroraSite({ onEnterApp }) {
   );
 }
 
-function Nav({ showSignIn, onSignIn }) {
-  const scrollToSection = (id) => {
+function Nav({ showSignIn, onSignIn }: { showSignIn: boolean; onSignIn: () => void }) {
+  const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
@@ -460,27 +464,5 @@ function CTA() {
         Coba gratis 30 hari untuk satu prodi. Tanpa kartu kredit. Migrasi data dibantu.
       </p>
     </AuRise>
-  );
-}
-
-function Foot() {
-  return (
-    <footer className="au-foot">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <img
-          src="/assets/loka_lab.png"
-          alt="Loka Lab"
-          className="au-brand-dot"
-          style={{ width: 18, height: 18 }}
-        />
-        <span>© 2026 Loka Lab Suite · Dibuat di Bandung</span>
-      </div>
-      <div className="au-foot-links">
-        <a>Privasi</a>
-        <a>Ketentuan</a>
-        <a>Status</a>
-        <a>Changelog</a>
-      </div>
-    </footer>
   );
 }

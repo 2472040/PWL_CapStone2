@@ -1,8 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 
-export default function TextReveal({ text, delay = 0 }) {
-  const containerRef = useRef(null);
+export default function TextReveal({ delay = 0 }: { delay?: number }) {
+  const containerRef = useRef<HTMLHeadingElement>(null);
 
   // Split the text into words, but preserve the HTML structure (like <br/> or <em>)
   // For simplicity since we have HTML tags in our Hero, we'll implement a custom split

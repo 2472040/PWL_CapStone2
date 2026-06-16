@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ScrambleText } from './LandingUtils.jsx';
+import { useState, useEffect } from 'react';
+import { ScrambleText } from './LandingUtils';
 
 const testimonials = [
   {

@@ -1,9 +1,4 @@
 declare global {
-  interface Document {
-    startViewTransition?: (cb: () => void) => {
-      finished: Promise<void>;
-    };
-  }
   interface HTMLElement {
     _applied?: boolean;
   }
@@ -49,13 +44,14 @@ export function themeTransition(
       )
     ) + 20;
 
-  if (document.startViewTransition) {
+  const doc = document as any;
+  if (doc.startViewTransition) {
     _themeTransitioning = true;
     document.documentElement.style.setProperty('--theme-x', `${originX}px`);
     document.documentElement.style.setProperty('--theme-y', `${originY}px`);
     document.documentElement.style.setProperty('--theme-r', `${maxRadius}px`);
 
-    const transition = document.startViewTransition(() => {
+    const transition = doc.startViewTransition(() => {
       dispatch({ type: 'SET_THEME', theme: newTheme });
     });
 

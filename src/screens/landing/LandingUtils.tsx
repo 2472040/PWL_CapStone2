@@ -227,33 +227,55 @@ export const D = {
   ],
 };
 
-export const fmtRp = (n) => 'Rp ' + n.toLocaleString('id-ID');
-export const fmtRpShort = (n) => {
+export const fmtRp = (n: number) => 'Rp ' + n.toLocaleString('id-ID');
+export const fmtRpShort = (n: number) => {
   if (n >= 1_000_000) return 'Rp ' + (n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1) + 'jt';
   if (n >= 1_000) return 'Rp ' + (n / 1_000).toFixed(0) + 'rb';
   return 'Rp ' + n;
 };
 
 // In-view observer hook (removed since GSAP handles all ScrollTriggers)
-export function AuRise({ children, as: As = 'div', className = '', ...rest }) {
+export function AuRise({
+  children,
+  as: As = 'div',
+  className = '',
+  ...rest
+}: {
+  children: React.ReactNode;
+  as?: React.ElementType;
+  className?: string;
+  [key: string]: any;
+}) {
+  const Component = As as any;
   return (
-    <As className={`au-rise ${className}`} {...rest}>
+    <Component className={`au-rise ${className}`} {...rest}>
       {children}
-    </As>
+    </Component>
   );
 }
-export function AuStagger({ children, as: As = 'div', className = '', ...rest }) {
+export function AuStagger({
+  children,
+  as: As = 'div',
+  className = '',
+  ...rest
+}: {
+  children: React.ReactNode;
+  as?: React.ElementType;
+  className?: string;
+  [key: string]: any;
+}) {
+  const Component = As as any;
   return (
-    <As className={`au-stagger ${className}`} {...rest}>
+    <Component className={`au-stagger ${className}`} {...rest}>
       {children}
-    </As>
+    </Component>
   );
 }
 
 // Tiny QR-ish pattern (deterministic from seed)
-export function FakeQR({ seed }) {
+export function FakeQR({ seed }: { seed: string }) {
   const cells = useMemo(() => {
-    const arr = [];
+    const arr: number[] = [];
     let h = 0;
     for (let i = 0; i < seed.length; i++) h = ((h << 5) - h + seed.charCodeAt(i)) | 0;
     for (let i = 0; i < 36; i++) {
@@ -272,8 +294,8 @@ export function FakeQR({ seed }) {
 }
 
 // Role icons
-export const RoleIcon = ({ kind }) => {
-  const map = {
+export const RoleIcon = ({ kind }: { kind: string }) => {
+  const map: Record<string, React.ReactNode> = {
     kalab: <path d="M3 9.5L12 4l9 5.5M5 10v9h14v-9M9 19v-5h6v5" />,
     kaprodi: (
       <path d="M9 12l2 2 4-4m-9 6V6a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2H8l-3 3v-3z" />
@@ -302,8 +324,8 @@ export const RoleIcon = ({ kind }) => {
 };
 
 // Cypher Text Scramble Component
-export function ScrambleText({ text }) {
-  const elRef = useRef(null);
+export function ScrambleText({ text }: { text: string }) {
+  const elRef = useRef<HTMLSpanElement>(null);
   useEffect(() => {
     const el = elRef.current;
     if (!el) return;

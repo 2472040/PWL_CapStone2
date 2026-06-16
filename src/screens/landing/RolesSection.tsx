@@ -1,5 +1,4 @@
-import React from 'react';
-import { D, RoleIcon, AuRise, AuStagger, ScrambleText } from './LandingUtils.jsx';
+import { D, RoleIcon, AuRise, AuStagger, ScrambleText } from './LandingUtils';
 
 export default function RolesSection() {
   return (

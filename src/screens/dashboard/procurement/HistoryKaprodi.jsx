@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useStore, D, useSearch, Icon } from '../../../components/app-shell';
 import { apiFetch } from '../../../services/api';
-import { DraftDetail } from './DraftDetail.jsx';
-import { DraftCard } from './PengadaanKalab.jsx';
+import { DraftDetail } from './DraftDetail';
+import { DraftCard } from './PengadaanKalab';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function HistoryKaprodi() {

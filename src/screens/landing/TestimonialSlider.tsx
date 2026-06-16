@@ -1,7 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Star, Quote } from 'lucide-react';
-import { ScrambleText } from './LandingUtils.jsx';
+import { ScrambleText } from './LandingUtils';
 
 const testimonialsData = [
   {
@@ -33,9 +33,9 @@ const testimonialsData = [
   },
 ];
 
-const StarRating = ({ rating, className }) => {
+const StarRating = ({ rating, className }: { rating: number; className?: string }) => {
   return (
-    <div className={`flex items-center gap-1 ${className}`}>
+    <div className={`flex items-center gap-1 ${className || ''}`}>
       {[...Array(5)].map((_, i) => (
         <Star
           key={i}
@@ -64,8 +64,8 @@ export default function TestimonialSlider() {
 
   const currentTestimonial = testimonialsData[currentIndex];
 
-  const slideVariants = {
-    hidden: (direction) => ({
+  const slideVariants: any = {
+    hidden: (direction: number) => ({
       x: direction > 0 ? '100%' : '-100%',
       opacity: 0,
     }),
@@ -74,7 +74,7 @@ export default function TestimonialSlider() {
       opacity: 1,
       transition: { type: 'spring', stiffness: 260, damping: 30 },
     },
-    exit: (direction) => ({
+    exit: (direction: number) => ({
       x: direction < 0 ? '100%' : '-100%',
       opacity: 0,
       transition: { type: 'spring', stiffness: 260, damping: 30 },

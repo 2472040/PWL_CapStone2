@@ -1,5 +1,3 @@
-import React from 'react';
-
 export default function Marquee() {
   const items = ['LOKA LAB', 'SMART INVENTORY', 'AUTOMATED WORKFLOW', 'VISION OS'];
   const all = [...items, ...items, ...items];

@@ -1,6 +1,14 @@
-import React from 'react';
+import { ReactNode } from 'react';
 
-export default function ShinyButton({ children, onClick, className = '' }) {
+export default function ShinyButton({
+  children,
+  onClick,
+  className = '',
+}: {
+  children: ReactNode;
+  onClick?: () => void;
+  className?: string;
+}) {
   return (
     <button
       onClick={onClick}

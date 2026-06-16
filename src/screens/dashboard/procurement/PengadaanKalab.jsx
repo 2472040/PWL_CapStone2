@@ -8,7 +8,7 @@ import {
   CustomSelect,
 } from '../../../components/app-shell';
 import { apiFetch } from '../../../services/api';
-import { DraftDetail } from './DraftDetail.jsx';
+import { DraftDetail } from './DraftDetail';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const monthOptions = [

@@ -1,5 +1,4 @@
-import React from 'react';
-import { D, FakeQR, AuRise, AuStagger, ScrambleText } from './LandingUtils.jsx';
+import { D, FakeQR, AuRise, AuStagger, ScrambleText } from './LandingUtils';
 
 export default function InventorySection() {
   return (
@@ -18,7 +17,7 @@ export default function InventorySection() {
       </AuRise>
 
       <AuStagger className="au-inv-grid">
-        {D.inventory.map((it, i) => (
+        {D.inventory.map((it) => (
           <div key={it.code} className="au-inv-card">
             <div className="au-inv-card-head">
               <div>

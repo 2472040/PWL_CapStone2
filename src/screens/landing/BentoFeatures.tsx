@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from 'react';
-import { ScrambleText } from './LandingUtils.jsx';
+import { useRef, useEffect } from 'react';
+import { ScrambleText } from './LandingUtils';
 
 const features = [
   {
@@ -127,14 +127,14 @@ const features = [
   },
 ];
 
-function BentoCard({ f }) {
-  const cardRef = useRef(null);
+function BentoCard({ f }: { f: any }) {
+  const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const card = cardRef.current;
     if (!card) return;
 
-    const handleMouseMove = (e) => {
+    const handleMouseMove = (e: MouseEvent) => {
       const rect = card.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
@@ -147,12 +147,12 @@ function BentoCard({ f }) {
       const rotateX = (y - rect.height / 2) / -50;
       const rotateY = (x - rect.width / 2) / 50;
       card.style.transform = `perspective(1800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.005, 1.005, 1.005)`;
-      card.style.zIndex = 10;
+      card.style.zIndex = '10';
     };
 
     const handleMouseLeave = () => {
       card.style.transform = 'perspective(1800px) rotateX(0) rotateY(0) scale3d(1, 1, 1)';
-      card.style.zIndex = 1;
+      card.style.zIndex = '1';
     };
 
     card.addEventListener('mousemove', handleMouseMove);
@@ -212,7 +212,7 @@ export default function BentoFeatures() {
       </p>
 
       <div className="au-bento-grid perspective-1000">
-        {features.map((f, i) => (
+        {features.map((f) => (
           <BentoCard key={f.title} f={f} />
         ))}
       </div>

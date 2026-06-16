@@ -1,6 +1,21 @@
-import React from 'react';
+interface TimelineItem {
+  id?: string | number;
+  n?: number;
+  short?: string;
+  label?: string;
+  action?: string;
+  sub?: string;
+}
 
-export default function TimelineRail({ items, activeIndex, onSelect }) {
+export default function TimelineRail({
+  items,
+  activeIndex,
+  onSelect,
+}: {
+  items: TimelineItem[];
+  activeIndex: number;
+  onSelect: (index: number) => void;
+}) {
   return (
     <div className="relative w-full max-w-3xl mx-auto my-12">
       {/* Background Rail */}
@@ -15,11 +30,13 @@ export default function TimelineRail({ items, activeIndex, onSelect }) {
       <div className="relative z-10 flex justify-between items-center w-full">
         {items.map((item, index) => {
           const isActive = index <= activeIndex;
-          const isCurrent = index === activeIndex;
+          const key = item.id !== undefined ? item.id : item.n;
+          const shortLabel = item.short !== undefined ? item.short : item.label;
+          const actionLabel = item.action !== undefined ? item.action : item.sub;
 
           return (
             <div
-              key={item.id}
+              key={key}
               className="relative flex flex-col items-center group cursor-pointer"
               onClick={() => onSelect(index)}
             >
@@ -27,7 +44,7 @@ export default function TimelineRail({ items, activeIndex, onSelect }) {
               <div
                 className={`absolute -top-10 text-xs font-medium whitespace-nowrap transition-colors duration-300 ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-400'}`}
               >
-                {item.short}
+                {shortLabel}
               </div>
 
               {/* Node */}
@@ -45,7 +62,7 @@ export default function TimelineRail({ items, activeIndex, onSelect }) {
               <div
                 className={`absolute top-10 text-xs text-center w-32 -ml-16 left-1/2 transition-colors duration-300 ${isActive ? 'text-gray-300' : 'text-gray-600'}`}
               >
-                {item.action}
+                {actionLabel}
               </div>
             </div>
           );

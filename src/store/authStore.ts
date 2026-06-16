@@ -19,7 +19,7 @@ export const initialAuthState: AuthState = {
 };
 
 export const authReducer = (
-  state: Record<string, any>,
+  _state: Record<string, any>,
   action: AppAction
 ): Record<string, any> | null => {
   switch (action.type) {

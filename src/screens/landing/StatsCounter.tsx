@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
-function useCountUp(target, duration = 2000, startOnView = true) {
+function useCountUp(target: number, duration = 2000, startOnView = true) {
   const [count, setCount] = useState(0);
-  const ref = useRef(null);
+  const ref = useRef<HTMLDivElement>(null);
   const started = useRef(false);
 
   useEffect(() => {
@@ -12,7 +12,7 @@ function useCountUp(target, duration = 2000, startOnView = true) {
         if (entry.isIntersecting && !started.current) {
           started.current = true;
           const start = performance.now();
-          const tick = (now) => {
+          const tick = (now: number) => {
             const elapsed = now - start;
             const progress = Math.min(elapsed / duration, 1);
             // Ease-out cubic
@@ -51,7 +51,7 @@ export default function StatsCounter() {
   );
 }
 
-function StatItem({ stat, index }) {
+function StatItem({ stat, index }: { stat: any; index: number }) {
   const { count, ref } = useCountUp(
     stat.decimal ? Math.floor(stat.value) : stat.value,
     2000 + index * 200

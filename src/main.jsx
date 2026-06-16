@@ -76,7 +76,7 @@ const AuditDetailModal = React.lazy(() =>
   }))
 );
 
-import LandingPage from './screens/landing/index.jsx';
+import LandingPage from './screens/landing/index';
 
 // Split components for readability and maintenance
 import { ErrorBoundary } from './components/ErrorBoundary';

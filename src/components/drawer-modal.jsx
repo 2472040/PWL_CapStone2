@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, Suspense } from 'react';
-import { useStore } from './store-context.jsx';
+import { useStore } from './store-context';
 
 export const DrawerContent = {};
 export const ModalContent = {};

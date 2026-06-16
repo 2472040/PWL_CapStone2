@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { D, AuRise, ScrambleText } from './LandingUtils.jsx';
+import { D, AuRise, ScrambleText } from './LandingUtils';
 
 export default function ActivitySection() {
   const [items, setItems] = useState(D.activity);
@@ -11,7 +11,9 @@ export default function ActivitySection() {
       setItems((prev) => {
         const newItems = [...prev];
         const lastItem = newItems.pop();
-        newItems.unshift(lastItem);
+        if (lastItem) {
+          newItems.unshift(lastItem);
+        }
         return newItems;
       });
     }, 4000); // cycle every 4 seconds
@@ -37,7 +39,7 @@ export default function ActivitySection() {
         <div className="relative w-full h-[400px] overflow-hidden rounded-2xl bg-[#09090B] border border-[#27272A] p-6 shadow-2xl">
           <div className="flex flex-col gap-3">
             <AnimatePresence>
-              {items.map((a, i) => (
+              {items.map((a) => (
                 <motion.div
                   key={a.who + a.act + a.target}
                   layout

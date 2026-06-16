@@ -1,6 +1,6 @@
-import React from 'react';
+import { FC } from 'react';
 
-const GithubIcon = () => (
+const GithubIcon: FC = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"
@@ -11,7 +11,7 @@ const GithubIcon = () => (
   </svg>
 );
 
-const MicrosoftIcon = () => (
+const MicrosoftIcon: FC = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 23 23"
@@ -25,7 +25,7 @@ const MicrosoftIcon = () => (
   </svg>
 );
 
-const VercelIcon = () => (
+const VercelIcon: FC = () => (
   <svg
     viewBox="0 0 256 222"
     xmlns="http://www.w3.org/2000/svg"
@@ -36,7 +36,7 @@ const VercelIcon = () => (
   </svg>
 );
 
-const ReactIcon = () => (
+const ReactIcon: FC = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="-11.5 -10.232 23 20.463"
@@ -52,7 +52,7 @@ const ReactIcon = () => (
   </svg>
 );
 
-const NodeIcon = () => (
+const NodeIcon: FC = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"
@@ -112,11 +112,13 @@ export default function AdvancedMarquee() {
               >
                 {/* Gradient background revealed on hover */}
                 <div
-                  style={{
-                    '--from': logo.gradient.from,
-                    '--via': logo.gradient.via,
-                    '--to': logo.gradient.to,
-                  }}
+                  style={
+                    {
+                      '--from': logo.gradient.from,
+                      '--via': logo.gradient.via,
+                      '--to': logo.gradient.to,
+                    } as any
+                  }
                   className="absolute inset-0 scale-150 opacity-0 transition-all duration-700 ease-out group-hover:opacity-100 group-hover:scale-100 bg-gradient-to-br from-[var(--from)] via-[var(--via)] to-[var(--to)]"
                 />
 

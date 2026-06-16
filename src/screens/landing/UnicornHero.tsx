@@ -1,4 +1,3 @@
-import React from 'react';
 import UnicornScene from 'unicornstudio-react';
 
 export default function UnicornHero() {
