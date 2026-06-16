@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useStore, StatTile, D, Icon, QR, useSearch, CustomSelect } from '../../../components/app-shell.jsx';
+import {
+  useStore,
+  StatTile,
+  D,
+  Icon,
+  QR,
+  useSearch,
+  CustomSelect,
+} from '../../../components/app-shell.jsx';
 import { apiFetch } from '../../../services/api';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
@@ -27,7 +35,7 @@ const monthOptions = [
   { value: '09', label: 'September' },
   { value: '10', label: 'Oktober' },
   { value: '11', label: 'November' },
-  { value: '12', label: 'Desember' }
+  { value: '12', label: 'Desember' },
 ];
 
 export function Inventory() {
@@ -61,7 +69,9 @@ export function Inventory() {
         if (res.data) {
           const uniqueCats = ['all', ...new Set(res.data.map((i) => i.category))].filter(Boolean);
           const uniqueYears = [
-            ...new Set(res.data.map((i) => (i.acquired_date ? i.acquired_date.split('-')[0] : null))),
+            ...new Set(
+              res.data.map((i) => (i.acquired_date ? i.acquired_date.split('-')[0] : null))
+            ),
           ]
             .filter(Boolean)
             .sort();
@@ -309,7 +319,7 @@ export function Inventory() {
           onChange={setYearFilter}
           options={[
             { value: 'all', label: 'Semua Tahun' },
-            ...years.map((y) => ({ value: y, label: y }))
+            ...years.map((y) => ({ value: y, label: y })),
           ]}
           style={{ width: '130px' }}
           placeholder="Semua Tahun"
@@ -330,25 +340,96 @@ export function Inventory() {
         {loading ? (
           Array.from({ length: 6 }).map((_, idx) => (
             <div key={idx} className="skeleton-card shimmer">
-              <div className="flex between aic" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ width: '100px', height: '16px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }} />
-                <div style={{ width: '36px', height: '36px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px' }} />
+              <div
+                className="flex between aic"
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+              >
+                <div
+                  style={{
+                    width: '100px',
+                    height: '16px',
+                    background: 'rgba(255,255,255,0.05)',
+                    borderRadius: '4px',
+                  }}
+                />
+                <div
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    background: 'rgba(255,255,255,0.05)',
+                    borderRadius: '6px',
+                  }}
+                />
               </div>
-              <div style={{ width: '80%', height: '20px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', marginTop: '12px' }} />
-              <div style={{ width: '50%', height: '14px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', marginTop: '8px' }} />
-              <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ height: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }} />
-                <div style={{ height: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }} />
+              <div
+                style={{
+                  width: '80%',
+                  height: '20px',
+                  background: 'rgba(255,255,255,0.05)',
+                  borderRadius: '6px',
+                  marginTop: '12px',
+                }}
+              />
+              <div
+                style={{
+                  width: '50%',
+                  height: '14px',
+                  background: 'rgba(255,255,255,0.05)',
+                  borderRadius: '4px',
+                  marginTop: '8px',
+                }}
+              />
+              <div
+                style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '8px' }}
+              >
+                <div
+                  style={{
+                    height: '12px',
+                    background: 'rgba(255,255,255,0.05)',
+                    borderRadius: '4px',
+                  }}
+                />
+                <div
+                  style={{
+                    height: '12px',
+                    background: 'rgba(255,255,255,0.05)',
+                    borderRadius: '4px',
+                  }}
+                />
               </div>
             </div>
           ))
         ) : filtered.length === 0 ? (
-          <div className="empty" style={{ gridColumn: '1 / -1', padding: '48px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-            <div className="ico" style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(255,255,255,0.02)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+          <div
+            className="empty"
+            style={{
+              gridColumn: '1 / -1',
+              padding: '48px 0',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <div
+              className="ico"
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.02)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '16px',
+              }}
+            >
               <Icon name="search" size={20} />
             </div>
             <h4>Aset tidak ditemukan</h4>
-            <div className="text-3" style={{ fontSize: '13px', color: 'var(--ink-3)' }}>Coba ubah kata kunci pencarian atau filter kategori.</div>
+            <div className="text-3" style={{ fontSize: '13px', color: 'var(--ink-3)' }}>
+              Coba ubah kata kunci pencarian atau filter kategori.
+            </div>
           </div>
         ) : (
           filtered.map((it) => (
@@ -396,16 +477,30 @@ export function Inventory() {
 
       {/* Pagination Controls */}
       {totalPages > 1 && (
-        <div className="flex justify-between items-center mt-6 p-4 border-t border-line" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px', padding: '16px 0', borderTop: '1px solid var(--color-line)' }}>
+        <div
+          className="flex justify-between items-center mt-6 p-4 border-t border-line"
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginTop: '24px',
+            padding: '16px 0',
+            borderTop: '1px solid var(--color-line)',
+          }}
+        >
           <span className="text-sm text-ink-3" style={{ fontSize: '13px', color: 'var(--ink-3)' }}>
-            Menampilkan {filtered.length} dari {totalItems} aset (Halaman {currentPage} dari {totalPages})
+            Menampilkan {filtered.length} dari {totalItems} aset (Halaman {currentPage} dari{' '}
+            {totalPages})
           </span>
           <div className="flex gap-2" style={{ display: 'flex', gap: '8px' }}>
             <button
               className="btn sm border border-line"
               disabled={currentPage === 1}
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              style={{ opacity: currentPage === 1 ? 0.5 : 1, cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
+              style={{
+                opacity: currentPage === 1 ? 0.5 : 1,
+                cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+              }}
             >
               Sebelumnya
             </button>
@@ -413,7 +508,10 @@ export function Inventory() {
               className="btn sm border border-line"
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              style={{ opacity: currentPage === totalPages ? 0.5 : 1, cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' }}
+              style={{
+                opacity: currentPage === totalPages ? 0.5 : 1,
+                cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+              }}
             >
               Berikutnya
             </button>

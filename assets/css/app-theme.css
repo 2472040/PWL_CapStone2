@@ -544,7 +544,7 @@ body:has(.app) {
 .stat-tile:hover {
   transform: translateY(-4px);
   border-color: var(--accent-color, var(--color-violet));
-  box-shadow: 
+  box-shadow:
     0 12px 24px -10px rgba(0, 0, 0, 0.5),
     0 0 20px rgba(var(--accent-rgb, 167, 139, 250), 0.15);
 }

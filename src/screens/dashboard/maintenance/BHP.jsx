@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useStore, useToast, Icon, D, useSearch, CustomSelect } from '../../../components/app-shell.jsx';
+import {
+  useStore,
+  useToast,
+  Icon,
+  D,
+  useSearch,
+  CustomSelect,
+} from '../../../components/app-shell.jsx';
 import { apiFetch } from '../../../services/api';
 
 function formatThousand(val) {
@@ -23,7 +30,7 @@ const monthOptions = [
   { value: '09', label: 'September' },
   { value: '10', label: 'Oktober' },
   { value: '11', label: 'November' },
-  { value: '12', label: 'Desember' }
+  { value: '12', label: 'Desember' },
 ];
 
 export function BHP() {
@@ -257,7 +264,7 @@ export function BHP() {
           onChange={setYearFilter}
           options={[
             { value: 'all', label: 'Semua Tahun' },
-            ...years.map((y) => ({ value: y, label: y }))
+            ...years.map((y) => ({ value: y, label: y })),
           ]}
           style={{ width: '130px' }}
           placeholder="Semua Tahun"
@@ -291,25 +298,109 @@ export function BHP() {
         </div>
         {loadingList ? (
           Array.from({ length: 5 }).map((_, idx) => (
-            <div key={idx} className="skeleton-row shimmer" style={{ display: 'grid', gridTemplateColumns: '90px 1fr 100px 1fr 100px 110px', gap: 14, padding: '12px 18px', alignItems: 'center', height: 'auto', borderBottom: '1px solid var(--color-line)' }}>
-              <div style={{ width: '60px', height: '14px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }} />
+            <div
+              key={idx}
+              className="skeleton-row shimmer"
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '90px 1fr 100px 1fr 100px 110px',
+                gap: 14,
+                padding: '12px 18px',
+                alignItems: 'center',
+                height: 'auto',
+                borderBottom: '1px solid var(--color-line)',
+              }}
+            >
+              <div
+                style={{
+                  width: '60px',
+                  height: '14px',
+                  background: 'rgba(255,255,255,0.05)',
+                  borderRadius: '4px',
+                }}
+              />
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <div style={{ width: '120px', height: '16px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }} />
-                <div style={{ width: '60px', height: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px' }} />
+                <div
+                  style={{
+                    width: '120px',
+                    height: '16px',
+                    background: 'rgba(255,255,255,0.05)',
+                    borderRadius: '4px',
+                  }}
+                />
+                <div
+                  style={{
+                    width: '60px',
+                    height: '10px',
+                    background: 'rgba(255,255,255,0.05)',
+                    borderRadius: '3px',
+                  }}
+                />
               </div>
-              <div style={{ width: '40px', height: '14px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }} />
-              <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }} />
-              <div style={{ width: '80px', height: '14px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }} />
-              <div style={{ width: '30px', height: '24px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }} />
+              <div
+                style={{
+                  width: '40px',
+                  height: '14px',
+                  background: 'rgba(255,255,255,0.05)',
+                  borderRadius: '4px',
+                }}
+              />
+              <div
+                style={{
+                  width: '100%',
+                  height: '8px',
+                  background: 'rgba(255,255,255,0.05)',
+                  borderRadius: '4px',
+                }}
+              />
+              <div
+                style={{
+                  width: '80px',
+                  height: '14px',
+                  background: 'rgba(255,255,255,0.05)',
+                  borderRadius: '4px',
+                }}
+              />
+              <div
+                style={{
+                  width: '30px',
+                  height: '24px',
+                  background: 'rgba(255,255,255,0.05)',
+                  borderRadius: '4px',
+                }}
+              />
             </div>
           ))
         ) : filteredBhp.length === 0 ? (
-          <div className="empty" style={{ padding: '48px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-            <div className="ico" style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(255,255,255,0.02)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+          <div
+            className="empty"
+            style={{
+              padding: '48px 0',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <div
+              className="ico"
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.02)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '16px',
+              }}
+            >
               <Icon name="search" size={20} />
             </div>
             <h4>Tidak ada BHP cocok</h4>
-            <div className="text-3" style={{ fontSize: '13px', color: 'var(--ink-3)' }}>Coba ubah kata kunci pencarian atau filter tanggal.</div>
+            <div className="text-3" style={{ fontSize: '13px', color: 'var(--ink-3)' }}>
+              Coba ubah kata kunci pencarian atau filter tanggal.
+            </div>
           </div>
         ) : (
           filteredBhp.map((b) => {
@@ -346,7 +437,10 @@ export function BHP() {
                     onClick={() =>
                       dispatch({
                         type: 'OPEN_MODAL',
-                        modal: { kind: 'aiPredictive', payload: { bhpId: b.dbId, bhpName: b.name } },
+                        modal: {
+                          kind: 'aiPredictive',
+                          payload: { bhpId: b.dbId, bhpName: b.name },
+                        },
                       })
                     }
                     title="AI Predictive Analysis"
@@ -378,16 +472,31 @@ export function BHP() {
 
       {/* Pagination Controls */}
       {totalPages > 1 && (
-        <div className="flex justify-between items-center mt-6 p-4 border-t border-line" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px', padding: '16px 18px', background: 'rgba(255,255,255,0.01)', borderTop: '1px solid var(--color-line)' }}>
+        <div
+          className="flex justify-between items-center mt-6 p-4 border-t border-line"
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginTop: '24px',
+            padding: '16px 18px',
+            background: 'rgba(255,255,255,0.01)',
+            borderTop: '1px solid var(--color-line)',
+          }}
+        >
           <span className="text-sm text-ink-3" style={{ fontSize: '13px', color: 'var(--ink-3)' }}>
-            Menampilkan {filteredBhp.length} dari {totalItems} barang (Halaman {currentPage} dari {totalPages})
+            Menampilkan {filteredBhp.length} dari {totalItems} barang (Halaman {currentPage} dari{' '}
+            {totalPages})
           </span>
           <div className="flex gap-2" style={{ display: 'flex', gap: '8px' }}>
             <button
               className="btn sm border border-line"
               disabled={currentPage === 1}
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              style={{ opacity: currentPage === 1 ? 0.5 : 1, cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
+              style={{
+                opacity: currentPage === 1 ? 0.5 : 1,
+                cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+              }}
             >
               Sebelumnya
             </button>
@@ -395,7 +504,10 @@ export function BHP() {
               className="btn sm border border-line"
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              style={{ opacity: currentPage === totalPages ? 0.5 : 1, cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' }}
+              style={{
+                opacity: currentPage === totalPages ? 0.5 : 1,
+                cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+              }}
             >
               Berikutnya
             </button>

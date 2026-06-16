@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useStore, useToast, D, Icon, useSearch, CustomSelect } from '../../../components/app-shell.jsx';
+import {
+  useStore,
+  useToast,
+  D,
+  Icon,
+  useSearch,
+  CustomSelect,
+} from '../../../components/app-shell.jsx';
 import { apiFetch } from '../../../services/api';
 import { DraftDetail } from './DraftDetail.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,7 +24,7 @@ const monthOptions = [
   { value: '09', label: 'September' },
   { value: '10', label: 'Oktober' },
   { value: '11', label: 'November' },
-  { value: '12', label: 'Desember' }
+  { value: '12', label: 'Desember' },
 ];
 
 export function PengadaanKalab() {
@@ -168,7 +175,7 @@ export function PengadaanKalab() {
               onChange={setYearFilter}
               options={[
                 { value: 'all', label: 'Semua Tahun' },
-                ...years.map((y) => ({ value: y, label: y }))
+                ...years.map((y) => ({ value: y, label: y })),
               ]}
               style={{ width: '130px' }}
               placeholder="Semua Tahun"

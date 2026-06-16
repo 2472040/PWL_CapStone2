@@ -1261,7 +1261,9 @@ html[data-theme='light'] select option {
   outline: none;
   min-width: 130px;
   height: 32px;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 .custom-select-trigger:focus {
   border-color: var(--color-violet);
@@ -1302,7 +1304,9 @@ html[data-theme='light'] select option {
   border-radius: 6px;
   color: var(--color-ink-2);
   cursor: pointer;
-  transition: background-color 0.15s, color 0.15s;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
   white-space: nowrap;
 }
 .custom-select-option:hover {
@@ -1429,4 +1433,3 @@ html[data-theme='light'] .skeleton-row {
   word-break: break-word;
   line-height: 1.3;
 }
-

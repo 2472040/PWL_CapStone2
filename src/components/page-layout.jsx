@@ -121,15 +121,18 @@ function hexToRgb(hex) {
 export function StatTile({ label, value, fmt = 'int', icon, delta, accent, percentage }) {
   const initial =
     fmt === 'rp' ? window.fmtRpShort(value || 0) : (value || 0).toLocaleString('id-ID');
-  
+
   const accentRgb = hexToRgb(accent);
   const radius = 20;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = percentage !== undefined ? circumference - (Math.max(0, Math.min(100, percentage)) / 100) * circumference : 0;
+  const strokeDashoffset =
+    percentage !== undefined
+      ? circumference - (Math.max(0, Math.min(100, percentage)) / 100) * circumference
+      : 0;
 
   return (
-    <div 
-      className={`stat-tile ${percentage !== undefined && percentage !== null ? 'has-ring' : ''}`} 
+    <div
+      className={`stat-tile ${percentage !== undefined && percentage !== null ? 'has-ring' : ''}`}
       data-reveal
       style={{
         '--accent-color': accent || 'var(--color-violet)',
@@ -144,13 +147,7 @@ export function StatTile({ label, value, fmt = 'int', icon, delta, accent, perce
       {percentage !== undefined && percentage !== null && (
         <div className="stat-ring-container">
           <svg width="48" height="48" viewBox="0 0 48 48">
-            <circle
-              className="stat-ring-circle-bg"
-              cx="24"
-              cy="24"
-              r={radius}
-              strokeWidth="4"
-            />
+            <circle className="stat-ring-circle-bg" cx="24" cy="24" r={radius} strokeWidth="4" />
             <circle
               className="stat-ring-circle"
               cx="24"

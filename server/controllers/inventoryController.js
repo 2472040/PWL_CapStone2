@@ -6,7 +6,8 @@ const asyncHandler = require('../utils/asyncHandler');
 const { BadRequestError, NotFoundError, ConflictError } = require('../utils/errors');
 
 const getInventory = asyncHandler(async (req, res) => {
-  const { category, room_id, condition, search, page, limit, include_deleted, year, month } = req.query;
+  const { category, room_id, condition, search, page, limit, include_deleted, year, month } =
+    req.query;
   const where = {};
   if (category) where.category = category;
   if (room_id) where.room_id = room_id;
@@ -21,7 +22,9 @@ const getInventory = asyncHandler(async (req, res) => {
   }
   if (month && month !== 'all') {
     where[Op.and] = where[Op.and] || [];
-    where[Op.and].push(sequelize.where(sequelize.fn('MONTH', sequelize.col('acquired_date')), month));
+    where[Op.and].push(
+      sequelize.where(sequelize.fn('MONTH', sequelize.col('acquired_date')), month)
+    );
   }
 
   // Pagination: default 200, max 1000

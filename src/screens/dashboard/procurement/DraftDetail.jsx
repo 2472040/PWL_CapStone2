@@ -929,7 +929,8 @@ export function KalabKaprodiItems({
             );
           }
 
-          const displayUnit = !it.unit || it.unit.trim() === '1' || it.unit.trim() === '' ? 'unit' : it.unit;
+          const displayUnit =
+            !it.unit || it.unit.trim() === '1' || it.unit.trim() === '' ? 'unit' : it.unit;
 
           return (
             <div
@@ -942,7 +943,9 @@ export function KalabKaprodiItems({
               <div>
                 <div className="item-name">{it.name}</div>
                 <div className="item-sub">
-                  <span className="mono" title="ID Item Database">ID: #{it.id}</span>
+                  <span className="mono" title="ID Item Database">
+                    ID: #{it.id}
+                  </span>
                   {it.link && (
                     <>
                       <span>·</span>
@@ -1041,9 +1044,7 @@ export function KalabKaprodiItems({
         <div className="summary-tile">
           <div className="summary-tile-lbl">{mode === 'kaprodi' ? 'Disetujui' : 'Grand total'}</div>
           <div className="summary-tile-val green">
-            {mode === 'kaprodi'
-              ? window.fmtRp(totals.approved)
-              : window.fmtRp(totals.all)}
+            {mode === 'kaprodi' ? window.fmtRp(totals.approved) : window.fmtRp(totals.all)}
           </div>
         </div>
         {mode === 'kaprodi' && (
