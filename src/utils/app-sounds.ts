@@ -1,12 +1,13 @@
-// app-sounds.js — Micro-interaction sounds using Web Audio API (no external files)
+// app-sounds.ts — Micro-interaction sounds using Web Audio API (no external files)
 // Respects prefers-reduced-motion (treated as reduced-sensory) and OS silence.
 
-window.LokaSounds = (function () {
-  let ctx = null;
+
+const LokaSounds: LokaSoundsType = (function () {
+  let ctx: AudioContext | null = null;
   let enabled = true;
 
   // Check if audio context is allowed
-  function ensureCtx() {
+  function ensureCtx(): AudioContext | null {
     if (!enabled) return null;
     if (!ctx) {
       try {
@@ -16,7 +17,9 @@ window.LokaSounds = (function () {
         return null;
       }
     }
-    if (ctx.state === 'suspended') ctx.resume();
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
     return ctx;
   }
 
@@ -27,8 +30,16 @@ window.LokaSounds = (function () {
     enabled = !e.matches;
   });
 
+  interface BeepOptions {
+    freq?: number;
+    type?: OscillatorType;
+    duration?: number;
+    vol?: number;
+    fade?: boolean;
+  }
+
   // Oscillator beep
-  function beep({ freq = 440, type = 'sine', duration = 0.06, vol = 0.04, fade = true }) {
+  function beep({ freq = 440, type = 'sine', duration = 0.06, vol = 0.04, fade = true }: BeepOptions) {
     const c = ensureCtx();
     if (!c) return;
     const now = c.currentTime;
@@ -116,3 +127,5 @@ window.LokaSounds = (function () {
 
   return { click, hover, success, error, toggle, drawer };
 })();
+
+export default LokaSounds;

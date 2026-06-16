@@ -1,16 +1,6 @@
 import React, { useEffect } from 'react';
 import { useStore } from './store-context';
 
-declare global {
-  interface Window {
-    gsap?: any;
-    LokaSounds?: {
-      click: () => void;
-      hover: () => void;
-      toggle: () => void;
-    };
-  }
-}
 
 // =========================================================
 // IntersectionObserver reveal fallback (when GSAP unavailable)

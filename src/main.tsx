@@ -99,17 +99,16 @@ import '../assets/css/app-theme.css';
 import '../assets/css/app-components.css';
 import '../assets/css/app-landing.css';
 
+import LokaSounds from './utils/app-sounds';
+
 window.gsap = gsap;
 window.ScrollTrigger = ScrollTrigger;
 window.Lenis = Lenis;
 gsap.registerPlugin(ScrollTrigger);
 
-// Mock sounds to prevent undefined errors
-window.LokaSounds = {
-  click: () => {},
-  hover: () => {},
-  toggle: () => {},
-};
+// Bind sound interactions
+window.LokaSounds = LokaSounds;
+
 
 // Register drawer + modal content
 Object.assign(DrawerContent, {

@@ -8,8 +8,19 @@ declare module 'pdfmake/build/vfs_fonts' {
 }
 declare module '*.css';
 
+interface LokaSoundsType {
+  click: () => void;
+  hover: () => void;
+  success: () => void;
+  error: () => void;
+  toggle: () => void;
+  drawer: () => void;
+}
+
 interface Window {
   gsap?: any;
   ScrollTrigger?: any;
   Lenis?: any;
+  LokaSounds?: LokaSoundsType;
+  webkitAudioContext: typeof AudioContext;
 }
