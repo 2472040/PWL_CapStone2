@@ -1,8 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import { useStore, useToast, D, Icon, themeTransition } from '../../../components/app-shell';
 import { apiFetch } from '../../../services/api';
 
-export function SettingsSection({ title, sub, children, reveal }) {
+export function SettingsSection({
+  title,
+  sub,
+  children,
+  reveal,
+}: {
+  title: string;
+  sub?: string;
+  children: ReactNode;
+  reveal?: boolean;
+}) {
   return (
     <div className="settings-section" data-reveal={reveal ? '' : undefined}>
       <div className="settings-section-head">
@@ -14,7 +24,15 @@ export function SettingsSection({ title, sub, children, reveal }) {
   );
 }
 
-export function SettingsRow({ label, desc, children }) {
+export function SettingsRow({
+  label,
+  desc,
+  children,
+}: {
+  label: string;
+  desc?: string;
+  children: ReactNode;
+}) {
   return (
     <div className="settings-row">
       <div className="settings-row-info">
@@ -30,7 +48,8 @@ export function Settings() {
   const { state, dispatch } = useStore();
   const toast = useToast();
   const role = D.roles.find((r) => r.id === state.role);
-  const me = state.currentUser || D.me[state.role] || { name: '', email: '', initials: '' };
+  const me = state.currentUser ||
+    D.me[state.role as keyof typeof D.me] || { name: '', email: '', initials: '' };
 
   const [name, setName] = useState(me.name || '');
   const [email, setEmail] = useState(me.email || '');
@@ -61,7 +80,7 @@ export function Settings() {
         dispatch({ type: 'SET_USER', user: res.data });
         toast('Perubahan akun berhasil disimpan!', 'ok');
       }
-    } catch (err) {
+    } catch (err: any) {
       toast(err.message || 'Gagal menyimpan perubahan', 'warn');
     } finally {
       setSavingProfile(false);

@@ -5,7 +5,12 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
-  initials: string;
+  initials?: string;
+  status?: string;
+  last_login?: string;
+  lastLogin?: string;
+  created_at?: string;
+  createdAt?: string;
 }
 
 export interface Room {

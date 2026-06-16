@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
+import { useState, FormEvent } from 'react';
 import { useToast } from '../../../components/app-shell';
 import { apiFetch } from '../../../services/api';
 
-export function ChangePasswordModal({ close }) {
+export function ChangePasswordModal({ close }: { close: () => void }) {
   const toast = useToast();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!newPassword) {
       toast('Password baru wajib diisi!', 'warn');
@@ -34,7 +34,7 @@ export function ChangePasswordModal({ close }) {
         toast('Password berhasil diperbarui!', 'ok');
         close();
       }
-    } catch (err) {
+    } catch (err: any) {
       toast(err.message || 'Gagal mengubah password', 'warn');
     } finally {
       setLoading(false);

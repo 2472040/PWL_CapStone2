@@ -1,16 +1,17 @@
-import React from 'react';
 import { useStore, useToast, D } from '../../../components/app-shell';
 
-export function LogoutModal({ close }) {
+export function LogoutModal({ close }: { close: () => void }) {
   const { state } = useStore();
   const toast = useToast();
-  const me = state.currentUser || D.me[state.role] || { name: 'Pengguna' };
+  const me = state.currentUser || D.me[state.role as keyof typeof D.me] || { name: 'Pengguna' };
 
   function logout() {
     close();
     toast('Keluar dari akun…', 'info');
     setTimeout(() => {
-      if (window.__lokaLogout) window.__lokaLogout();
+      if ((window as any).__lokaLogout) {
+        (window as any).__lokaLogout();
+      }
     }, 800);
   }
 

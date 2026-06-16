@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useStore, useToast, D, Icon, StatTile } from '../../../components/app-shell';
+import { useState, useEffect } from 'react';
+import { useStore, useToast, D, Icon } from '../../../components/app-shell';
 import { apiFetch } from '../../../services/api';
 
 export function Rooms() {
@@ -14,14 +14,14 @@ export function Rooms() {
         if (res.data) {
           dispatch({ type: 'SET_ROOMS', rooms: res.data });
         }
-      } catch (err) {
+      } catch (err: any) {
         toast('Gagal memuat data ruangan: ' + err.message, 'warn');
       }
     }
     loadRooms();
   }, [dispatch]);
 
-  function handleDeleteRoom(room) {
+  function handleDeleteRoom(room: any) {
     dispatch({
       type: 'OPEN_MODAL',
       modal: {
@@ -40,7 +40,7 @@ export function Rooms() {
                 dispatch({ type: 'SET_ROOMS', rooms: res.data });
               }
               toast(`Ruangan "${room.name}" berhasil dihapus.`, 'ok');
-            } catch (err) {
+            } catch (err: any) {
               toast('Gagal menghapus ruangan: ' + err.message, 'warn');
             }
           },
@@ -50,13 +50,13 @@ export function Rooms() {
   }
 
   return (
-    <div className="page" style={{ '--role-accent': role.accent }}>
+    <div className="page" style={{ '--role-accent': role?.accent } as any}>
       <div className="page-head" data-reveal>
         <div>
           <h1 className="page-title">Ruangan</h1>
           <p className="page-sub">
             {state.rooms.length} laboratorium terdaftar · total{' '}
-            {state.rooms.reduce((s, r) => s + (Number(r.assets) || 0), 0)} aset
+            {state.rooms.reduce((s: number, r: any) => s + (Number(r.assets) || 0), 0)} aset
           </p>
         </div>
         <button
@@ -71,7 +71,7 @@ export function Rooms() {
         className="gap-[14px]"
         style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}
       >
-        {state.rooms.map((r) => {
+        {state.rooms.map((r: any) => {
           const pct = Math.min(
             100,
             ((Number(r.assets) || 0) / (Number(r.capacity) || 1)) * 100 * 1.2
@@ -81,7 +81,7 @@ export function Rooms() {
             <div key={r.code} className="card tilt-card" data-reveal>
               <div className="tilt-shine" />
               <div className="flex between aic mb-3">
-                <div className="mono text-xs tracking-[0.08em]" style={{ color: role.accent }}>
+                <div className="mono text-xs tracking-[0.08em]" style={{ color: role?.accent }}>
                   [{r.code}]
                 </div>
                 <span className="chip">Lantai {r.floor}</span>
@@ -99,7 +99,7 @@ export function Rooms() {
                   style={{
                     height: '100%',
                     width: pct + '%',
-                    background: 'linear-gradient(90deg, ' + role.accent + ', var(--color-cyan))',
+                    background: 'linear-gradient(90deg, ' + role?.accent + ', var(--color-cyan))',
                   }}
                 />
               </div>
@@ -129,7 +129,7 @@ export function Rooms() {
   );
 }
 
-export function NewRoomForm({ payload, close }) {
+export function NewRoomForm({ payload, close }: { payload?: any; close: () => void }) {
   const { dispatch } = useStore();
   const toast = useToast();
   const isEdit = !!payload;
@@ -139,7 +139,7 @@ export function NewRoomForm({ payload, close }) {
   const [floor, setFloor] = useState(payload?.floor || 1);
   const [capacity, setCapacity] = useState(payload?.capacity || 30);
   const [picUserId, setPicUserId] = useState(payload?.pic_user_id || '');
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -147,10 +147,10 @@ export function NewRoomForm({ payload, close }) {
       try {
         const res = await apiFetch('/users');
         if (res.data) {
-          const activeUsers = res.data.filter((u) => u.status === 'active');
+          const activeUsers = res.data.filter((u: any) => u.status === 'active');
           setUsers(activeUsers);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to load users for PIC selection:', err);
       }
     }
@@ -185,7 +185,7 @@ export function NewRoomForm({ payload, close }) {
         toast(isEdit ? 'Ruangan berhasil diperbarui' : 'Ruangan berhasil dibuat', 'ok');
         close();
       }
-    } catch (err) {
+    } catch (err: any) {
       toast(`Gagal ${isEdit ? 'memperbarui' : 'membuat'} ruangan: ` + err.message, 'warn');
     } finally {
       setLoading(false);

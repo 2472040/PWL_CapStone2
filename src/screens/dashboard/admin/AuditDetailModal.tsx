@@ -1,8 +1,14 @@
-import React, { useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { Icon } from '../../../components/app-shell';
 
-export function AuditDetailModal({ payload: selectedLog, close }) {
-  const scrollRef = useRef(null);
+export function AuditDetailModal({
+  payload: selectedLog,
+  close,
+}: {
+  payload: any;
+  close: () => void;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Smooth Y-axis scrolling implementation for the modal content
   useEffect(() => {
@@ -11,9 +17,9 @@ export function AuditDetailModal({ payload: selectedLog, close }) {
 
     let targetScrollTop = el.scrollTop;
     let currentScrollTop = el.scrollTop;
-    let animationFrameId = null;
+    let animationFrameId: number | null = null;
 
-    const handleWheel = (e) => {
+    const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       const delta = e.deltaY;
       targetScrollTop = Math.max(

@@ -1,18 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore, D, Icon, QR, downloadQR } from '../../../components/app-shell';
 import { apiFetch } from '../../../services/api';
 
+interface LabelItem {
+  code: string;
+  name: string;
+  room: string;
+  photoUrl: string | null;
+}
+
 export function Labels() {
-  const { state, dispatch } = useStore();
-  const role = D.roles.find((r) => r.id === 'admin');
-  const [recent, setRecent] = useState([]);
+  const { dispatch } = useStore();
+  const role = D.roles.find((r) => r.id === 'admin') || D.roles[0];
+  const [recent, setRecent] = useState<LabelItem[]>([]);
 
   useEffect(() => {
     async function loadLabels() {
       try {
         const res = await apiFetch('/inventory');
         if (res.data) {
-          const inv = res.data.map((i) => ({
+          const inv = res.data.map((i: any) => ({
             code: i.code,
             name: i.name,
             room: i.Room?.name || 'Belum ada ruangan',
@@ -20,7 +27,7 @@ export function Labels() {
           }));
           setRecent(inv.slice(0, 8));
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to load inventory for labels:', err);
       }
     }
@@ -28,7 +35,7 @@ export function Labels() {
   }, []);
 
   return (
-    <div className="page" style={{ '--role-accent': role.accent }}>
+    <div className="page" style={{ '--role-accent': role?.accent } as any}>
       <div className="page-head" data-reveal>
         <div>
           <h1 className="page-title">
@@ -106,7 +113,7 @@ export function Labels() {
                   className="btn sm flex-1 justify-center"
                   onClick={() => {
                     const a = document.createElement('a');
-                    a.href = it.photoUrl;
+                    a.href = it.photoUrl || '';
                     a.download = `QR_Univ_${it.code}.png`;
                     a.click();
                   }}

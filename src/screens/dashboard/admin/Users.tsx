@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore, useToast, D, Icon, StatTile, useSearch } from '../../../components/app-shell';
 import { apiFetch } from '../../../services/api';
+import { User, UserRole } from '../../../store/store.types';
 
 export function Users() {
   const { state, dispatch } = useStore();
   const { query } = useSearch();
   const toast = useToast();
-  const role = D.roles.find((r) => r.id === 'sysadmin');
+  const role = D.roles.find((r) => r.id === 'sysadmin') || D.roles[0];
 
   useEffect(() => {
     async function loadUsers() {
@@ -15,14 +16,14 @@ export function Users() {
         if (res.data) {
           dispatch({ type: 'SET_USERS', users: res.data });
         }
-      } catch (err) {
+      } catch (err: any) {
         toast('Gagal memuat data pengguna: ' + err.message, 'warn');
       }
     }
     loadUsers();
   }, [dispatch]);
 
-  const filteredUsers = state.users.filter((u) => {
+  const filteredUsers = state.users.filter((u: User) => {
     if (!query) return true;
     const q = query.toLowerCase();
     return (
@@ -32,7 +33,7 @@ export function Users() {
     );
   });
 
-  async function toggleStatus(user) {
+  async function toggleStatus(user: User) {
     const newStatus = user.status === 'active' ? 'paused' : 'active';
     try {
       const res = await apiFetch(`/users/${user.id}`, {
@@ -43,12 +44,12 @@ export function Users() {
         dispatch({ type: 'TOGGLE_USER', id: user.id });
         toast(`Status ${user.name}: ${newStatus === 'active' ? 'aktif' : 'paused'}`, 'info');
       }
-    } catch (err) {
+    } catch (err: any) {
       toast('Gagal mengubah status: ' + err.message, 'warn');
     }
   }
 
-  function handleDeleteUser(user) {
+  function handleDeleteUser(user: User) {
     const neverLoggedIn = !user.last_login && !user.lastLogin;
     const msg = neverLoggedIn
       ? `Apakah Anda yakin ingin menghapus permanen pengguna "${user.name}" yang belum pernah login ini?`
@@ -72,7 +73,7 @@ export function Users() {
                 dispatch({ type: 'SET_USERS', users: refresh.data });
               }
               toast(res.message || `Pengguna "${user.name}" berhasil diproses.`, 'ok');
-            } catch (err) {
+            } catch (err: any) {
               toast('Gagal menghapus pengguna: ' + err.message, 'warn');
             }
           },
@@ -100,14 +101,14 @@ export function Users() {
         'Dibuat Pada',
       ];
 
-      const parseDate = (d) => {
+      const parseDate = (d: any) => {
         if (!d) return '';
         const date = new Date(d);
         return isNaN(date.getTime()) ? String(d) : date.toISOString();
       };
 
       // CSV rows
-      const rows = state.users.map((u) => {
+      const rows = state.users.map((u: User) => {
         const nameStr = u.name ? String(u.name).replace(/"/g, '""') : '';
         const emailStr = u.email ? String(u.email).replace(/"/g, '""') : '';
         const roleStr = u.role ? String(u.role).replace(/"/g, '""') : '';
@@ -140,7 +141,7 @@ export function Users() {
         ];
       });
 
-      const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+      const csvContent = [headers.join(','), ...rows.map((r: string[]) => r.join(','))].join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -155,20 +156,20 @@ export function Users() {
       document.body.removeChild(link);
 
       toast('Data pengguna berhasil diekspor ke CSV!', 'ok');
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       toast('Gagal mengekspor CSV: ' + err.message, 'warn');
     }
   }
 
   return (
-    <div className="page" style={{ '--role-accent': role.accent }}>
+    <div className="page" style={{ '--role-accent': role.accent } as any}>
       <div className="page-head" data-reveal>
         <div>
           <h1 className="page-title">Pengguna</h1>
           <p className="page-sub">
-            {state.users.filter((u) => u.status === 'active').length} aktif ·{' '}
-            {state.users.filter((u) => u.status === 'paused').length} di-pause
+            {state.users.filter((u: User) => u.status === 'active').length} aktif ·{' '}
+            {state.users.filter((u: User) => u.status === 'paused').length} di-pause
           </p>
         </div>
         <div className="flex gap-2">
@@ -189,7 +190,7 @@ export function Users() {
           <StatTile
             key={r.id}
             label={r.title}
-            value={state.users.filter((u) => u.role === r.id).length}
+            value={state.users.filter((u: User) => u.role === r.id).length}
             fmt="int"
             icon="users"
             accent={i === 0 ? role.accent : undefined}
@@ -220,7 +221,7 @@ export function Users() {
             </tr>
           </thead>
           <tbody>
-            {filteredUsers.map((u) => {
+            {filteredUsers.map((u: User) => {
               const r = D.roles.find((x) => x.id === u.role) || {
                 short: u.role,
                 accent: 'var(--color-primary)',
@@ -229,10 +230,10 @@ export function Users() {
                 <tr key={u.id}>
                   <td>
                     <div className="flex gap-2.5 items-center">
-                      <div className="avatar sm" style={{ '--av-c': r.accent }}>
+                      <div className="avatar sm" style={{ '--av-c': r.accent } as any}>
                         {u.name
                           .split(' ')
-                          .map((w) => w[0])
+                          .map((w: string) => w[0])
                           .slice(0, 2)
                           .join('')}
                       </div>
@@ -304,7 +305,7 @@ export function Users() {
   );
 }
 
-export function NewUserForm({ payload, close }) {
+export function NewUserForm({ payload, close }: { payload?: User; close: () => void }) {
   const { dispatch } = useStore();
   const toast = useToast();
   const isEdit = !!payload;
@@ -335,7 +336,7 @@ export function NewUserForm({ payload, close }) {
       const endpoint = isEdit ? `/users/${payload.id}` : '/users';
       const method = isEdit ? 'PUT' : 'POST';
 
-      const body = {
+      const body: { name: string; email: string; role: string; password?: string } = {
         name,
         email,
         role,
@@ -357,7 +358,7 @@ export function NewUserForm({ payload, close }) {
         toast(isEdit ? 'Pengguna berhasil diperbarui' : 'Pengguna ditambahkan', 'ok');
         close();
       }
-    } catch (err) {
+    } catch (err: any) {
       toast(`Gagal ${isEdit ? 'memperbarui' : 'menambahkan'} pengguna: ` + err.message, 'warn');
     } finally {
       setLoading(false);
@@ -402,7 +403,7 @@ export function NewUserForm({ payload, close }) {
           <select
             className="select"
             value={role}
-            onChange={(e) => setRole(e.target.value)}
+            onChange={(e) => setRole(e.target.value as UserRole)}
             disabled={loading}
           >
             {D.roles.map((r) => (

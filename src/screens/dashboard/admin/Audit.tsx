@@ -1,19 +1,44 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useStore, useToast, D, Icon, useSearch } from '../../../components/app-shell';
 import { apiFetch } from '../../../services/api';
 
-function CustomDatePicker({ value, onChange, placeholder }) {
+interface AuditLog {
+  id: number;
+  user_id?: number | string;
+  User?: {
+    name: string;
+    role: string;
+  };
+  action: string;
+  target: string;
+  details: string;
+  ip: string;
+  hash: string;
+  previous_hash: string;
+  created_at?: string;
+  createdAt?: string;
+}
+
+function CustomDatePicker({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+}) {
   const [open, setOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [viewMode, setViewMode] = useState('day'); // 'day', 'year', 'month'
   const [decadeStart, setDecadeStart] = useState(
     () => Math.floor(new Date().getFullYear() / 12) * 12
   );
-  const ref = useRef(null);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (ref.current && !ref.current.contains(event.target)) {
+    function handleClickOutside(event: any) {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
         setOpen(false);
       }
     }
@@ -39,7 +64,7 @@ function CustomDatePicker({ value, onChange, placeholder }) {
     const firstDay = new Date(year, month, 1).getDay();
     const totalDays = new Date(year, month + 1, 0).getDate();
 
-    const days = [];
+    const days: (Date | null)[] = [];
     for (let i = 0; i < firstDay; i++) {
       days.push(null);
     }
@@ -72,7 +97,7 @@ function CustomDatePicker({ value, onChange, placeholder }) {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
   };
 
-  const handleSelectDay = (date) => {
+  const handleSelectDay = (date: Date | null) => {
     if (!date) return;
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -333,22 +358,21 @@ function CustomDatePicker({ value, onChange, placeholder }) {
 }
 
 export function Audit() {
-  const role = D.roles.find((r) => r.id === 'sysadmin');
+  const role = D.roles.find((r) => r.id === 'sysadmin') || D.roles[0];
   const { query } = useSearch();
   const { dispatch } = useStore();
   const toast = useToast();
-  const [logs, setLogs] = useState([]);
+  const [logs, setLogs] = useState<AuditLog[]>([]);
   const [filter, setFilter] = useState('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [actionType, setActionType] = useState('all');
-  const [loading, setLoading] = useState(false);
   const [actionDropdownOpen, setActionDropdownOpen] = useState(false);
-  const actionDropdownRef = useRef(null);
+  const actionDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    function handleClickOutside(e) {
-      if (actionDropdownRef.current && !actionDropdownRef.current.contains(e.target)) {
+    function handleClickOutside(e: any) {
+      if (actionDropdownRef.current && !actionDropdownRef.current.contains(e.target as Node)) {
         setActionDropdownOpen(false);
       }
     }
@@ -356,20 +380,17 @@ export function Audit() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const tableWrapRef = useRef(null);
+  const tableWrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function loadLogs() {
-      setLoading(true);
       try {
         const res = await apiFetch('/audit-logs');
         if (res.data) {
           setLogs(res.data);
         }
-      } catch (err) {
+      } catch (err: any) {
         toast('Gagal memuat audit log: ' + err.message, 'warn');
-      } finally {
-        setLoading(false);
       }
     }
     loadLogs();
@@ -382,9 +403,9 @@ export function Audit() {
 
     let targetScrollLeft = el.scrollLeft;
     let currentScrollLeft = el.scrollLeft;
-    let animationFrameId = null;
+    let animationFrameId: number | null = null;
 
-    const handleWheel = (e) => {
+    const handleWheel = (e: WheelEvent) => {
       // Determine if scrolling horizontally (e.deltaX) or vertically with Shift key
       const delta = e.shiftKey
         ? e.deltaY
@@ -443,13 +464,13 @@ export function Audit() {
         'Waktu',
       ];
 
-      const parseDate = (d) => {
+      const parseDate = (d: any) => {
         if (!d) return '';
         const date = new Date(d);
         return isNaN(date.getTime()) ? String(d) : date.toISOString();
       };
 
-      const rows = logs.map((l) => {
+      const rows = logs.map((l: AuditLog) => {
         const userName = l.User?.name || 'Sistem';
         const cleanName = String(userName).replace(/"/g, '""');
         const cleanTarget = String(l.target || '').replace(/"/g, '""');
@@ -479,7 +500,10 @@ export function Audit() {
         ];
       });
 
-      const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+      const csvContent = [
+        headers.join(','),
+        ...rows.map((r: (string | number)[]) => r.join(',')),
+      ].join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -494,14 +518,14 @@ export function Audit() {
       document.body.removeChild(link);
 
       toast('Audit log berhasil diekspor ke CSV!', 'ok');
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       toast('Gagal mengekspor audit log CSV: ' + err.message, 'warn');
     }
   }
 
   const formattedLogs = useMemo(() => {
-    return logs.map((a, i) => {
+    return logs.map((a: AuditLog, i: number) => {
       const uRole = a.User?.role || '';
       const rawDate = a.created_at
         ? new Date(a.created_at)
@@ -586,7 +610,7 @@ export function Audit() {
   }, [formattedLogs, filter, actionType, startDate, endDate, query]);
 
   return (
-    <div className="page" style={{ '--role-accent': role.accent }}>
+    <div className="page" style={{ '--role-accent': role.accent } as any}>
       <div className="page-head" data-reveal>
         <div>
           <h1 className="page-title">Audit log</h1>

@@ -1,14 +1,14 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef, ChangeEvent } from 'react';
 import { useStore, useToast, Icon, QR } from '../../../components/app-shell';
 import jsQR from 'jsqr';
 
-export function QRScanner({ close }) {
+export function QRScanner({ close }: { close: () => void }) {
   const { state, dispatch } = useStore();
   const toast = useToast();
   const [selectedAssetCode, setSelectedAssetCode] = useState('');
-  const fileInputRef = useRef(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const selectedAsset = state.inventory.find((i) => i.code === selectedAssetCode);
+  const selectedAsset = state.inventory.find((i: any) => i.code === selectedAssetCode);
 
   function handleScanSimulate() {
     if (!selectedAsset) {
@@ -31,8 +31,8 @@ export function QRScanner({ close }) {
     }, 300);
   }
 
-  function handleQrUpload(e) {
-    const file = e.target.files[0];
+  function handleQrUpload(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
     if (!file) return;
 
     // Validate MIME type
@@ -58,6 +58,7 @@ export function QRScanner({ close }) {
         canvas.width = img.width;
         canvas.height = img.height;
         const ctx = canvas.getContext('2d');
+        if (!ctx) return;
         ctx.drawImage(img, 0, 0);
 
         try {
@@ -67,7 +68,7 @@ export function QRScanner({ close }) {
           if (decoded && decoded.data) {
             const code = decoded.data.trim();
             const matched = state.inventory.find(
-              (i) => i.code.toLowerCase() === code.toLowerCase()
+              (i: any) => i.code.toLowerCase() === code.toLowerCase()
             );
 
             if (matched) {
@@ -90,7 +91,7 @@ export function QRScanner({ close }) {
           toast('Terjadi kesalahan saat memproses gambar QR.', 'warn');
         }
       };
-      img.src = evt.target.result;
+      img.src = evt.target?.result as string;
     };
     reader.readAsDataURL(file);
   }
@@ -190,7 +191,7 @@ export function QRScanner({ close }) {
             onChange={(e) => setSelectedAssetCode(e.target.value)}
           >
             <option value="">-- Pilih Aset Lab --</option>
-            {state.inventory.map((i) => (
+            {state.inventory.map((i: any) => (
               <option key={i.code} value={i.code}>
                 [{i.code}] {i.name} ({i.room})
               </option>
