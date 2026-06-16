@@ -15,11 +15,6 @@
     "ignoreDeprecations": "6.0",
     "types": ["node"]
   },
-  "include": [
-    "middleware/**/*.js",
-    "types/**/*.d.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["middleware/**/*.js", "types/**/*.d.ts"],
+  "exclude": ["node_modules"]
 }

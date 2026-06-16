@@ -15,9 +15,11 @@ let lastHashPromise = null;
 const getLastHash = async () => {
   if (lastHashPromise) return lastHashPromise;
   lastHashPromise = (async () => {
-    const lastLog = /** @type {any} */ (await AuditLog.findOne({
-      order: [['id', 'DESC']],
-    }));
+    const lastLog = /** @type {any} */ (
+      await AuditLog.findOne({
+        order: [['id', 'DESC']],
+      })
+    );
     return lastLog && lastLog.hash
       ? lastLog.hash
       : '0000000000000000000000000000000000000000000000000000000000000000';

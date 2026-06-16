@@ -103,7 +103,10 @@ export function AuthInitializer({ pendingRole }: AuthInitializerProps) {
 
       // 1. Fetch Rooms (only on 'rooms', 'dashboard', or if rooms array is empty)
       const needRooms = screen === 'rooms' || screen === 'dashboard' || state.rooms.length === 0;
-      if (needRooms && (role === 'sysadmin' || role === 'staflab' || role === 'admin' || role === 'kalab')) {
+      if (
+        needRooms &&
+        (role === 'sysadmin' || role === 'staflab' || role === 'admin' || role === 'kalab')
+      ) {
         try {
           const resRooms = await apiFetch('/rooms');
           if (resRooms.data) {
@@ -127,7 +130,8 @@ export function AuthInitializer({ pendingRole }: AuthInitializerProps) {
 
       // 3. Fetch Procurement Drafts (Kalab only, on 'pengadaan', 'dashboard', or if empty)
       if (role === 'kalab') {
-        const needDrafts = screen === 'pengadaan' || screen === 'dashboard' || state.drafts.length === 0;
+        const needDrafts =
+          screen === 'pengadaan' || screen === 'dashboard' || state.drafts.length === 0;
         if (needDrafts) {
           try {
             const resDrafts = await apiFetch('/procurement/drafts');
@@ -222,7 +226,8 @@ export function AuthInitializer({ pendingRole }: AuthInitializerProps) {
 
       // 5. Fetch Procurement Receiving (Admin only, on 'receiving', 'dashboard', or if empty)
       if (role === 'admin') {
-        const needReceiving = screen === 'receiving' || screen === 'dashboard' || state.drafts.length === 0;
+        const needReceiving =
+          screen === 'receiving' || screen === 'dashboard' || state.drafts.length === 0;
         if (needReceiving) {
           try {
             const resReceiving = await apiFetch('/procurement/receiving');
@@ -257,7 +262,11 @@ export function AuthInitializer({ pendingRole }: AuthInitializerProps) {
 
       // 6. Fetch BHP (Kalab, Admin, Staf Lab)
       if (role === 'kalab' || role === 'admin' || role === 'staflab') {
-        const needBhp = screen === 'bhp' || screen === 'dashboard' || screen === 'maintenance' || state.bhp.length === 0;
+        const needBhp =
+          screen === 'bhp' ||
+          screen === 'dashboard' ||
+          screen === 'maintenance' ||
+          state.bhp.length === 0;
         if (needBhp) {
           try {
             const resBhp = await apiFetch('/bhp');
@@ -282,7 +291,8 @@ export function AuthInitializer({ pendingRole }: AuthInitializerProps) {
 
       // 7. Fetch Maintenance Logs (Staf Lab only, on 'maintenance', 'dashboard', or if empty)
       if (role === 'staflab') {
-        const needMaint = screen === 'maintenance' || screen === 'dashboard' || state.maintLog.length === 0;
+        const needMaint =
+          screen === 'maintenance' || screen === 'dashboard' || state.maintLog.length === 0;
         if (needMaint) {
           try {
             const resLogs = await apiFetch('/maintenance');
@@ -315,7 +325,8 @@ export function AuthInitializer({ pendingRole }: AuthInitializerProps) {
       }
 
       // 8. Fetch Inventory (all roles, on 'inventaris', 'dashboard', or if empty)
-      const needInventory = screen === 'inventaris' || screen === 'dashboard' || state.inventory.length === 0;
+      const needInventory =
+        screen === 'inventaris' || screen === 'dashboard' || state.inventory.length === 0;
       if (needInventory) {
         try {
           const resInv = await apiFetch('/inventory');
@@ -419,4 +430,3 @@ export function AuthInitializer({ pendingRole }: AuthInitializerProps) {
 
   return null;
 }
-
