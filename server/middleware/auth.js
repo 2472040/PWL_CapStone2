@@ -1,9 +1,14 @@
+// @ts-check
 const jwt = require('jsonwebtoken');
 const { User, RevokedToken } = require('../models');
 const { parseCookies } = require('../utils/cookies');
 
 // Persistent blacklist for JTI values in MySQL
 const tokenBlacklist = {
+  /**
+   * @param {string} jti
+   * @returns {Promise<boolean>}
+   */
   has: async (jti) => {
     try {
       const found = await RevokedToken.findOne({ where: { jti } });
@@ -11,11 +16,17 @@ const tokenBlacklist = {
     } catch (e) {
       console.error(
         '[Blacklist Has Error] Database error - treating as revoked (fail-closed):',
+        // @ts-ignore
         e.message
       );
       return true; // Fail-closed: block access if JTI check fails
     }
   },
+  /**
+   * @param {string} jti
+   * @param {number|Date} [expiresAt]
+   * @returns {Promise<void>}
+   */
   add: async (jti, expiresAt) => {
     try {
       let expiry = expiresAt;
@@ -29,11 +40,16 @@ const tokenBlacklist = {
         expires_at: expiry,
       });
     } catch (e) {
+      // @ts-ignore
       if (e.name !== 'SequelizeUniqueConstraintError') {
+        // @ts-ignore
         console.error('[Blacklist Add Error]', e.message);
       }
     }
   },
+  /**
+   * @returns {Promise<void>}
+   */
   cleanup: async () => {
     try {
       const { Op } = require('sequelize');
@@ -48,16 +64,18 @@ const tokenBlacklist = {
         console.log(`🧹 [Blacklist Cleanup] Berhasil menghapus ${deletedCount} token kedaluwarsa.`);
       }
     } catch (e) {
+      // @ts-ignore
       console.error('[Blacklist Cleanup Error]', e.message);
     }
   },
 };
 
-// parseCookies imported from ../utils/cookies
-
 /**
  * JWT Authentication middleware
  * Verifies the Bearer token from cookies or Authorization header
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
 const authenticate = async (req, res, next) => {
   try {
@@ -85,6 +103,7 @@ const authenticate = async (req, res, next) => {
       return res.status(401).json({ error: 'Token tidak ditemukan. Silakan login.' });
     }
 
+    // @ts-ignore
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Validate blacklist (JTI revocation)
@@ -92,7 +111,7 @@ const authenticate = async (req, res, next) => {
       return res.status(401).json({ error: 'Sesi Anda telah berakhir. Silakan login kembali.' });
     }
 
-    const user = await User.findByPk(decoded.id);
+    const user = /** @type {any} */ (await User.findByPk(decoded.id));
 
     if (!user) {
       return res.status(401).json({ error: 'User tidak ditemukan.' });
@@ -113,6 +132,7 @@ const authenticate = async (req, res, next) => {
     req.user = user;
     next();
   } catch (err) {
+    // @ts-ignore
     if (err.name === 'TokenExpiredError') {
       return res.status(401).json({ error: 'Token kadaluarsa. Silakan login ulang.' });
     }
@@ -123,6 +143,8 @@ const authenticate = async (req, res, next) => {
 /**
  * Role-based access control middleware
  * Usage: authorize('sysadmin', 'kalab')
+ * @param {...string} roles
+ * @returns {(req: import('express').Request, res: import('express').Response, next: import('express').NextFunction) => void}
  */
 const authorize = (...roles) => {
   return (req, res, next) => {

@@ -11,6 +11,7 @@
     "db:migrate": "sequelize-cli db:migrate",
     "db:migrate:undo": "sequelize-cli db:migrate:undo:all",
     "build": "vite build",
+    "typecheck:server": "tsc --project server/tsconfig.json --noEmit",
     "preview": "vite preview",
     "security-test": "vitest run server/tests/security.test.js",
     "lint": "eslint \"**/*.{js,jsx,cjs,mjs}\"",
@@ -57,6 +58,8 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.0",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.9.3",
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^6.0.2",

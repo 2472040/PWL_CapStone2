@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useStore, PageBar, PageHost, D } from './app-shell';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -31,13 +32,18 @@ interface RoleConfig {
 }
 
 export function Router() {
-  const { state } = useStore();
+  const { state, dispatch } = useStore();
   const location = useLocation();
   const role = state.role;
 
   // Extract current screen segment from the path (e.g. /dashboard/inventaris -> inventaris)
   const pathSegments = location.pathname.split('/').filter(Boolean);
   const currentSegment = pathSegments[pathSegments.length - 1] || 'dashboard';
+
+  // Synchronize route with global screen state in store
+  useEffect(() => {
+    dispatch({ type: 'SET_SCREEN', screen: currentSegment });
+  }, [currentSegment, dispatch]);
 
   let screenLabel = 'Dashboard';
   if (currentSegment === 'settings') {

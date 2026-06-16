@@ -5,6 +5,7 @@ import crypto from 'crypto';
 // Import middlewares using CommonJS require to align with the server's require model
 const { authenticate, authorize } = require('../middleware/auth');
 const { loginRateLimiter } = require('../middleware/rateLimiter');
+const csrfProtection = require('../middleware/csrf');
 
 // A helper mock for Express Response
 const createMockResponse = () => {
@@ -252,6 +253,165 @@ describe('Security Middleware & Utilities', () => {
 
       const secondCheck = verifyChain(tamperedLogs);
       expect(secondCheck.valid).toBe(false);
+    });
+  });
+
+  describe('Double Submit CSRF Protection Middleware', () => {
+    it('should bypass safe methods (GET, HEAD, OPTIONS)', () => {
+      const req = { method: 'GET', path: '/api/v1/inventory', originalUrl: '/api/v1/inventory' };
+      const res = createMockResponse();
+      let nextCalled = false;
+
+      csrfProtection(req, res, () => {
+        nextCalled = true;
+      });
+
+      expect(nextCalled).toBe(true);
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('should bypass whitelisted routes (login and refresh)', () => {
+      const req = { method: 'POST', path: '/api/v1/auth/login', originalUrl: '/api/v1/auth/login' };
+      const res = createMockResponse();
+      let nextCalled = false;
+
+      csrfProtection(req, res, () => {
+        nextCalled = true;
+      });
+
+      expect(nextCalled).toBe(true);
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('should reject request when Origin header is invalid', () => {
+      const req = {
+        method: 'POST',
+        path: '/api/v1/inventory',
+        originalUrl: '/api/v1/inventory',
+        headers: {
+          origin: 'http://malicious.com',
+        },
+      };
+      const res = createMockResponse();
+      let nextCalled = false;
+
+      csrfProtection(req, res, () => {
+        nextCalled = true;
+      });
+
+      expect(nextCalled).toBe(false);
+      expect(res.statusCode).toBe(403);
+      expect(res.jsonData.error).toContain('Origin header tidak sesuai');
+    });
+
+    it('should reject request when Referer header is invalid', () => {
+      const req = {
+        method: 'POST',
+        path: '/api/v1/inventory',
+        originalUrl: '/api/v1/inventory',
+        headers: {
+          referer: 'http://malicious.com/attack',
+        },
+      };
+      const res = createMockResponse();
+      let nextCalled = false;
+
+      csrfProtection(req, res, () => {
+        nextCalled = true;
+      });
+
+      expect(nextCalled).toBe(false);
+      expect(res.statusCode).toBe(403);
+      expect(res.jsonData.error).toContain('Referer header tidak sesuai');
+    });
+
+    it('should reject when CSRF token cookie is missing', () => {
+      const req = {
+        method: 'POST',
+        path: '/api/v1/inventory',
+        originalUrl: '/api/v1/inventory',
+        headers: {
+          origin: 'http://localhost:5173',
+          'x-csrf-token': 'token123',
+        },
+      };
+      const res = createMockResponse();
+      let nextCalled = false;
+
+      csrfProtection(req, res, () => {
+        nextCalled = true;
+      });
+
+      expect(nextCalled).toBe(false);
+      expect(res.statusCode).toBe(403);
+      expect(res.jsonData.error).toContain('CSRF token tidak ditemukan atau tidak cocok');
+    });
+
+    it('should reject when CSRF token header is missing', () => {
+      const req = {
+        method: 'POST',
+        path: '/api/v1/inventory',
+        originalUrl: '/api/v1/inventory',
+        headers: {
+          origin: 'http://localhost:5173',
+          cookie: 'csrfToken=token123',
+        },
+      };
+      const res = createMockResponse();
+      let nextCalled = false;
+
+      csrfProtection(req, res, () => {
+        nextCalled = true;
+      });
+
+      expect(nextCalled).toBe(false);
+      expect(res.statusCode).toBe(403);
+      expect(res.jsonData.error).toContain('CSRF token tidak ditemukan atau tidak cocok');
+    });
+
+    it('should reject when cookie and header CSRF tokens mismatch', () => {
+      const req = {
+        method: 'POST',
+        path: '/api/v1/inventory',
+        originalUrl: '/api/v1/inventory',
+        headers: {
+          origin: 'http://localhost:5173',
+          cookie: 'csrfToken=token123',
+          'x-csrf-token': 'token999',
+        },
+      };
+      const res = createMockResponse();
+      let nextCalled = false;
+
+      csrfProtection(req, res, () => {
+        nextCalled = true;
+      });
+
+      expect(nextCalled).toBe(false);
+      expect(res.statusCode).toBe(403);
+      expect(res.jsonData.error).toContain('CSRF token tidak ditemukan atau tidak cocok');
+    });
+
+    it('should allow request when Origin and Double Submit Cookie CSRF token match', () => {
+      const req = {
+        method: 'POST',
+        path: '/api/v1/inventory',
+        originalUrl: '/api/v1/inventory',
+        headers: {
+          origin: 'http://localhost:5173',
+          cookie: 'csrfToken=token123',
+          'x-csrf-token': 'token123',
+        },
+      };
+      const res = createMockResponse();
+      let nextCalled = false;
+
+      csrfProtection(req, res, () => {
+        nextCalled = true;
+      });
+
+      expect(nextCalled).toBe(true);
+      expect(res.statusCode).toBe(200);
     });
   });
 });

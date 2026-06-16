@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useStore, D, Icon, QR, useSearch, CustomSelect } from '../../../components/app-shell';
 import { apiFetch } from '../../../services/api';
 import pdfMake from 'pdfmake/build/pdfmake';
@@ -49,6 +49,8 @@ export function Inventory() {
   const [inventoryItems, setInventoryItems] = useState<any[]>([]);
   const limit = 12;
 
+  const prevDeps = useRef({ currentPage, filter, monthFilter, yearFilter, query });
+
   // Reset page on filter/search change
   useEffect(() => {
     setCurrentPage(1);
@@ -82,8 +84,19 @@ export function Inventory() {
 
   // Fetch paginated inventory
   useEffect(() => {
-    async function fetchInventory() {
-      setLoading(true);
+    let active = true;
+
+    const depsChanged =
+      prevDeps.current.currentPage !== currentPage ||
+      prevDeps.current.filter !== filter ||
+      prevDeps.current.monthFilter !== monthFilter ||
+      prevDeps.current.yearFilter !== yearFilter ||
+      prevDeps.current.query !== query;
+
+    prevDeps.current = { currentPage, filter, monthFilter, yearFilter, query };
+
+    async function fetchInventory(silent = false) {
+      if (!silent) setLoading(true);
       try {
         const params = new URLSearchParams({
           page: currentPage.toString(),
@@ -95,6 +108,7 @@ export function Inventory() {
         if (query) params.append('search', query);
 
         const res = await apiFetch(`/inventory?${params.toString()}`);
+        if (!active) return;
         if (res.data) {
           const inv = res.data.map((i: any) => ({
             id: i.id,
@@ -121,10 +135,18 @@ export function Inventory() {
       } catch (err) {
         console.error('Failed to load inventory', err);
       } finally {
-        setLoading(false);
+        if (active && !silent) setLoading(false);
       }
     }
-    fetchInventory();
+
+    const isFirstLoad = inventoryItems.length === 0;
+    const silent = !isFirstLoad && !depsChanged;
+
+    fetchInventory(silent);
+
+    return () => {
+      active = false;
+    };
   }, [state.inventory, currentPage, filter, monthFilter, yearFilter, query]);
 
   const filtered = inventoryItems;

@@ -1,5 +1,11 @@
+// @ts-check
 const { ZodError } = require('zod');
 
+/**
+ * Zod request body validation middleware helper
+ * @param {import('zod').ZodSchema<any>} schema
+ * @returns {(req: import('express').Request, res: import('express').Response, next: import('express').NextFunction) => Promise<any>}
+ */
 const validate = (schema) => {
   return async (req, res, next) => {
     try {
@@ -10,7 +16,7 @@ const validate = (schema) => {
       next();
     } catch (err) {
       if (err instanceof ZodError) {
-        const issues = err.issues || err.errors || [];
+        const issues = err.issues || [];
         const firstError = issues[0]?.message || 'Input data tidak valid.';
         return res.status(400).json({ error: firstError, details: issues });
       }

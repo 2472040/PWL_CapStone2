@@ -1,3 +1,4 @@
+// @ts-check
 const { parseCookies } = require('../utils/cookies');
 
 /**
@@ -5,6 +6,9 @@ const { parseCookies } = require('../utils/cookies');
  * Employs the Double Submit Cookie pattern with Origin validation.
  * Non-GET endpoints must supply an 'X-CSRF-Token' header matching the 'csrfToken' cookie,
  * AND the request Origin/Referer must match the allowed origin.
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
 const csrfProtection = (req, res, next) => {
   const method = req.method.toUpperCase();

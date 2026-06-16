@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   useStore,
@@ -75,6 +75,7 @@ export function BHP() {
   const [loadingList, setLoadingList] = useState(true);
   const [bhpList, setBhpList] = useState<BhpItem[]>([]);
   const limit = 10;
+  const prevDeps = useRef({ currentPage, monthFilter, yearFilter, query });
 
   // Reset page when filters change
   useEffect(() => {
@@ -106,8 +107,18 @@ export function BHP() {
   }, []);
 
   useEffect(() => {
-    async function loadBhpData() {
-      setLoadingList(true);
+    let active = true;
+
+    const depsChanged =
+      prevDeps.current.currentPage !== currentPage ||
+      prevDeps.current.monthFilter !== monthFilter ||
+      prevDeps.current.yearFilter !== yearFilter ||
+      prevDeps.current.query !== query;
+
+    prevDeps.current = { currentPage, monthFilter, yearFilter, query };
+
+    async function loadBhpData(silent = false) {
+      if (!silent) setLoadingList(true);
       try {
         const params = new URLSearchParams({
           page: currentPage.toString(),
@@ -118,6 +129,7 @@ export function BHP() {
         if (query) params.append('search', query);
 
         const res = await apiFetch(`/bhp?${params.toString()}`);
+        if (!active) return;
         if (res.data) {
           const formatted = res.data.map((b: any) => ({
             id: b.code || b.id.toString(),
@@ -138,10 +150,18 @@ export function BHP() {
       } catch (err) {
         console.error('Failed to load BHP:', err);
       } finally {
-        setLoadingList(false);
+        if (active && !silent) setLoadingList(false);
       }
     }
-    loadBhpData();
+
+    const isFirstLoad = bhpList.length === 0;
+    const silent = !isFirstLoad && !depsChanged;
+
+    loadBhpData(silent);
+
+    return () => {
+      active = false;
+    };
   }, [state.bhp, currentPage, monthFilter, yearFilter, query]);
 
   async function submitRestock() {

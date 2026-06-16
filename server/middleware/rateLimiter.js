@@ -1,3 +1,4 @@
+// @ts-check
 // Lazy-load ioredis to prevent startup crash if the package is not installed
 let Redis;
 try {
@@ -31,6 +32,7 @@ setInterval(() => {
 let redisClient = null;
 if (Redis && (process.env.REDIS_URL || process.env.USE_REDIS === 'true')) {
   try {
+    // @ts-ignore
     redisClient = new Redis(process.env.REDIS_URL || 'redis://redis:6379', {
       maxRetriesPerRequest: 1,
       retryStrategy: (times) => {
@@ -39,10 +41,12 @@ if (Redis && (process.env.REDIS_URL || process.env.USE_REDIS === 'true')) {
         return Math.min(times * 200, 1000);
       },
     });
+    // @ts-ignore
     redisClient.on('error', (err) => {
       console.warn('[Rate Limiter] Redis down, using in-memory fallback:', err.message);
     });
   } catch (err) {
+    // @ts-ignore
     console.error('[Rate Limiter] Failed to initialize Redis client:', err.message);
   }
 }
@@ -52,6 +56,9 @@ if (Redis && (process.env.REDIS_URL || process.env.USE_REDIS === 'true')) {
  * 1. IP-based limit: 5 attempts per 15 minutes.
  * 2. Username/Email-based limit: 5 attempts per 15 minutes.
  * 3. Progressive Delay: introduces a delay (consecutive_failures * 1000ms, max 5000ms) for subsequent attempts.
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
 const loginRateLimiter = async (req, res, next) => {
   const ip = req.ip;
@@ -63,6 +70,7 @@ const loginRateLimiter = async (req, res, next) => {
   const cleanEmail = email ? String(email).trim().toLowerCase() : null;
 
   // Check if we should use Redis or local fallback
+  // @ts-ignore
   const useRedis = redisClient && redisClient.status === 'ready';
 
   if (useRedis) {
@@ -71,10 +79,13 @@ const loginRateLimiter = async (req, res, next) => {
       const userKey = cleanEmail ? `rate:user:${cleanEmail}` : null;
 
       // 1. IP check
+      // @ts-ignore
       await redisClient.zremrangebyscore(ipKey, 0, now - timeframe);
+      // @ts-ignore
       const ipAttemptsCount = await redisClient.zcard(ipKey);
 
       if (ipAttemptsCount >= maxAttempts) {
+        // @ts-ignore
         const oldestIpAttempt = await redisClient.zrange(ipKey, 0, 0);
         const oldestTime = oldestIpAttempt.length ? parseInt(oldestIpAttempt[0], 10) : now;
         const minutesLeft = Math.ceil((oldestTime + timeframe - now) / 60000);
@@ -86,10 +97,13 @@ const loginRateLimiter = async (req, res, next) => {
       // 2. User check
       let userAttemptsCount = 0;
       if (userKey) {
+        // @ts-ignore
         await redisClient.zremrangebyscore(userKey, 0, now - timeframe);
+        // @ts-ignore
         userAttemptsCount = await redisClient.zcard(userKey);
 
         if (userAttemptsCount >= maxAttempts) {
+          // @ts-ignore
           const oldestUserAttempt = await redisClient.zrange(userKey, 0, 0);
           const oldestTime = oldestUserAttempt.length ? parseInt(oldestUserAttempt[0], 10) : now;
           const minutesLeft = Math.ceil((oldestTime + timeframe - now) / 60000);
@@ -110,6 +124,7 @@ const loginRateLimiter = async (req, res, next) => {
       }
 
       // Track attempt
+      // @ts-ignore
       const multi = redisClient.multi();
       multi.zadd(ipKey, now, now);
       multi.expire(ipKey, 900); // 15 mins
@@ -123,6 +138,7 @@ const loginRateLimiter = async (req, res, next) => {
     } catch (err) {
       console.warn(
         '[Rate Limiter] Redis error in rate limiter, using in-memory fallback:',
+        // @ts-ignore
         err.message
       );
       // Fall through to in-memory fallback logic
@@ -184,6 +200,8 @@ const loginRateLimiter = async (req, res, next) => {
 
 /**
  * Clear tracking for successful logins
+ * @param {string} [ip]
+ * @param {string} [email]
  */
 const clearLoginAttempts = (ip, email) => {
   const cleanEmail = email ? String(email).trim().toLowerCase() : null;
@@ -193,12 +211,15 @@ const clearLoginAttempts = (ip, email) => {
   if (cleanEmail) userAttempts.delete(cleanEmail);
 
   // Clear in Redis
+  // @ts-ignore
   const useRedis = redisClient && redisClient.status === 'ready';
   if (useRedis) {
     try {
       const ipKey = `rate:ip:${ip}`;
       const userKey = cleanEmail ? `rate:user:${cleanEmail}` : null;
+      // @ts-ignore
       if (ip) redisClient.del(ipKey).catch(() => {});
+      // @ts-ignore
       if (userKey) redisClient.del(userKey).catch(() => {});
     } catch (err) {
       console.warn('[Rate Limiter] Redis error in clearLoginAttempts:', err.message);
