@@ -46,6 +46,7 @@ export function Inventory() {
   const [cats, setCats] = useState<string[]>(['all']);
   const [years, setYears] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [inventoryItems, setInventoryItems] = useState<any[]>([]);
   const limit = 12;
 
   // Reset page on filter/search change
@@ -111,7 +112,7 @@ export function Inventory() {
             specs: i.specs || '-',
             photo_url: i.label?.photo_url || null,
           }));
-          dispatch({ type: 'SET_INVENTORY', inventory: inv });
+          setInventoryItems(inv);
           if (res.pagination) {
             setTotalPages(res.pagination.pages || 1);
             setTotalItems(res.pagination.total || 0);
@@ -124,9 +125,9 @@ export function Inventory() {
       }
     }
     fetchInventory();
-  }, [dispatch, currentPage, filter, monthFilter, yearFilter, query]);
+  }, [state.inventory, currentPage, filter, monthFilter, yearFilter, query]);
 
-  const filtered = state.inventory;
+  const filtered = inventoryItems;
 
   const generateInventoryPDF = () => {
     if (window.showToast) window.showToast('Menyiapkan Laporan PDF…', 'info', 'log');

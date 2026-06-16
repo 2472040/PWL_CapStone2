@@ -73,6 +73,7 @@ export function BHP() {
   const [totalItems, setTotalItems] = useState(0);
   const [years, setYears] = useState<string[]>([]);
   const [loadingList, setLoadingList] = useState(true);
+  const [bhpList, setBhpList] = useState<BhpItem[]>([]);
   const limit = 10;
 
   // Reset page when filters change
@@ -128,7 +129,7 @@ export function BHP() {
             lastIn: b.last_in || '-',
             cat: b.category || 'General',
           }));
-          dispatch({ type: 'SET_BHP', bhp: formatted });
+          setBhpList(formatted);
           if (res.pagination) {
             setTotalPages(res.pagination.pages || 1);
             setTotalItems(res.pagination.total || 0);
@@ -141,7 +142,7 @@ export function BHP() {
       }
     }
     loadBhpData();
-  }, [dispatch, currentPage, monthFilter, yearFilter, query]);
+  }, [state.bhp, currentPage, monthFilter, yearFilter, query]);
 
   async function submitRestock() {
     if (!restockItem) return;
@@ -227,7 +228,7 @@ export function BHP() {
     }
   }
 
-  const filteredBhp = state.bhp;
+  const filteredBhp = bhpList;
 
   return (
     <div className="page" style={{ '--role-accent': role ? role.accent : undefined } as any}>
