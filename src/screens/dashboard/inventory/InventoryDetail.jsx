@@ -1,5 +1,5 @@
 import React from 'react';
-import { useStore, useToast, D, Icon, QR, downloadQR } from '../../../components/app-shell.jsx';
+import { useStore, useToast, D, Icon, QR, downloadQR } from '../../../components/app-shell';
 
 export function InventoryDetail({ payload, close }) {
   const it = payload;

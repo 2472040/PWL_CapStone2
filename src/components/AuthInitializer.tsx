@@ -1,9 +1,20 @@
-import React, { useEffect } from 'react';
-import { useStore, D } from './app-shell.jsx';
+import { useEffect } from 'react';
+import { useStore } from './store-context';
 import { apiFetch, getToken } from '../services/api';
-import { io } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 
-export function AuthInitializer({ pendingRole }) {
+declare global {
+  interface Window {
+    clearApiCache?: () => void;
+    showToast?: (msg: string, kind: 'ok' | 'warn' | 'info') => void;
+  }
+}
+
+interface AuthInitializerProps {
+  pendingRole: string | null;
+}
+
+export function AuthInitializer({ pendingRole }: AuthInitializerProps) {
   const { state, dispatch } = useStore();
   const currentRole = state.role;
 
@@ -45,7 +56,7 @@ export function AuthInitializer({ pendingRole }) {
             localStorage.setItem('loka-role', user.role);
           } catch (e) {}
         }
-      } catch (error) {
+      } catch (error: any) {
         if (cancelled) return;
         console.error('Gagal mengambil data user:', error.message);
         // Don't clear token here — the 401 interceptor in apiFetch already handles logout
@@ -89,7 +100,7 @@ export function AuthInitializer({ pendingRole }) {
             if (resRooms.data) {
               dispatch({ type: 'SET_ROOMS', rooms: resRooms.data });
             }
-          } catch (e) {
+          } catch (e: any) {
             console.error('Gagal mengambil data ruangan:', e.message);
           }
         }
@@ -99,7 +110,7 @@ export function AuthInitializer({ pendingRole }) {
           try {
             const resUsers = await apiFetch('/users');
             if (resUsers.data) dispatch({ type: 'SET_USERS', users: resUsers.data });
-          } catch (e) {
+          } catch (e: any) {
             console.error('Gagal mengambil data pengguna:', e.message);
           }
         }
@@ -109,7 +120,7 @@ export function AuthInitializer({ pendingRole }) {
           try {
             const resDrafts = await apiFetch('/procurement/drafts');
             if (resDrafts.data) {
-              const formatted = resDrafts.data.map((d) => ({
+              const formatted = resDrafts.data.map((d: any) => ({
                 ...d,
                 by: d.creator?.name || d.by || 'Kepala Lab',
                 role: d.creator?.role || d.role || 'kalab',
@@ -121,7 +132,7 @@ export function AuthInitializer({ pendingRole }) {
                     })
                   : '-',
                 items:
-                  d.items?.map((it) => ({
+                  d.items?.map((it: any) => ({
                     ...it,
                     approval:
                       it.approval?.status === 'approved'
@@ -134,14 +145,14 @@ export function AuthInitializer({ pendingRole }) {
               }));
               dispatch({ type: 'SET_DRAFTS', drafts: formatted });
             }
-          } catch (e) {
+          } catch (e: any) {
             console.error('Gagal mengambil data draf:', e.message);
           }
 
           try {
             const resBhp = await apiFetch('/bhp');
             if (resBhp.data) {
-              const formatted = resBhp.data.map((b) => ({
+              const formatted = resBhp.data.map((b: any) => ({
                 id: b.code || b.id.toString(),
                 dbId: b.id,
                 name: b.name,
@@ -153,7 +164,7 @@ export function AuthInitializer({ pendingRole }) {
               }));
               dispatch({ type: 'SET_BHP', bhp: formatted });
             }
-          } catch (e) {
+          } catch (e: any) {
             console.error('Gagal mengambil data BHP:', e.message);
           }
         }
@@ -165,7 +176,7 @@ export function AuthInitializer({ pendingRole }) {
             const resReview = await apiFetch('/procurement/review');
             let reviewCount = 0;
             if (resReview.data) {
-              reviewCount = resReview.data.filter((d) => d.status === 'submitted').length;
+              reviewCount = resReview.data.filter((d: any) => d.status === 'submitted').length;
               dispatch({ type: 'SET_PENDING_REVIEW_COUNT', count: reviewCount });
             }
 
@@ -173,12 +184,12 @@ export function AuthInitializer({ pendingRole }) {
             if (isHistory) {
               const resHistory = await apiFetch('/procurement/history');
               if (resHistory.data) {
-                const formatted = resHistory.data.map((d) => ({
+                const formatted = resHistory.data.map((d: any) => ({
                   ...d,
                   by: d.creator?.name || d.by,
                   role: d.creator?.role || d.role,
                   items:
-                    d.items?.map((it) => ({
+                    d.items?.map((it: any) => ({
                       ...it,
                       approval:
                         it.approval?.status === 'approved'
@@ -192,12 +203,12 @@ export function AuthInitializer({ pendingRole }) {
               }
             } else {
               if (resReview.data) {
-                const formatted = resReview.data.map((d) => ({
+                const formatted = resReview.data.map((d: any) => ({
                   ...d,
                   by: d.creator?.name || d.by,
                   role: d.creator?.role || d.role,
                   items:
-                    d.items?.map((it) => ({
+                    d.items?.map((it: any) => ({
                       ...it,
                       approval:
                         it.approval?.status === 'approved'
@@ -210,7 +221,7 @@ export function AuthInitializer({ pendingRole }) {
                 dispatch({ type: 'SET_DRAFTS', drafts: formatted });
               }
             }
-          } catch (e) {
+          } catch (e: any) {
             console.error('Gagal mengambil data pengadaan Kaprodi:', e.message);
           }
         }
@@ -220,12 +231,12 @@ export function AuthInitializer({ pendingRole }) {
           try {
             const resReceiving = await apiFetch('/procurement/receiving');
             if (resReceiving.data) {
-              const formatted = resReceiving.data.map((d) => ({
+              const formatted = resReceiving.data.map((d: any) => ({
                 ...d,
                 by: d.creator?.name || d.by,
                 role: d.creator?.role || d.role,
                 items:
-                  d.items?.map((it) => ({
+                  d.items?.map((it: any) => ({
                     ...it,
                     approval:
                       it.approval?.status === 'approved'
@@ -242,14 +253,14 @@ export function AuthInitializer({ pendingRole }) {
               }));
               dispatch({ type: 'SET_DRAFTS', drafts: formatted });
             }
-          } catch (e) {
+          } catch (e: any) {
             console.error('Gagal mengambil data penerimaan:', e.message);
           }
 
           try {
             const resBhp = await apiFetch('/bhp');
             if (resBhp.data) {
-              const formatted = resBhp.data.map((b) => ({
+              const formatted = resBhp.data.map((b: any) => ({
                 id: b.code || b.id.toString(),
                 dbId: b.id,
                 name: b.name,
@@ -261,7 +272,7 @@ export function AuthInitializer({ pendingRole }) {
               }));
               dispatch({ type: 'SET_BHP', bhp: formatted });
             }
-          } catch (e) {
+          } catch (e: any) {
             console.error('Gagal mengambil data BHP:', e.message);
           }
         }
@@ -271,7 +282,7 @@ export function AuthInitializer({ pendingRole }) {
           try {
             const resLogs = await apiFetch('/maintenance');
             if (resLogs.data) {
-              const formatted = resLogs.data.map((l) => ({
+              const formatted = resLogs.data.map((l: any) => ({
                 id: l.code || l.id,
                 date: new Date(l.date).toLocaleDateString('id-ID', {
                   day: 'numeric',
@@ -284,7 +295,7 @@ export function AuthInitializer({ pendingRole }) {
                 tech: l.technician?.name || 'Teknisi',
                 cond: l.condition_after,
                 bhp:
-                  l.bhpUsed?.map((bu) => ({
+                  l.bhpUsed?.map((bu: any) => ({
                     id: bu.Bhp?.code || bu.bhp_id,
                     qty: parseFloat(bu.qty_used) || 0,
                     unit: bu.Bhp?.unit || 'pcs',
@@ -292,14 +303,14 @@ export function AuthInitializer({ pendingRole }) {
               }));
               dispatch({ type: 'SET_MAINT_LOGS', logs: formatted });
             }
-          } catch (e) {
+          } catch (e: any) {
             console.error('Gagal mengambil data log pemeliharaan:', e.message);
           }
 
           try {
             const resBhp = await apiFetch('/bhp');
             if (resBhp.data) {
-              const formatted = resBhp.data.map((b) => ({
+              const formatted = resBhp.data.map((b: any) => ({
                 id: b.code || b.id.toString(),
                 dbId: b.id,
                 name: b.name,
@@ -311,7 +322,7 @@ export function AuthInitializer({ pendingRole }) {
               }));
               dispatch({ type: 'SET_BHP', bhp: formatted });
             }
-          } catch (e) {
+          } catch (e: any) {
             console.error('Gagal mengambil data BHP:', e.message);
           }
         }
@@ -320,7 +331,7 @@ export function AuthInitializer({ pendingRole }) {
         try {
           const resInv = await apiFetch('/inventory');
           if (resInv.data) {
-            const formatted = resInv.data.map((i) => ({
+            const formatted = resInv.data.map((i: any) => ({
               id: i.id,
               code: i.code,
               name: i.name,
@@ -338,10 +349,10 @@ export function AuthInitializer({ pendingRole }) {
             }));
             dispatch({ type: 'SET_INVENTORY', inventory: formatted });
           }
-        } catch (e) {
+        } catch (e: any) {
           console.error('Gagal mengambil data inventaris:', e.message);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Data sync polling error:', err.message);
       }
     };
@@ -350,7 +361,7 @@ export function AuthInitializer({ pendingRole }) {
 
     // Connect to LokaLab WebSocket for event-driven real-time data synchronization
     const wsToken = getToken();
-    const socket = io(
+    const socket: Socket = io(
       window.location.origin === 'http://localhost:5173'
         ? 'http://localhost:3000'
         : window.location.origin,
@@ -366,13 +377,13 @@ export function AuthInitializer({ pendingRole }) {
       pollData();
     });
 
-    socket.on('data_changed', (payload) => {
+    socket.on('data_changed', (payload: any) => {
       console.log('⚡ WebSocket Sync Event:', payload);
       if (window.clearApiCache) window.clearApiCache();
       pollData();
     });
 
-    socket.on('notification', (payload) => {
+    socket.on('notification', (payload: any) => {
       console.log('⚡ WebSocket Notification:', payload);
       const role =
         currentRole ||

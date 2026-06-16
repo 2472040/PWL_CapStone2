@@ -18,7 +18,10 @@ export const initialAuthState: AuthState = {
   density: 'comfortable',
 };
 
-export const authReducer = (state: Record<string, any>, action: AppAction): Record<string, any> | null => {
+export const authReducer = (
+  state: Record<string, any>,
+  action: AppAction
+): Record<string, any> | null => {
   switch (action.type) {
     case 'SET_ROLE':
       return { role: action.role, screen: 'dashboard', mobileSidebarOpen: false };

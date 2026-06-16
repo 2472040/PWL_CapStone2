@@ -10,7 +10,10 @@ export const initialProcurementState: ProcurementState = {
   bhp: [],
 };
 
-export const procurementReducer = (state: Record<string, any>, action: AppAction): Record<string, any> | null => {
+export const procurementReducer = (
+  state: Record<string, any>,
+  action: AppAction
+): Record<string, any> | null => {
   switch (action.type) {
     case 'SET_DRAFTS':
       return { drafts: action.drafts };
@@ -74,9 +77,7 @@ export const procurementReducer = (state: Record<string, any>, action: AppAction
     case 'REQUEST_REVISION':
       return {
         drafts: state.drafts.map((d: any) =>
-          d.code !== action.code
-            ? d
-            : { ...d, status: 'revision', revision_notes: action.notes }
+          d.code !== action.code ? d : { ...d, status: 'revision', revision_notes: action.notes }
         ),
       };
     case 'ADD_DRAFT_ITEM':

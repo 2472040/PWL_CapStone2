@@ -1,5 +1,5 @@
 import React from 'react';
-import { useStore, useToast, D } from '../../../components/app-shell.jsx';
+import { useStore, useToast, D } from '../../../components/app-shell';
 
 export function LogoutModal({ close }) {
   const { state } = useStore();

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Icon } from './app-shell.jsx';
+import { Icon } from './app-shell';
 
 export function FinancialChart({ data }) {
   const [activeIdx, setActiveIdx] = useState(null);

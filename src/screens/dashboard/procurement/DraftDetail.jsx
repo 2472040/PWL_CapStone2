@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useStore, useToast, D, Icon } from '../../../components/app-shell.jsx';
+import { useStore, useToast, D, Icon } from '../../../components/app-shell';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../../../services/api';
 import { AdminReceiveGrid } from './ReceivingAdmin.jsx';

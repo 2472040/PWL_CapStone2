@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useStore, useToast, D, Icon } from '../../../components/app-shell.jsx';
+import { useStore, useToast, D, Icon } from '../../../components/app-shell';
 import { apiFetch } from '../../../services/api';
 import { createDraftSchema } from '../../../schemas/procurementSchema.js';
 

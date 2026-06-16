@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useToast } from '../../../components/app-shell.jsx';
+import { useToast } from '../../../components/app-shell';
 import { apiFetch } from '../../../services/api';
 
 export function ChangePasswordModal({ close }) {

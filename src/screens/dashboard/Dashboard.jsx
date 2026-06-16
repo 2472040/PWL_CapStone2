@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { useStore, StatTile, D, Icon } from '../../components/app-shell.jsx';
+import { useStore, StatTile, D, Icon } from '../../components/app-shell';
 import { apiFetch } from '../../services/api';
 import { FinancialChart } from '../../components/FinancialChart.jsx';
 

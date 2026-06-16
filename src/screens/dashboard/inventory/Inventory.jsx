@@ -7,7 +7,7 @@ import {
   QR,
   useSearch,
   CustomSelect,
-} from '../../../components/app-shell.jsx';
+} from '../../../components/app-shell';
 import { apiFetch } from '../../../services/api';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';

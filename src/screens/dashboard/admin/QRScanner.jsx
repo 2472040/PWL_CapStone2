@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { useStore, useToast, Icon, QR } from '../../../components/app-shell.jsx';
+import { useStore, useToast, Icon, QR } from '../../../components/app-shell';
 import jsQR from 'jsqr';
 
 export function QRScanner({ close }) {

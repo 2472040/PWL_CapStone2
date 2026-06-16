@@ -6,7 +6,7 @@ import {
   Icon,
   useSearch,
   CustomSelect,
-} from '../../../components/app-shell.jsx';
+} from '../../../components/app-shell';
 import { apiFetch } from '../../../services/api';
 import { DraftDetail } from './DraftDetail.jsx';
 import { motion, AnimatePresence } from 'framer-motion';

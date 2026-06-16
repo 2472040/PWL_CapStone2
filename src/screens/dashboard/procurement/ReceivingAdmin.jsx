@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useStore, D, QR, Icon, useSearch, useToast } from '../../../components/app-shell.jsx';
+import { useStore, D, QR, Icon, useSearch, useToast } from '../../../components/app-shell';
 import { apiFetch } from '../../../services/api';
 import { DraftDetail } from './DraftDetail.jsx';
 import { DraftCard } from './PengadaanKalab.jsx';

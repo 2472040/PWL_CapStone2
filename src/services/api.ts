@@ -133,7 +133,7 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}): Pro
       credentials: 'include', // Ensure HttpOnly cookies are attached
       headers: {
         ...authHeaders(),
-        ...(options.headers as Record<string, string> || {}),
+        ...((options.headers as Record<string, string>) || {}),
       },
     });
 
@@ -150,7 +150,7 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}): Pro
           credentials: 'include',
           headers: {
             ...authHeaders(),
-            ...(options.headers as Record<string, string> || {}),
+            ...((options.headers as Record<string, string>) || {}),
           },
         });
       } catch (refreshErr) {
@@ -199,10 +199,9 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}): Pro
     return result;
   } catch (err: any) {
     if (
-      err.message && (
-        err.message.includes('Unexpected end of JSON input') ||
-        err.message.includes('Failed to fetch')
-      )
+      err.message &&
+      (err.message.includes('Unexpected end of JSON input') ||
+        err.message.includes('Failed to fetch'))
     ) {
       throw new Error(
         'Gagal terhubung ke server. Pastikan backend sudah dijalankan (npm run server atau npm run dev:all).'

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Icon } from './app-shell.jsx';
+import { Icon } from './app-shell';
 
 export function ConfirmModal({ payload, close }) {
   if (!payload) return null;

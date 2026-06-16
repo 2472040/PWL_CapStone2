@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useStore, Icon } from './app-shell.jsx';
+import { useStore, Icon } from './app-shell';
 import { apiFetch } from '../services/api';
 
 export function AiPredictiveModal({ payload, close }) {

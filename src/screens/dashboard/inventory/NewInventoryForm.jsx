@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useStore, useToast, Icon } from '../../../components/app-shell.jsx';
+import { useStore, useToast, Icon } from '../../../components/app-shell';
 import { apiFetch } from '../../../services/api';
 
 export function NewInventoryForm() {

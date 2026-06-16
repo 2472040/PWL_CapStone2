@@ -1,14 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Icon } from './app-icons.jsx';
+import { Icon } from './app-icons';
 
-export function CustomSelect({ value, onChange, options, style, placeholder }) {
+interface CustomSelectOption {
+  value: string;
+  label: string;
+}
+
+interface CustomSelectProps {
+  value: string;
+  onChange: (val: string) => void;
+  options: CustomSelectOption[];
+  style?: React.CSSProperties;
+  placeholder?: string;
+}
+
+export function CustomSelect({ value, onChange, options, style, placeholder }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Close when clicking outside
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (containerRef.current && !containerRef.current.contains(event.target)) {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     }

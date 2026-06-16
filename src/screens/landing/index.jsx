@@ -4,7 +4,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
 import { CustomCursor } from '../../components/app-cursor.jsx';
-import { CursorEnabler } from '../../components/app-shell.jsx';
+import { CursorEnabler } from '../../components/app-shell';
 
 import { D, AuRise } from './LandingUtils.jsx';
 import HeroSection from './HeroSection.jsx';

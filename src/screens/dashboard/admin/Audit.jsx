@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useStore, useToast, D, Icon, useSearch } from '../../../components/app-shell.jsx';
+import { useStore, useToast, D, Icon, useSearch } from '../../../components/app-shell';
 import { apiFetch } from '../../../services/api';
 
 function CustomDatePicker({ value, onChange, placeholder }) {

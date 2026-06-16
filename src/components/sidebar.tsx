@@ -1,25 +1,45 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useStore } from './store-context.jsx';
-import { themeTransition } from './theme-transition.jsx';
-import { LOKA as D } from '../data/app-data.jsx';
-import { Icon } from './app-icons.jsx';
+import { useStore } from './store-context';
+import { themeTransition } from './theme-transition';
+import { LOKA as D } from '../data/app-data';
+import { Icon } from './app-icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-// =========================================================
-// Sidebar
-// =========================================================
+interface RoleConfig {
+  id: string;
+  title: string;
+  short: string;
+  accent: string;
+}
+
+interface NavItem {
+  id: string;
+  label: string;
+  icon: string;
+  badge?: number | string | null;
+}
+
 export function Sidebar() {
   const { state, dispatch } = useStore();
   const location = useLocation();
   const navigate = useNavigate();
   const [popOpen, setPopOpen] = useState(false);
-  const popRef = useRef();
-  const sbRef = useRef();
-  const role = D.roles.find((r) => r.id === state.role);
-  const me = state.currentUser || D.me[state.role] || { name: 'Pengguna', initials: '?' };
-  const items = D.nav[state.role];
+  const popRef = useRef<HTMLDivElement>(null);
+  const sbRef = useRef<HTMLElement>(null);
 
-  const isActive = (id) => {
+  const role = (D.roles as RoleConfig[]).find((r) => r.id === state.role) || {
+    id: 'sysadmin',
+    title: 'Administrator',
+    short: 'Admin',
+    accent: '#94a3b8',
+  };
+
+  const defaultMe = { name: 'Pengguna', initials: '?' };
+  const me =
+    state.currentUser || (D.me as Record<string, typeof defaultMe>)[state.role] || defaultMe;
+  const items = (D.nav as Record<string, NavItem[]>)[state.role] || [];
+
+  const isActive = (id: string) => {
     if (id === 'dashboard') {
       return location.pathname === '/dashboard' || location.pathname === '/dashboard/';
     }
@@ -28,8 +48,8 @@ export function Sidebar() {
 
   useEffect(() => {
     if (!popOpen) return;
-    const off = (e) => {
-      if (popRef.current && !popRef.current.contains(e.target)) setPopOpen(false);
+    const off = (e: PointerEvent) => {
+      if (popRef.current && !popRef.current.contains(e.target as Node)) setPopOpen(false);
     };
     document.addEventListener('pointerdown', off, true);
     return () => document.removeEventListener('pointerdown', off, true);
@@ -57,17 +77,12 @@ export function Sidebar() {
     return () => ctx.revert();
   }, [state.role]);
 
-  const setRole = (id) => {
-    setPopOpen(false);
-    dispatch({ type: 'SET_ROLE', role: id });
-  };
-
   return (
     <aside
       id="main-sidebar"
       className={`sb ${state.mobileSidebarOpen ? 'open' : ''}`}
       ref={sbRef}
-      style={{ '--role-accent': role.accent }}
+      style={{ '--role-accent': role.accent } as React.CSSProperties}
       role="navigation"
       aria-label="Menu utama"
     >
@@ -90,7 +105,7 @@ export function Sidebar() {
           <div className="role-switch-head">
             <div
               className="role-switch-av"
-              style={{ '--role-accent': role.accent }}
+              style={{ '--role-accent': role.accent } as React.CSSProperties}
               aria-hidden="true"
             >
               {me.initials}
@@ -108,15 +123,15 @@ export function Sidebar() {
       </div>
       <div className="sb-list" role="menubar">
         {items.map((it) => {
-          let badgeValue = it.badge;
+          let badgeValue: number | string | null = it.badge ?? null;
           if (state.role === 'admin' && it.id === 'receiving') {
-            badgeValue = state.drafts.filter((d) => d.status === 'finalized').length || null;
+            badgeValue = state.drafts.filter((d: any) => d.status === 'finalized').length || null;
           } else if (state.role === 'kaprodi' && it.id === 'review') {
             badgeValue = state.pendingReviewCount || null;
           } else if (state.role === 'staflab' && it.id === 'bhp') {
-            badgeValue = state.bhp.filter((b) => b.stock <= b.min).length || null;
+            badgeValue = state.bhp.filter((b: any) => b.stock <= b.min).length || null;
           } else if (state.role === 'kalab' && it.id === 'pengadaan') {
-            badgeValue = state.drafts.filter((d) => d.status === 'draft').length || null;
+            badgeValue = state.drafts.filter((d: any) => d.status === 'draft').length || null;
           }
 
           const isItemActive = isActive(it.id);

@@ -1,16 +1,28 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useStore } from './store-context.jsx';
-import { useSearch } from './search-context.jsx';
-import { useRevealFallback, useStaggerReveal } from './effects.jsx';
-import { Icon } from './app-icons.jsx';
+import React, { useEffect, useRef, useState, ReactNode } from 'react';
+import { useStore } from './store-context';
+import { useSearch } from './search-context';
+import { useRevealFallback, useStaggerReveal } from './effects';
+import { Icon } from './app-icons';
+
+declare global {
+  interface Window {
+    gsap?: any;
+    fmtRpShort: (val: number) => string;
+  }
+}
 
 // =========================================================
 // Top bar with functional search
 // =========================================================
-export function PageBar({ breadcrumbs, rightContent }) {
-  const { state, dispatch } = useStore();
+interface PageBarProps {
+  breadcrumbs: string[];
+  rightContent?: ReactNode;
+}
+
+export function PageBar({ breadcrumbs, rightContent }: PageBarProps) {
+  const { dispatch } = useStore();
   const { query, setQuery } = useSearch();
-  const inputRef = useRef();
+  const inputRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className="page-bar" role="banner">
@@ -62,8 +74,14 @@ export function PageBar({ breadcrumbs, rightContent }) {
 // =========================================================
 // Page wrapper with GSAP transitions + IO fallback
 // =========================================================
-export function PageHost({ children, role, screen }) {
-  const ref = useRef();
+interface PageHostProps {
+  children: ReactNode;
+  role: string;
+  screen: string;
+}
+
+export function PageHost({ children, role, screen }: PageHostProps) {
+  const ref = useRef<HTMLDivElement>(null);
   const [isRevealed, setIsRevealed] = useState(false);
 
   useEffect(() => {
@@ -77,8 +95,8 @@ export function PageHost({ children, role, screen }) {
     if (!window.gsap || !ref.current) return;
     const ctx = window.gsap.context(() => {
       // Staggered count-ups for [data-counter] tiles
-      const counters = ref.current.querySelectorAll('[data-counter]');
-      counters.forEach((c, index) => {
+      const counters = ref.current?.querySelectorAll('[data-counter]');
+      counters?.forEach((c: any, index: number) => {
         const target = parseFloat(c.dataset.counter);
         if (Number.isNaN(target)) return;
         const obj = { v: 0 };
@@ -109,7 +127,7 @@ export function PageHost({ children, role, screen }) {
 // =========================================================
 // Stat tile with GSAP counter
 // =========================================================
-function hexToRgb(hex) {
+function hexToRgb(hex?: string): string {
   if (!hex) return '167, 139, 250';
   const clean = hex.replace('#', '');
   const r = parseInt(clean.substring(0, 2), 16);
@@ -118,9 +136,30 @@ function hexToRgb(hex) {
   return isNaN(r) || isNaN(g) || isNaN(b) ? '167, 139, 250' : `${r}, ${g}, ${b}`;
 }
 
-export function StatTile({ label, value, fmt = 'int', icon, delta, accent, percentage }) {
-  const initial =
-    fmt === 'rp' ? window.fmtRpShort(value || 0) : (value || 0).toLocaleString('id-ID');
+interface StatTileProps {
+  label: string;
+  value: number | string;
+  fmt?: 'int' | 'rp';
+  icon?: string;
+  delta?: {
+    dir: 'up' | 'down';
+    text: string;
+  };
+  accent?: string;
+  percentage?: number;
+}
+
+export function StatTile({
+  label,
+  value,
+  fmt = 'int',
+  icon,
+  delta,
+  accent,
+  percentage,
+}: StatTileProps) {
+  const numericVal = typeof value === 'number' ? value : parseFloat(value) || 0;
+  const initial = fmt === 'rp' ? window.fmtRpShort(numericVal) : numericVal.toLocaleString('id-ID');
 
   const accentRgb = hexToRgb(accent);
   const radius = 20;
@@ -134,10 +173,12 @@ export function StatTile({ label, value, fmt = 'int', icon, delta, accent, perce
     <div
       className={`stat-tile ${percentage !== undefined && percentage !== null ? 'has-ring' : ''}`}
       data-reveal
-      style={{
-        '--accent-color': accent || 'var(--color-violet)',
-        '--accent-rgb': accentRgb,
-      }}
+      style={
+        {
+          '--accent-color': accent || 'var(--color-violet)',
+          '--accent-rgb': accentRgb,
+        } as React.CSSProperties
+      }
     >
       <div className="stat-tile-lbl">
         {icon && <Icon name={icon} size={13} strokeWidth={1.8} style={{ flexShrink: 0 }} />}
@@ -222,13 +263,15 @@ export function MobileSidebarToggle() {
 // Scroll progress bar
 // =========================================================
 export function ScrollProgress() {
-  const ref = useRef();
+  const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const main = document.querySelector('.main');
     if (!main || !ref.current) return;
     const update = () => {
       const pct = (main.scrollTop / (main.scrollHeight - main.clientHeight)) * 100;
-      ref.current.style.width = Math.min(100, Math.max(0, pct)) + '%';
+      if (ref.current) {
+        ref.current.style.width = Math.min(100, Math.max(0, pct)) + '%';
+      }
     };
     main.addEventListener('scroll', update, { passive: true });
     return () => main.removeEventListener('scroll', update);

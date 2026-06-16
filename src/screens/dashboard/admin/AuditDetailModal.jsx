@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Icon } from '../../../components/app-shell.jsx';
+import { Icon } from '../../../components/app-shell';
 
 export function AuditDetailModal({ payload: selectedLog, close }) {
   const scrollRef = useRef(null);

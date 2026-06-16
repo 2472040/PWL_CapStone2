@@ -24,7 +24,7 @@ import {
   CardHoverEngine,
   ListStaggerEngine,
   D,
-} from './components/app-shell.jsx';
+} from './components/app-shell';
 import { CustomCursor } from './components/app-cursor.jsx';
 // Lazy loaded drawers and modals for extreme performance & code splitting
 const NewUserForm = React.lazy(() =>
@@ -80,8 +80,8 @@ import LandingPage from './screens/landing/index.jsx';
 
 // Split components for readability and maintenance
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
-import { Router } from './components/Router.jsx';
-import { AuthInitializer } from './components/AuthInitializer.jsx';
+import { Router } from './components/Router';
+import { AuthInitializer } from './components/AuthInitializer';
 import { LoginScreen } from './screens/auth/LoginScreen.jsx';
 
 const AiPredictiveModal = React.lazy(() =>

@@ -7,7 +7,7 @@ import {
   D,
   useSearch,
   CustomSelect,
-} from '../../../components/app-shell.jsx';
+} from '../../../components/app-shell';
 import { apiFetch } from '../../../services/api';
 
 function formatThousand(val) {

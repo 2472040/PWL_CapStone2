@@ -10,7 +10,10 @@ export const initialInventoryState: InventoryState = {
   maintLog: [],
 };
 
-export const inventoryReducer = (state: Record<string, any>, action: AppAction): Record<string, any> | null => {
+export const inventoryReducer = (
+  state: Record<string, any>,
+  action: AppAction
+): Record<string, any> | null => {
   switch (action.type) {
     case 'SET_INVENTORY':
       return { inventory: action.inventory };
