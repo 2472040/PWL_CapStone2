@@ -1,27 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore, useToast, Icon, QR } from '../../../components/app-shell';
 import { apiFetch } from '../../../services/api';
 
-export function MaintenanceForm({ payload, close }) {
+interface BhpRow {
+  id: string;
+  qty: number | string;
+  assetCode: string;
+}
+
+export function MaintenanceForm({ payload, close }: { payload?: any; close: () => void }) {
   const { state, dispatch } = useStore();
   const toast = useToast();
 
   const isEdit = !!payload?.dbId;
   const [selectedRoomId, setSelectedRoomId] = useState('');
-  const [selectedAssets, setSelectedAssets] = useState([]);
+  const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
   const [action, setAction] = useState(payload?.action || '');
   const [cond, setCond] = useState(payload?.cond || 'Baik');
   const [maintDate, setMaintDate] = useState(
     payload?.rawDate ? payload.rawDate.substring(0, 10) : new Date().toISOString().substring(0, 10)
   );
-  const [bhpRows, setBhpRows] = useState([]);
+  const [bhpRows, setBhpRows] = useState<BhpRow[]>([]);
   const [loading, setLoading] = useState(false);
-  const filteredAssets = state.inventory.filter((i) => String(i.roomId) === String(selectedRoomId));
-  const selectedAssetData = filteredAssets.filter((a) => selectedAssets.includes(a.code));
+  const filteredAssets = state.inventory.filter((i: any) => String(i.roomId) === String(selectedRoomId));
+  const selectedAssetData = filteredAssets.filter((a: any) => selectedAssets.includes(a.code));
 
   useEffect(() => {
     if (isEdit && payload?.asset) {
-      const editAsset = state.inventory.find((i) => i.code === payload.asset);
+      const editAsset = state.inventory.find((i: any) => i.code === payload.asset);
 
       if (editAsset) {
         setSelectedRoomId(editAsset.roomId || '');
@@ -41,10 +47,10 @@ export function MaintenanceForm({ payload, close }) {
       { id: first.id, qty: 1, assetCode: selectedAssets.length > 0 ? selectedAssets[0] : 'all' },
     ]);
   }
-  function updateBhp(idx, patch) {
+  function updateBhp(idx: number, patch: Partial<BhpRow>) {
     setBhpRows((r) => r.map((x, i) => (i === idx ? { ...x, ...patch } : x)));
   }
-  function removeBhp(idx) {
+  function removeBhp(idx: number) {
     setBhpRows((r) => r.filter((_, i) => i !== idx));
   }
 
@@ -67,17 +73,17 @@ export function MaintenanceForm({ payload, close }) {
       const endpoint = isEdit ? `/maintenance/${payload.dbId}` : '/maintenance';
       const method = isEdit ? 'PUT' : 'POST';
 
-      let bhpPayload = [];
+      let bhpPayload: any[] = [];
       if (!isEdit) {
         bhpRows.forEach((b) => {
-          const bd = state.bhp.find((x) => x.id === b.id);
+          const bd = state.bhp.find((x: any) => x.id === b.id);
           if (!bd) return;
           if (b.assetCode === 'all') {
             selectedAssets.forEach((ac) => {
-              bhpPayload.push({ asset_code: ac, bhp_id: bd.dbId, qty: parseFloat(b.qty) });
+              bhpPayload.push({ asset_code: ac, bhp_id: bd.dbId, qty: parseFloat(b.qty as string) });
             });
           } else {
-            bhpPayload.push({ asset_code: b.assetCode, bhp_id: bd.dbId, qty: parseFloat(b.qty) });
+            bhpPayload.push({ asset_code: b.assetCode, bhp_id: bd.dbId, qty: parseFloat(b.qty as string) });
           }
         });
       }
@@ -89,7 +95,7 @@ export function MaintenanceForm({ payload, close }) {
             date: maintDate,
           }
         : {
-            inventory_ids: selectedAssetData.map((a) => a.id),
+            inventory_ids: selectedAssetData.map((a: any) => a.id),
             action,
             condition_after: cond,
             date: maintDate,
@@ -104,7 +110,7 @@ export function MaintenanceForm({ payload, close }) {
       if (res.data) {
         const resLogs = await apiFetch('/maintenance');
         if (resLogs.data) {
-          const formattedLogs = resLogs.data.map((l) => ({
+          const formattedLogs = resLogs.data.map((l: any) => ({
             id: l.code || l.id,
             dbId: l.id,
             date: new Date(l.date).toLocaleDateString('id-ID', {
@@ -119,7 +125,7 @@ export function MaintenanceForm({ payload, close }) {
             tech: l.technician?.name || 'Teknisi',
             cond: l.condition_after,
             bhp:
-              l.bhpUsed?.map((bu) => ({
+              l.bhpUsed?.map((bu: any) => ({
                 id: bu.Bhp?.code || bu.bhp_id,
                 qty: parseFloat(bu.qty_used) || 0,
                 unit: bu.Bhp?.unit || 'pcs',
@@ -129,7 +135,7 @@ export function MaintenanceForm({ payload, close }) {
         }
         const resBhp = await apiFetch('/bhp');
         if (resBhp.data) {
-          const formattedBhp = resBhp.data.map((b) => ({
+          const formattedBhp = resBhp.data.map((b: any) => ({
             id: b.code || b.id.toString(),
             dbId: b.id,
             name: b.name,
@@ -141,7 +147,7 @@ export function MaintenanceForm({ payload, close }) {
           }));
           dispatch({ type: 'SET_BHP', bhp: formattedBhp });
         }
-        const updatedInventory = state.inventory.map((x) =>
+        const updatedInventory = state.inventory.map((x: any) =>
           !selectedAssets.includes(x.code) ? x : { ...x, cond: cond, last: 'baru saja' }
         );
         dispatch({ type: 'SET_INVENTORY', inventory: updatedInventory });
@@ -152,7 +158,7 @@ export function MaintenanceForm({ payload, close }) {
         );
         close();
       }
-    } catch (err) {
+    } catch (err: any) {
       toast('Gagal menyimpan log: ' + err.message, 'warn');
     } finally {
       setLoading(false);
@@ -184,7 +190,7 @@ export function MaintenanceForm({ payload, close }) {
             disabled={loading || isEdit}
           >
             <option value="">Pilih ruangan…</option>
-            {state.rooms.map((r) => (
+            {state.rooms.map((r: any) => (
               <option key={r.id} value={r.id}>
                 {r.name}
               </option>
@@ -204,7 +210,7 @@ export function MaintenanceForm({ payload, close }) {
                   checked={selectedAssets.length === filteredAssets.length}
                   onChange={(e) => {
                     if (e.target.checked) {
-                      setSelectedAssets(filteredAssets.map((a) => a.code));
+                      setSelectedAssets(filteredAssets.map((a: any) => a.code));
                     } else {
                       setSelectedAssets([]);
                     }
@@ -228,7 +234,7 @@ export function MaintenanceForm({ payload, close }) {
                 padding: 8,
               }}
             >
-              {filteredAssets.map((asset) => (
+              {filteredAssets.map((asset: any) => (
                 <label
                   key={asset.code}
                   style={{
@@ -263,7 +269,7 @@ export function MaintenanceForm({ payload, close }) {
 
         {selectedAssetData.length > 0 && (
           <div className="card compact mb-4">
-            {selectedAssetData.map((asset) => (
+            {selectedAssetData.map((asset: any) => (
               <div key={asset.code} className="flex gap-3 items-center mb-2">
                 <QR seed={asset.code} size={6} />
 
@@ -326,7 +332,7 @@ export function MaintenanceForm({ payload, close }) {
               <div className="text-3 text-xs mono">// tidak ada BHP yang digunakan</div>
             ) : (
               <div className="flex flex-col gap-1.5 mt-1">
-                {payload.bhp.map((b, i) => (
+                {payload.bhp.map((b: any, i: number) => (
                   <div
                     key={i}
                     className="text-xs px-3 py-2 bg-surface/50 border border-line-2 rounded flex justify-between"
@@ -359,7 +365,7 @@ export function MaintenanceForm({ payload, close }) {
             )}
             <div className="flex flex-col gap-2">
               {bhpRows.map((b, i) => {
-                const bd = state.bhp.find((x) => x.id === b.id);
+                const bd = state.bhp.find((x: any) => x.id === b.id);
                 return (
                   <div key={i} className="bg-surface/50 border border-line-2 p-2 rounded-md">
                     <div className="flex items-center gap-2 mb-2">
@@ -370,7 +376,7 @@ export function MaintenanceForm({ payload, close }) {
                         disabled={loading}
                       >
                         <option value="all">Untuk Semua Aset Terpilih</option>
-                        {selectedAssets.map((ac) => (
+                        {selectedAssets.map((ac: any) => (
                           <option key={ac} value={ac}>
                             {ac}
                           </option>
@@ -387,7 +393,7 @@ export function MaintenanceForm({ payload, close }) {
                         onChange={(e) => updateBhp(i, { id: e.target.value })}
                         disabled={loading}
                       >
-                        {state.bhp.map((x) => (
+                        {state.bhp.map((x: any) => (
                           <option key={x.id} value={x.id}>
                             {x.name} (stok: {x.stock})
                           </option>

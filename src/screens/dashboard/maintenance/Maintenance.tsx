@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useStore, D, Icon, StatTile, useSearch, useToast } from '../../../components/app-shell';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../../../services/api';
@@ -20,15 +20,15 @@ export function Maintenance() {
   const toast = useToast();
   const { query, setQuery } = useSearch();
   const navigate = useNavigate();
-  const role = D.roles.find((r) => r.id === 'staflab');
-  const [activeModal, setActiveModal] = useState(null);
+  const role = D.roles.find((r) => r.id === 'staflab') || D.roles[0];
+  const [activeModal, setActiveModal] = useState<'log' | 'maint' | 'check' | 'bhp' | null>(null);
 
   useEffect(() => {
     async function loadMaintLogs() {
       try {
         const res = await apiFetch('/maintenance');
         if (res.data) {
-          const formatted = res.data.map((l) => ({
+          const formatted = res.data.map((l: any) => ({
             id: l.code || l.id,
             dbId: l.id,
             date: new Date(l.date).toLocaleDateString('id-ID', {
@@ -43,7 +43,7 @@ export function Maintenance() {
             tech: l.technician?.name || 'Teknisi',
             cond: l.condition_after,
             bhp:
-              l.bhpUsed?.map((bu) => ({
+              l.bhpUsed?.map((bu: any) => ({
                 id: bu.Bhp?.code || bu.bhp_id,
                 qty: parseFloat(bu.qty_used) || 0,
                 unit: bu.Bhp?.unit || 'pcs',
@@ -60,7 +60,7 @@ export function Maintenance() {
       try {
         const res = await apiFetch('/bhp');
         if (res.data) {
-          const formatted = res.data.map((b) => ({
+          const formatted = res.data.map((b: any) => ({
             id: b.code || b.id.toString(),
             dbId: b.id,
             name: b.name,
@@ -81,7 +81,7 @@ export function Maintenance() {
     loadBhpData();
   }, [dispatch]);
 
-  function handleQuickResolve(inventoryId, code, condition, actionText) {
+  function handleQuickResolve(inventoryId: number, code: string, condition: string, actionText: string) {
     dispatch({
       type: 'OPEN_MODAL',
       modal: {
@@ -107,7 +107,7 @@ export function Maintenance() {
                 // Reload maintenance logs
                 const resLogs = await apiFetch('/maintenance');
                 if (resLogs.data) {
-                  const formattedLogs = resLogs.data.map((l) => ({
+                  const formattedLogs = resLogs.data.map((l: any) => ({
                     id: l.code || l.id,
                     dbId: l.id,
                     date: new Date(l.date).toLocaleDateString('id-ID', {
@@ -122,7 +122,7 @@ export function Maintenance() {
                     tech: l.technician?.name || 'Teknisi',
                     cond: l.condition_after,
                     bhp:
-                      l.bhpUsed?.map((bu) => ({
+                      l.bhpUsed?.map((bu: any) => ({
                         id: bu.Bhp?.code || bu.bhp_id,
                         qty: parseFloat(bu.qty_used) || 0,
                         unit: bu.Bhp?.unit || 'pcs',
@@ -134,7 +134,7 @@ export function Maintenance() {
                 // Reload inventory condition in store
                 const resInv = await apiFetch('/inventory');
                 if (resInv.data) {
-                  const formattedInv = resInv.data.map((i) => ({
+                  const formattedInv = resInv.data.map((i: any) => ({
                     id: i.id,
                     code: i.code,
                     name: i.name,
@@ -155,7 +155,7 @@ export function Maintenance() {
 
                 toast(`Kondisi aset ${code} berhasil diperbarui menjadi "${condition}"!`, 'ok');
               }
-            } catch (err) {
+            } catch (err: any) {
               toast(`Gagal memperbarui kondisi aset: ${err.message}`, 'warn');
             }
           },
@@ -164,7 +164,7 @@ export function Maintenance() {
     });
   }
 
-  const filteredLogs = state.maintLog.filter((l) => {
+  const filteredLogs = state.maintLog.filter((l: any) => {
     if (!query) return true;
     const q = query.toLowerCase();
     return (
@@ -191,7 +191,7 @@ export function Maintenance() {
       ],
     ];
 
-    filteredLogs.forEach((l, idx) => {
+    filteredLogs.forEach((l: any, idx: number) => {
       tableBody.push([
         { text: (idx + 1).toString(), style: 'tableCellCenter' },
         { text: l.id, style: 'tableCellCode' },
@@ -318,7 +318,7 @@ export function Maintenance() {
       'KONDISI AKHIR',
       'BHP DIGUNAKAN',
     ];
-    const data = filteredLogs.map((l, idx) => [
+    const data = filteredLogs.map((l: any, idx: number) => [
       idx + 1,
       l.id,
       l.date,
@@ -327,14 +327,14 @@ export function Maintenance() {
       l.action,
       l.tech,
       l.cond,
-      l.bhp.map((b) => `${b.id}:${b.qty}${b.unit}`).join('; '),
+      l.bhp.map((b: any) => `${b.id}:${b.qty}${b.unit}`).join('; '),
     ]);
 
     const csvRows = [
       headers.join(','),
-      ...data.map((row) =>
+      ...data.map((row: any) =>
         row
-          .map((val) => {
+          .map((val: any) => {
             const escaped = String(val).replace(/"/g, '""');
             return `"${escaped}"`;
           })
@@ -357,7 +357,7 @@ export function Maintenance() {
   };
 
   return (
-    <div className="page" style={{ '--role-accent': role.accent }}>
+    <div className="page" style={{ '--role-accent': role.accent } as any}>
       <div className="page-head" data-reveal>
         <div>
           <h1 className="page-title">
@@ -404,7 +404,7 @@ export function Maintenance() {
         >
           <StatTile
             label="Aset di-maintain"
-            value={state.inventory.filter((i) => i.cond === 'Maintenance').length}
+            value={state.inventory.filter((i: any) => i.cond === 'Maintenance').length}
             icon="wrench"
             fmt="int"
           />
@@ -416,7 +416,7 @@ export function Maintenance() {
         >
           <StatTile
             label="Aset perlu cek"
-            value={state.inventory.filter((i) => i.cond === 'Perlu cek').length}
+            value={state.inventory.filter((i: any) => i.cond === 'Perlu cek').length}
             icon="alert"
             fmt="int"
             accent="var(--gold)"
@@ -425,7 +425,7 @@ export function Maintenance() {
         <div onClick={() => setActiveModal('bhp')} style={{ cursor: 'pointer' }} className="flex-1">
           <StatTile
             label="BHP rendah"
-            value={state.bhp.filter((b) => b.stock <= b.min).length}
+            value={state.bhp.filter((b: any) => b.stock <= b.min).length}
             icon="flask"
             fmt="int"
             accent="var(--rose)"
@@ -458,7 +458,7 @@ export function Maintenance() {
             </tr>
           </thead>
           <tbody>
-            {filteredLogs.map((l) => (
+            {filteredLogs.map((l: any) => (
               <tr key={l.id}>
                 <td className="mono">{l.id}</td>
                 <td>{l.date}</td>
@@ -477,7 +477,7 @@ export function Maintenance() {
                   {!l.bhp || l.bhp.length === 0 ? (
                     <span className="text-3">—</span>
                   ) : (
-                    l.bhp.map((b, i) => (
+                    l.bhp.map((b: any, i: number) => (
                       <div key={i}>
                         {b.id}: −{b.qty}
                         {b.unit}
@@ -599,7 +599,7 @@ export function Maintenance() {
                       </tr>
                     </thead>
                     <tbody>
-                      {state.maintLog.map((l) => (
+                      {state.maintLog.map((l: any) => (
                         <tr
                           key={l.id}
                           className="hover:bg-white/5 cursor-pointer"
@@ -620,7 +620,7 @@ export function Maintenance() {
                       ))}
                       {state.maintLog.length === 0 && (
                         <tr>
-                          <td colSpan="5" className="text-center text-xs text-ink-3 py-6">
+                          <td colSpan={5} className="text-center text-xs text-ink-3 py-6">
                             Belum ada log terekam bulan ini.
                           </td>
                         </tr>
@@ -644,8 +644,8 @@ export function Maintenance() {
                     </thead>
                     <tbody>
                       {state.inventory
-                        .filter((i) => i.cond === 'Maintenance')
-                        .map((i) => (
+                        .filter((i: any) => i.cond === 'Maintenance')
+                        .map((i: any) => (
                           <tr key={i.id}>
                             <td className="mono">{i.code}</td>
                             <td>
@@ -692,9 +692,9 @@ export function Maintenance() {
                             </td>
                           </tr>
                         ))}
-                      {state.inventory.filter((i) => i.cond === 'Maintenance').length === 0 && (
+                      {state.inventory.filter((i: any) => i.cond === 'Maintenance').length === 0 && (
                         <tr>
-                          <td colSpan="5" className="text-center text-xs text-ink-3 py-6">
+                          <td colSpan={5} className="text-center text-xs text-ink-3 py-6">
                             Tidak ada aset yang sedang dalam maintenance! 🎉
                           </td>
                         </tr>
@@ -718,8 +718,8 @@ export function Maintenance() {
                     </thead>
                     <tbody>
                       {state.inventory
-                        .filter((i) => i.cond === 'Perlu cek')
-                        .map((i) => (
+                        .filter((i: any) => i.cond === 'Perlu cek')
+                        .map((i: any) => (
                           <tr key={i.id}>
                             <td className="mono">{i.code}</td>
                             <td>
@@ -779,9 +779,9 @@ export function Maintenance() {
                             </td>
                           </tr>
                         ))}
-                      {state.inventory.filter((i) => i.cond === 'Perlu cek').length === 0 && (
+                      {state.inventory.filter((i: any) => i.cond === 'Perlu cek').length === 0 && (
                         <tr>
-                          <td colSpan="5" className="text-center text-xs text-ink-3 py-6">
+                          <td colSpan={5} className="text-center text-xs text-ink-3 py-6">
                             Tidak ada aset yang membutuhkan pengecekan.
                           </td>
                         </tr>
@@ -806,8 +806,8 @@ export function Maintenance() {
                     </thead>
                     <tbody>
                       {state.bhp
-                        .filter((b) => b.stock <= b.min)
-                        .map((b) => (
+                        .filter((b: any) => b.stock <= b.min)
+                        .map((b: any) => (
                           <tr key={b.id} className="hover:bg-white/5">
                             <td className="mono text-rose">{b.id}</td>
                             <td>
@@ -834,9 +834,9 @@ export function Maintenance() {
                             </td>
                           </tr>
                         ))}
-                      {state.bhp.filter((b) => b.stock <= b.min).length === 0 && (
+                      {state.bhp.filter((b: any) => b.stock <= b.min).length === 0 && (
                         <tr>
-                          <td colSpan="6" className="text-center text-xs text-ink-3 py-6">
+                          <td colSpan={6} className="text-center text-xs text-ink-3 py-6">
                             Stok seluruh BHP dalam kondisi aman.
                           </td>
                         </tr>

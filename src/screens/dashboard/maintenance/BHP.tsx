@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   useStore,
@@ -9,8 +9,16 @@ import {
   CustomSelect,
 } from '../../../components/app-shell';
 import { apiFetch } from '../../../services/api';
+import { BhpItem } from '../../../store/store.types';
 
-function formatThousand(val) {
+interface RestockRow {
+  bhpId: string;
+  qty: string | number;
+  unit: string;
+  price: string | number;
+}
+
+function formatThousand(val: any) {
   if (val === undefined || val === null || val === '') return '';
   const numString = String(val).replace(/\D/g, ''); // strip non-digits
   if (!numString) return '';
@@ -39,19 +47,19 @@ export function BHP() {
   const toast = useToast();
   const role = D.roles.find((r) => r.id === state.role);
 
-  const [reductionItem, setReductionItem] = useState(null);
+  const [reductionItem, setReductionItem] = useState<BhpItem | null>(null);
   const [reductionQty, setReductionQty] = useState('');
   const [reductionReason, setReductionReason] = useState('');
   const [reducing, setReducing] = useState(false);
 
-  const [restockItem, setRestockItem] = useState(null);
+  const [restockItem, setRestockItem] = useState<BhpItem | null>(null);
   const [restockQty, setRestockQty] = useState('');
   const [restockReason, setRestockReason] = useState('');
   const [restocking, setRestocking] = useState(false);
 
   // Staflab restock request (via draft)
   const [showRestockRequest, setShowRestockRequest] = useState(false);
-  const [restockRows, setRestockRows] = useState([]);
+  const [restockRows, setRestockRows] = useState<RestockRow[]>([]);
   const [restockTitle, setRestockTitle] = useState(
     'Restock BHP · ' + new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
   );
@@ -63,7 +71,7 @@ export function BHP() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [years, setYears] = useState([]);
+  const [years, setYears] = useState<string[]>([]);
   const [loadingList, setLoadingList] = useState(true);
   const limit = 10;
 
@@ -80,11 +88,11 @@ export function BHP() {
         if (res.data) {
           const uniqueYears = [
             ...new Set(
-              res.data.map((b) => (b.last_in && b.last_in !== '-' ? b.last_in.split('-')[0] : null))
+              res.data.map((b: any) => (b.last_in && b.last_in !== '-' ? b.last_in.split('-')[0] : null))
             ),
           ]
             .filter(Boolean)
-            .sort();
+            .sort() as string[];
           setYears(uniqueYears);
         }
       } catch (err) {
@@ -108,7 +116,7 @@ export function BHP() {
 
         const res = await apiFetch(`/bhp?${params.toString()}`);
         if (res.data) {
-          const formatted = res.data.map((b) => ({
+          const formatted = res.data.map((b: any) => ({
             id: b.code || b.id.toString(),
             dbId: b.id,
             name: b.name,
@@ -134,6 +142,7 @@ export function BHP() {
   }, [dispatch, currentPage, monthFilter, yearFilter, query]);
 
   async function submitRestock() {
+    if (!restockItem) return;
     if (!restockQty || isNaN(parseFloat(restockQty)) || parseFloat(restockQty) <= 0) {
       toast('Jumlah penambahan tidak valid!', 'warn');
       return;
@@ -166,7 +175,7 @@ export function BHP() {
         toast(`+${qty} ${restockItem.unit} (${restockItem.name}) berhasil ditambahkan`, 'ok');
         setRestockItem(null);
       }
-    } catch (err) {
+    } catch (err: any) {
       toast('Gagal melakukan restock: ' + err.message, 'warn');
     } finally {
       setRestocking(false);
@@ -174,6 +183,7 @@ export function BHP() {
   }
 
   async function submitReduction() {
+    if (!reductionItem) return;
     if (!reductionQty || isNaN(parseFloat(reductionQty)) || parseFloat(reductionQty) <= 0) {
       toast('Jumlah pengurangan tidak valid!', 'warn');
       return;
@@ -208,7 +218,7 @@ export function BHP() {
         toast(`−${qty} ${reductionItem.unit} (${reductionItem.name}) berhasil dikurangi`, 'ok');
         setReductionItem(null);
       }
-    } catch (err) {
+    } catch (err: any) {
       toast('Gagal mengurangi stok: ' + err.message, 'warn');
     } finally {
       setReducing(false);
@@ -218,7 +228,7 @@ export function BHP() {
   const filteredBhp = state.bhp;
 
   return (
-    <div className="page" style={{ '--role-accent': role ? role.accent : undefined }}>
+    <div className="page" style={{ '--role-accent': role ? role.accent : undefined } as any}>
       <div className="page-head" data-reveal>
         <div>
           <h1 className="page-title">Barang Habis Pakai</h1>
@@ -403,7 +413,7 @@ export function BHP() {
             </div>
           </div>
         ) : (
-          filteredBhp.map((b) => {
+          filteredBhp.map((b: BhpItem) => {
             const pct = Math.min(100, (b.stock / (b.min * 3)) * 100);
             const status = b.stock <= b.min ? 'low' : b.stock <= b.min * 1.5 ? 'warn' : 'ok';
             return (
@@ -573,7 +583,7 @@ export function BHP() {
                 <button
                   className="btn sm"
                   onClick={() =>
-                    setRestockRows((r) => [
+                    setRestockRows((r: RestockRow[]) => [
                       ...r,
                       {
                         bhpId: state.bhp[0]?.id || '',
@@ -591,7 +601,6 @@ export function BHP() {
 
               <div style={{ maxHeight: '280px', overflowY: 'auto', marginBottom: '16px' }}>
                 {restockRows.map((row, i) => {
-                  const selectedBhp = state.bhp.find((b) => b.id === row.bhpId);
                   return (
                     <div
                       key={i}
@@ -603,8 +612,8 @@ export function BHP() {
                           className="select flex-1"
                           value={row.bhpId}
                           onChange={(e) => {
-                            const found = state.bhp.find((b) => b.id === e.target.value);
-                            setRestockRows((r) =>
+                            const found = state.bhp.find((b: any) => b.id === e.target.value);
+                            setRestockRows((r: RestockRow[]) =>
                               r.map((x, j) =>
                                 j === i
                                   ? { ...x, bhpId: e.target.value, unit: found?.unit || 'pcs' }
@@ -614,7 +623,7 @@ export function BHP() {
                           }}
                           disabled={submittingRestock}
                         >
-                          {state.bhp.map((b) => (
+                          {state.bhp.map((b: any) => (
                             <option key={b.id} value={b.id}>
                               {b.name} (stok: {b.stock} {b.unit})
                             </option>
@@ -622,7 +631,7 @@ export function BHP() {
                         </select>
                         <button
                           className="x-btn"
-                          onClick={() => setRestockRows((r) => r.filter((_, j) => j !== i))}
+                          onClick={() => setRestockRows((r: RestockRow[]) => r.filter((_, j) => j !== i))}
                           disabled={submittingRestock || restockRows.length <= 1}
                         >
                           <Icon name="x" size={12} />
@@ -635,7 +644,7 @@ export function BHP() {
                           min="1"
                           value={row.qty}
                           onChange={(e) =>
-                            setRestockRows((r) =>
+                            setRestockRows((r: RestockRow[]) =>
                               r.map((x, j) => (j === i ? { ...x, qty: e.target.value } : x))
                             )
                           }
@@ -651,7 +660,7 @@ export function BHP() {
                           value={formatThousand(row.price)}
                           onChange={(e) => {
                             const clean = e.target.value.replace(/\D/g, '');
-                            setRestockRows((r) =>
+                            setRestockRows((r: RestockRow[]) =>
                               r.map((x, j) => (j === i ? { ...x, price: clean } : x))
                             );
                           }}
@@ -687,7 +696,7 @@ export function BHP() {
                     setSubmittingRestock(true);
                     try {
                       const items = validRows.map((r) => {
-                        const found = state.bhp.find((b) => b.id === r.bhpId);
+                        const found = state.bhp.find((b: any) => b.id === r.bhpId);
                         return {
                           kind: 'BHP',
                           name: found?.name || r.bhpId,
@@ -710,7 +719,7 @@ export function BHP() {
                       });
                       toast('Pengajuan restock berhasil dikirim ke Kaprodi!', 'ok');
                       setShowRestockRequest(false);
-                    } catch (err) {
+                    } catch (err: any) {
                       toast('Gagal mengirim pengajuan: ' + err.message, 'warn');
                     } finally {
                       setSubmittingRestock(false);
@@ -993,7 +1002,7 @@ export function BHP() {
   );
 }
 
-export function NewBhpForm({ payload, close }) {
+export function NewBhpForm({ payload, close }: { payload?: any; close: () => void }) {
   const { state, dispatch } = useStore();
   const toast = useToast();
 
@@ -1038,7 +1047,7 @@ export function NewBhpForm({ payload, close }) {
           setLoading(false);
           return;
         }
-        const b = state.bhp.find((x) => x.id === selectedId);
+        const b = state.bhp.find((x: any) => x.id === selectedId);
         if (!b) {
           toast('Item BHP tidak ditemukan.', 'warn');
           setLoading(false);
@@ -1073,7 +1082,7 @@ export function NewBhpForm({ payload, close }) {
         }
 
         // Check if code already exists
-        const exists = state.bhp.some((x) => x.id.toLowerCase() === code.toLowerCase());
+        const exists = state.bhp.some((x: any) => x.id.toLowerCase() === code.toLowerCase());
         if (exists) {
           toast(`Kode BHP "${code}" sudah terdaftar.`, 'warn');
           setLoading(false);
@@ -1110,7 +1119,7 @@ export function NewBhpForm({ payload, close }) {
           close();
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       toast('Gagal memproses manual restock: ' + err.message, 'warn');
     } finally {
       setLoading(false);
@@ -1166,7 +1175,7 @@ export function NewBhpForm({ payload, close }) {
                 disabled={loading}
               >
                 <option value="">-- Pilih Barang --</option>
-                {state.bhp.map((b) => (
+                {state.bhp.map((b: any) => (
                   <option key={b.id} value={b.id}>
                     {b.id} - {b.name} (Stok: {b.stock} {b.unit})
                   </option>
@@ -1194,7 +1203,7 @@ export function NewBhpForm({ payload, close }) {
                   className="text-sm font-semibold mono color-ink-3"
                   style={{ opacity: 0.5, fontFamily: 'monospace' }}
                 >
-                  {selectedId ? state.bhp.find((x) => x.id === selectedId)?.unit : ''}
+                  {selectedId ? state.bhp.find((x: any) => x.id === selectedId)?.unit : ''}
                 </span>
               </div>
             </div>

@@ -1,12 +1,9 @@
-import React from 'react';
-import { useStore, useToast, D, Icon, QR, downloadQR } from '../../../components/app-shell';
+import { useStore, D, Icon, QR, downloadQR } from '../../../components/app-shell';
 
-export function InventoryDetail({ payload, close }) {
+export function InventoryDetail({ payload, close }: { payload: any; close: () => void }) {
   const it = payload;
   const { state, dispatch } = useStore();
-  const toast = useToast();
-  const role = D.roles.find((r) => r.id === state.role);
-  const logs = state.maintLog.filter((l) => l.asset === it.code);
+  const logs = state.maintLog.filter((l: any) => l.asset === it.code);
   const canMaintain = state.role === 'staflab';
   const canEdit = state.role === 'admin';
 
@@ -98,7 +95,7 @@ export function InventoryDetail({ payload, close }) {
           </div>
         ) : (
           <div className="flex-col gap-2">
-            {logs.map((l) => (
+            {logs.map((l: any) => (
               <div key={l.id} className="card compact p-3.5">
                 <div className="flex between aic mb-2">
                   <div className="fw-5 text-sm">{l.action}</div>
@@ -110,7 +107,7 @@ export function InventoryDetail({ payload, close }) {
                 </div>
                 {l.bhp.length > 0 && (
                   <div className="text-xs text-3 mt-2">
-                    BHP terpakai: {l.bhp.map((b) => `${b.qty} ${b.unit} (${b.id})`).join(', ')}
+                    BHP terpakai: {l.bhp.map((b: any) => `${b.qty} ${b.unit} (${b.id})`).join(', ')}
                   </div>
                 )}
               </div>

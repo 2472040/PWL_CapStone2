@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   useStore,
-  StatTile,
   D,
   Icon,
   QR,
@@ -51,8 +50,8 @@ export function Inventory() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [cats, setCats] = useState(['all']);
-  const [years, setYears] = useState([]);
+  const [cats, setCats] = useState<string[]>(['all']);
+  const [years, setYears] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const limit = 12;
 
@@ -67,14 +66,14 @@ export function Inventory() {
       try {
         const res = await apiFetch('/inventory?limit=1000');
         if (res.data) {
-          const uniqueCats = ['all', ...new Set(res.data.map((i) => i.category))].filter(Boolean);
+          const uniqueCats = ['all', ...new Set(res.data.map((i: any) => i.category))].filter(Boolean) as string[];
           const uniqueYears = [
             ...new Set(
-              res.data.map((i) => (i.acquired_date ? i.acquired_date.split('-')[0] : null))
+              res.data.map((i: any) => (i.acquired_date ? i.acquired_date.split('-')[0] : null))
             ),
           ]
             .filter(Boolean)
-            .sort();
+            .sort() as string[];
           setCats(uniqueCats);
           setYears(uniqueYears);
         }
@@ -101,7 +100,7 @@ export function Inventory() {
 
         const res = await apiFetch(`/inventory?${params.toString()}`);
         if (res.data) {
-          const inv = res.data.map((i) => ({
+          const inv = res.data.map((i: any) => ({
             id: i.id,
             code: i.code,
             name: i.name,
@@ -150,7 +149,7 @@ export function Inventory() {
     ];
 
     let totalValuation = 0;
-    filtered.forEach((it, idx) => {
+    filtered.forEach((it: any, idx: number) => {
       totalValuation += parseFloat(it.value) || 0;
       tableBody.push([
         { text: (idx + 1).toString(), style: 'tableCellCenter' },
@@ -268,7 +267,7 @@ export function Inventory() {
   };
 
   return (
-    <div className="page" style={{ '--role-accent': role ? role.accent : undefined }}>
+    <div className="page" style={{ '--role-accent': role ? role.accent : undefined } as any}>
       <div className="page-head" data-reveal>
         <div>
           <h1 className="page-title">Inventaris</h1>
@@ -432,7 +431,7 @@ export function Inventory() {
             </div>
           </div>
         ) : (
-          filtered.map((it) => (
+          filtered.map((it: any) => (
             <div
               key={it.code}
               className="inv-card tilt-card"

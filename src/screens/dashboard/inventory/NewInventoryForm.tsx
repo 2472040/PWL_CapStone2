@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useStore, useToast, Icon } from '../../../components/app-shell';
+import { useState } from 'react';
+import { useStore, useToast } from '../../../components/app-shell';
 import { apiFetch } from '../../../services/api';
 
 export function NewInventoryForm() {
@@ -20,7 +20,7 @@ export function NewInventoryForm() {
 
   const [saving, setSaving] = useState(false);
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: any) {
     e.preventDefault();
     if (!form.code.trim() || !form.name.trim()) {
       toast('Kode Barcode dan Nama Aset wajib diisi', 'warn');
@@ -42,10 +42,9 @@ export function NewInventoryForm() {
 
       if (res.data) {
         toast('Aset baru berhasil ditambahkan', 'ok');
-        // Fetch inventory to refresh
-        const invRes = await apiFetch('/inventory');
-        if (invRes.data) {
-          const inv = invRes.data.map((i) => ({
+        const refreshRes = await apiFetch('/inventory');
+        if (refreshRes.data) {
+          const inv = refreshRes.data.map((i: any) => ({
             id: i.id,
             code: i.code,
             name: i.name,
@@ -64,7 +63,7 @@ export function NewInventoryForm() {
         }
         dispatch({ type: 'CLOSE_DRAWER' });
       }
-    } catch (err) {
+    } catch (err: any) {
       toast('Gagal menambahkan aset: ' + err.message, 'warn');
     } finally {
       setSaving(false);
@@ -148,7 +147,7 @@ export function NewInventoryForm() {
               onChange={(e) => setForm({ ...form, room_id: e.target.value })}
             >
               <option value="">(Belum ditentukan / Gudang)</option>
-              {state.rooms?.map((r) => (
+              {state.rooms?.map((r: any) => (
                 <option key={r.id} value={r.id}>
                   {r.name} - {r.code}
                 </option>
