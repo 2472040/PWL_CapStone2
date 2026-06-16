@@ -1,19 +1,17 @@
-// app-cursor.jsx — Custom cursor with role-accent glow, idle hide, magnetic on interactive
-// Pure frontend, no deps. Respects prefers-reduced-motion & touch devices.
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
-function CustomCursor() {
+export function CustomCursor() {
   // Skip on touch devices and reduced-motion
   const [enabled, setEnabled] = useState(false);
-  const dotRef = useRef(null);
-  const ringRef = useRef(null);
+  const dotRef = useRef<HTMLDivElement>(null);
+  const ringRef = useRef<HTMLDivElement>(null);
   const pos = useRef({ x: -100, y: -100 });
   const target = useRef({ x: -100, y: -100 });
-  const idleTimer = useRef(null);
+  const idleTimer = useRef<any>(null);
   const [hidden, setHidden] = useState(false);
   const [hovering, setHovering] = useState(false);
   const [clicking, setClicking] = useState(false);
-  const raf = useRef(null);
+  const raf = useRef<number | null>(null);
 
   useEffect(() => {
     const mqMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -31,20 +29,23 @@ function CustomCursor() {
   useEffect(() => {
     if (!enabled) return;
 
-    const onMove = (e) => {
+    const onMove = (e: MouseEvent) => {
       target.current = { x: e.clientX, y: e.clientY };
       setHidden(false);
-      clearTimeout(idleTimer.current);
+      if (idleTimer.current) clearTimeout(idleTimer.current);
       idleTimer.current = setTimeout(() => setHidden(true), 3000);
     };
 
     const onDown = () => setClicking(true);
     const onUp = () => setClicking(false);
 
-    let magneticEl = null;
+    let magneticEl: HTMLElement | null = null;
 
-    const onEnterInteractive = (e) => {
-      const el = e.target.closest('button, .au-btn, .au-role, .au-tab, .au-preview-dot');
+    const onEnterInteractive = (e: MouseEvent) => {
+      const targetEl = e.target as HTMLElement;
+      const el = targetEl.closest(
+        'button, .au-btn, .au-role, .au-tab, .au-preview-dot'
+      ) as HTMLElement | null;
       if (el) {
         setHovering(true);
         if (el.classList.contains('au-btn') || el.classList.contains('au-tab')) {
@@ -54,8 +55,12 @@ function CustomCursor() {
         }
       }
     };
-    const onLeaveInteractive = (e) => {
-      const el = e.target.closest('button, .au-btn, .au-role, .au-tab, .au-preview-dot');
+
+    const onLeaveInteractive = (e: MouseEvent) => {
+      const targetEl = e.target as HTMLElement;
+      const el = targetEl.closest(
+        'button, .au-btn, .au-role, .au-tab, .au-preview-dot'
+      ) as HTMLElement | null;
       if (el) {
         setHovering(false);
         if (magneticEl) {
@@ -119,13 +124,13 @@ function CustomCursor() {
     document.addEventListener('mouseout', onLeaveInteractive);
 
     return () => {
-      cancelAnimationFrame(raf.current);
+      if (raf.current !== null) cancelAnimationFrame(raf.current);
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mousedown', onDown);
       document.removeEventListener('mouseup', onUp);
       document.removeEventListener('mouseover', onEnterInteractive);
       document.removeEventListener('mouseout', onLeaveInteractive);
-      clearTimeout(idleTimer.current);
+      if (idleTimer.current) clearTimeout(idleTimer.current);
     };
   }, [enabled, hovering, hidden]);
 
@@ -166,5 +171,3 @@ function CustomCursor() {
     </>
   );
 }
-
-export { CustomCursor };

@@ -1,6 +1,21 @@
+declare global {
+  interface Document {
+    startViewTransition?: (cb: () => void) => {
+      finished: Promise<void>;
+    };
+  }
+  interface HTMLElement {
+    _applied?: boolean;
+  }
+}
+
 let _themeTransitioning = false;
 
-export function themeTransition(dispatch, newTheme, e) {
+export function themeTransition(
+  dispatch: (action: { type: string; theme: string }) => void,
+  newTheme: string,
+  e?: React.MouseEvent | MouseEvent
+) {
   // Prevent overlapping transitions
   if (_themeTransitioning) {
     dispatch({ type: 'SET_THEME', theme: newTheme });
@@ -15,8 +30,8 @@ export function themeTransition(dispatch, newTheme, e) {
 
   // Get click origin coordinates
   const btn = e?.currentTarget || e?.target;
-  let originX, originY;
-  if (btn) {
+  let originX: number, originY: number;
+  if (btn instanceof HTMLElement) {
     const rect = btn.getBoundingClientRect();
     originX = rect.left + rect.width / 2;
     originY = rect.top + rect.height / 2;
@@ -49,7 +64,7 @@ export function themeTransition(dispatch, newTheme, e) {
     });
   } else {
     // Fallback: GSAP animation with a solid overlay
-    const overlay = document.createElement('div');
+    const overlay = document.createElement('div') as HTMLElement & { _applied?: boolean };
     const bgColor = newTheme === 'dark' ? '#08070d' : '#f5f0e6';
     Object.assign(overlay.style, {
       position: 'fixed',
@@ -68,7 +83,7 @@ export function themeTransition(dispatch, newTheme, e) {
         clipPath: `circle(${maxRadius}px at ${originX}px ${originY}px)`,
         duration: 0.55,
         ease: 'power2.inOut',
-        onUpdate: function () {
+        onUpdate: function (this: any) {
           if (this.progress() >= 0.35 && !overlay._applied) {
             overlay._applied = true;
             dispatch({ type: 'SET_THEME', theme: newTheme });

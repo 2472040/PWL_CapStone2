@@ -9,14 +9,19 @@ const DEMO_ACCOUNTS = [
   { label: 'Staf Lab', email: 'maharani@kampus.id' },
 ];
 
-export function LoginScreen({ onLogin, onBack }) {
+interface LoginScreenProps {
+  onLogin: (user: any) => void;
+  onBack: () => void;
+}
+
+export function LoginScreen({ onLogin, onBack }: LoginScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -34,14 +39,14 @@ export function LoginScreen({ onLogin, onBack }) {
 
       setToken();
       onLogin(result.data.user);
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message || 'Login gagal. Periksa email dan password.');
     } finally {
       setLoading(false);
     }
   };
 
-  const fillDemo = (demoEmail) => {
+  const fillDemo = (demoEmail: string) => {
     setEmail(demoEmail);
     setPassword('password123');
     setError('');

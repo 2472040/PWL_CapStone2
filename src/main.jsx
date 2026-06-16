@@ -25,7 +25,7 @@ import {
   ListStaggerEngine,
   D,
 } from './components/app-shell';
-import { CustomCursor } from './components/app-cursor.jsx';
+import { CustomCursor } from './components/app-cursor';
 // Lazy loaded drawers and modals for extreme performance & code splitting
 const NewUserForm = React.lazy(() =>
   import('./screens/dashboard/admin/Users.jsx').then((m) => ({ default: m.NewUserForm }))
@@ -79,16 +79,16 @@ const AuditDetailModal = React.lazy(() =>
 import LandingPage from './screens/landing/index.jsx';
 
 // Split components for readability and maintenance
-import { ErrorBoundary } from './components/ErrorBoundary.jsx';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Router } from './components/Router';
 import { AuthInitializer } from './components/AuthInitializer';
-import { LoginScreen } from './screens/auth/LoginScreen.jsx';
+import { LoginScreen } from './screens/auth/LoginScreen';
 
 const AiPredictiveModal = React.lazy(() =>
   import('./components/AiPredictiveModal.jsx').then((m) => ({ default: m.AiPredictiveModal }))
 );
 const ConfirmModal = React.lazy(() =>
-  import('./components/ConfirmModal.jsx').then((m) => ({ default: m.ConfirmModal }))
+  import('./components/ConfirmModal').then((m) => ({ default: m.ConfirmModal }))
 );
 
 import gsap from 'gsap';

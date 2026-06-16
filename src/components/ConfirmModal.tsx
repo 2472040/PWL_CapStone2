@@ -1,7 +1,22 @@
 import React from 'react';
 import { Icon } from './app-shell';
 
-export function ConfirmModal({ payload, close }) {
+interface ConfirmModalPayload {
+  title?: string;
+  message?: string;
+  onConfirm?: () => void;
+  onCancel?: () => void;
+  confirmText?: string;
+  cancelText?: string;
+  isDanger?: boolean;
+}
+
+interface ConfirmModalProps {
+  payload?: ConfirmModalPayload | null;
+  close: () => void;
+}
+
+export function ConfirmModal({ payload, close }: ConfirmModalProps) {
   if (!payload) return null;
 
   const {
