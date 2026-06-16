@@ -129,7 +129,7 @@ export function StatTile({ label, value, fmt = 'int', icon, delta, accent, perce
 
   return (
     <div 
-      className="stat-tile" 
+      className={`stat-tile ${percentage !== undefined && percentage !== null ? 'has-ring' : ''}`} 
       data-reveal
       style={{
         '--accent-color': accent || 'var(--color-violet)',
@@ -137,8 +137,8 @@ export function StatTile({ label, value, fmt = 'int', icon, delta, accent, perce
       }}
     >
       <div className="stat-tile-lbl">
-        {icon && <Icon name={icon} size={13} strokeWidth={1.8} />}
-        {label}
+        {icon && <Icon name={icon} size={13} strokeWidth={1.8} style={{ flexShrink: 0 }} />}
+        <span className="stat-tile-lbl-txt">{label}</span>
       </div>
 
       {percentage !== undefined && percentage !== null && (

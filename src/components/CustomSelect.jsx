@@ -39,7 +39,7 @@ export function CustomSelect({ value, onChange, options, style, placeholder }) {
       </button>
 
       {isOpen && (
-        <ul className="custom-select-options" role="listbox">
+        <ul className="custom-select-options" role="listbox" data-lenis-prevent>
           {options.map((opt) => (
             <li
               key={opt.value}

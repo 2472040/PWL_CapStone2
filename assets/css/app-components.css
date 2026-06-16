@@ -1284,14 +1284,17 @@ html[data-theme='light'] select option {
   margin: 0;
   padding: 6px;
   list-style: none;
-  background-color: #16151a;
+  background-color: #121118 !important; /* Solid dark theme background */
   border: 1px solid var(--color-line-2);
   border-radius: var(--radius-sm);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
   min-width: 140px;
   max-height: 260px;
   overflow-y: auto;
   scrollbar-width: thin;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .custom-select-option {
@@ -1319,9 +1322,12 @@ html[data-theme='light'] .custom-select-trigger {
   border: 1px solid rgba(0, 0, 0, 0.15);
 }
 html[data-theme='light'] .custom-select-options {
-  background-color: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  background-color: #ffffff !important; /* Solid light theme background */
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 html[data-theme='light'] .custom-select-option {
   color: rgba(17, 17, 19, 0.8);
@@ -1409,5 +1415,18 @@ html[data-theme='light'] .skeleton-row {
   stroke-linecap: round;
   transition: stroke-dashoffset 0.8s var(--ease-spring);
   filter: drop-shadow(0 0 4px rgba(var(--accent-rgb, 167, 139, 250), 0.5));
+}
+
+/* Prevent label text from overlapping with progress ring */
+.stat-tile.has-ring .stat-tile-lbl {
+  padding-right: 56px;
+  align-items: flex-start;
+}
+.stat-tile.has-ring .stat-tile-lbl svg {
+  margin-top: 1px; /* Align small icon to the first line of text */
+}
+.stat-tile-lbl-txt {
+  word-break: break-word;
+  line-height: 1.3;
 }
 
