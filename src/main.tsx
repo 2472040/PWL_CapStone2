@@ -109,7 +109,6 @@ gsap.registerPlugin(ScrollTrigger);
 // Bind sound interactions
 window.LokaSounds = LokaSounds;
 
-
 // Register drawer + modal content
 Object.assign(DrawerContent, {
   inventory: InventoryDetail,

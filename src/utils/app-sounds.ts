@@ -1,7 +1,6 @@
 // app-sounds.ts — Micro-interaction sounds using Web Audio API (no external files)
 // Respects prefers-reduced-motion (treated as reduced-sensory) and OS silence.
 
-
 const LokaSounds: LokaSoundsType = (function () {
   let ctx: AudioContext | null = null;
   let enabled = true;
@@ -39,7 +38,13 @@ const LokaSounds: LokaSoundsType = (function () {
   }
 
   // Oscillator beep
-  function beep({ freq = 440, type = 'sine', duration = 0.06, vol = 0.04, fade = true }: BeepOptions) {
+  function beep({
+    freq = 440,
+    type = 'sine',
+    duration = 0.06,
+    vol = 0.04,
+    fade = true,
+  }: BeepOptions) {
     const c = ensureCtx();
     if (!c) return;
     const now = c.currentTime;

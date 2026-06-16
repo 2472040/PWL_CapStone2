@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { useStore } from './store-context';
 
-
 // =========================================================
 // IntersectionObserver reveal fallback (when GSAP unavailable)
 // =========================================================
