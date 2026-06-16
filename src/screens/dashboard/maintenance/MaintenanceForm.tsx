@@ -22,7 +22,9 @@ export function MaintenanceForm({ payload, close }: { payload?: any; close: () =
   );
   const [bhpRows, setBhpRows] = useState<BhpRow[]>([]);
   const [loading, setLoading] = useState(false);
-  const filteredAssets = state.inventory.filter((i: any) => String(i.roomId) === String(selectedRoomId));
+  const filteredAssets = state.inventory.filter(
+    (i: any) => String(i.roomId) === String(selectedRoomId)
+  );
   const selectedAssetData = filteredAssets.filter((a: any) => selectedAssets.includes(a.code));
 
   useEffect(() => {
@@ -80,10 +82,18 @@ export function MaintenanceForm({ payload, close }: { payload?: any; close: () =
           if (!bd) return;
           if (b.assetCode === 'all') {
             selectedAssets.forEach((ac) => {
-              bhpPayload.push({ asset_code: ac, bhp_id: bd.dbId, qty: parseFloat(b.qty as string) });
+              bhpPayload.push({
+                asset_code: ac,
+                bhp_id: bd.dbId,
+                qty: parseFloat(b.qty as string),
+              });
             });
           } else {
-            bhpPayload.push({ asset_code: b.assetCode, bhp_id: bd.dbId, qty: parseFloat(b.qty as string) });
+            bhpPayload.push({
+              asset_code: b.assetCode,
+              bhp_id: bd.dbId,
+              qty: parseFloat(b.qty as string),
+            });
           }
         });
       }

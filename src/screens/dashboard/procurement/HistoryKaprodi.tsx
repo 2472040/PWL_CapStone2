@@ -8,18 +8,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 export function HistoryKaprodi() {
   const { state, dispatch } = useStore();
   const { query } = useSearch();
-  const role = D.roles.find((r) => r.id === 'kaprodi');
+  const role = D.roles.find((r: any) => r.id === 'kaprodi') || { accent: 'var(--color-violet)' };
 
   useEffect(() => {
     async function loadHistory() {
       try {
         const res = await apiFetch('/procurement/history');
-        const validDrafts = (res.data || []).map((d) => ({
+        const validDrafts = (res.data || []).map((d: any) => ({
           ...d,
           by: d.creator?.name || d.by,
           role: d.creator?.role || d.role,
           items:
-            d.items?.map((it) => ({
+            d.items?.map((it: any) => ({
               ...it,
               approval:
                 it.approval?.status === 'approved'
@@ -39,7 +39,7 @@ export function HistoryKaprodi() {
 
   const [yearFilter, setYearFilter] = useState('all');
 
-  const reviewed = state.drafts.filter((d) => {
+  const reviewed = state.drafts.filter((d: any) => {
     if (d.status !== 'finalized' && d.status !== 'completed') return false;
 
     if (yearFilter !== 'all') {
@@ -60,15 +60,15 @@ export function HistoryKaprodi() {
   const years = [
     ...new Set(
       state.drafts
-        .filter((d) => d.status === 'finalized' || d.status === 'completed')
-        .map((d) => (d.submitted_at ? String(new Date(d.submitted_at).getFullYear()) : null))
+        .filter((d: any) => d.status === 'finalized' || d.status === 'completed')
+        .map((d: any) => (d.submitted_at ? String(new Date(d.submitted_at).getFullYear()) : null))
     ),
   ]
     .filter(Boolean)
     .sort();
 
-  const [openCode, setOpenCode] = useState(null);
-  const opened = state.drafts.find((d) => d.code === openCode);
+  const [openCode, setOpenCode] = useState<string | null>(null);
+  const opened = state.drafts.find((d: any) => d.code === openCode);
 
   return (
     <AnimatePresence mode="wait">
@@ -91,7 +91,7 @@ export function HistoryKaprodi() {
           exit={{ opacity: 0, scale: 0.98 }}
           transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
           className="page"
-          style={{ '--role-accent': role.accent }}
+          style={{ '--role-accent': role.accent } as React.CSSProperties}
         >
           <div className="page-head" data-reveal>
             <div>
@@ -113,7 +113,7 @@ export function HistoryKaprodi() {
               style={{ width: '130px' }}
             >
               <option value="all">Semua Tahun</option>
-              {years.map((y) => (
+              {years.map((y: any) => (
                 <option key={y} value={y}>
                   {y}
                 </option>
@@ -138,7 +138,7 @@ export function HistoryKaprodi() {
             }}
             data-reveal-children
           >
-            {reviewed.map((d) => (
+            {reviewed.map((d: any) => (
               <DraftCard
                 key={d.code}
                 d={d}

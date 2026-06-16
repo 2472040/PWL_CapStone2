@@ -1,8 +1,18 @@
 import React, { useState } from 'react';
-import { Icon } from './app-shell';
 
-export function FinancialChart({ data }) {
-  const [activeIdx, setActiveIdx] = useState(null);
+interface FinancialDataPoint {
+  month: string;
+  requested: number;
+  approved: number;
+  saved: number;
+}
+
+interface FinancialChartProps {
+  data?: FinancialDataPoint[];
+}
+
+export function FinancialChart({ data }: FinancialChartProps) {
+  const [activeIdx, setActiveIdx] = useState<number | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
   const chartData =
@@ -22,20 +32,20 @@ export function FinancialChart({ data }) {
   const height = 220;
   const padding = 35;
 
-  const maxVal = Math.max(...chartData.map((d) => Math.max(d.requested, d.approved, 1000000)));
-  const getX = (idx) => padding + (idx / (chartData.length - 1)) * (width - 2 * padding);
-  const getY = (val) => height - padding - (val / maxVal) * (height - 2 * padding);
+  const maxVal = Math.max(...chartData.map((d: any) => Math.max(d.requested, d.approved, 1000000)));
+  const getX = (idx: number) => padding + (idx / (chartData.length - 1)) * (width - 2 * padding);
+  const getY = (val: number) => height - padding - (val / maxVal) * (height - 2 * padding);
 
-  const formatRpShort = (val) => {
+  const formatRpShort = (val: number) => {
     if (val >= 1000000) return `Rp ${(val / 1000000).toFixed(1)}jt`;
     return `Rp ${(val / 1000).toFixed(0)}rb`;
   };
 
-  const formatRpLong = (val) => {
+  const formatRpLong = (val: number) => {
     return `Rp ${val.toLocaleString('id-ID')}`;
   };
 
-  const handleMouseMove = (e, idx) => {
+  const handleMouseMove = (e: React.MouseEvent<SVGRectElement>, idx: number) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -46,7 +56,7 @@ export function FinancialChart({ data }) {
   return (
     <div
       className="card glow relative overflow-visible"
-      style={{ '--role-accent': 'var(--color-violet)' }}
+      style={{ '--role-accent': 'var(--color-violet)' } as React.CSSProperties}
     >
       <div className="flex between aic mb-5">
         <div>
@@ -194,7 +204,7 @@ export function FinancialChart({ data }) {
           )}
 
           {/* Data Points circles */}
-          {chartData.map((d, i) => (
+          {chartData.map((d: any, i: number) => (
             <g key={i}>
               <circle
                 cx={getX(i)}

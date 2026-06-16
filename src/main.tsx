@@ -28,50 +28,50 @@ import {
 import { CustomCursor } from './components/app-cursor';
 // Lazy loaded drawers and modals for extreme performance & code splitting
 const NewUserForm = React.lazy(() =>
-  import('./screens/dashboard/admin/Users.jsx').then((m) => ({ default: m.NewUserForm }))
+  import('./screens/dashboard/admin/Users').then((m) => ({ default: m.NewUserForm }))
 );
 const NewRoomForm = React.lazy(() =>
-  import('./screens/dashboard/admin/Rooms.jsx').then((m) => ({ default: m.NewRoomForm }))
+  import('./screens/dashboard/admin/Rooms').then((m) => ({ default: m.NewRoomForm }))
 );
 const NewDraftForm = React.lazy(() =>
-  import('./screens/dashboard/procurement/NewDraftForm.jsx').then((m) => ({
+  import('./screens/dashboard/procurement/NewDraftForm').then((m) => ({
     default: m.NewDraftForm,
   }))
 );
 const QRScanner = React.lazy(() =>
-  import('./screens/dashboard/admin/QRScanner.jsx').then((m) => ({ default: m.QRScanner }))
+  import('./screens/dashboard/admin/QRScanner').then((m) => ({ default: m.QRScanner }))
 );
 
 const InventoryDetail = React.lazy(() =>
-  import('./screens/dashboard/inventory/InventoryDetail.jsx').then((m) => ({
+  import('./screens/dashboard/inventory/InventoryDetail').then((m) => ({
     default: m.InventoryDetail,
   }))
 );
 const NewInventoryForm = React.lazy(() =>
-  import('./screens/dashboard/inventory/NewInventoryForm.jsx').then((m) => ({
+  import('./screens/dashboard/inventory/NewInventoryForm').then((m) => ({
     default: m.NewInventoryForm,
   }))
 );
 
 const MaintenanceForm = React.lazy(() =>
-  import('./screens/dashboard/maintenance/MaintenanceForm.jsx').then((m) => ({
+  import('./screens/dashboard/maintenance/MaintenanceForm').then((m) => ({
     default: m.MaintenanceForm,
   }))
 );
 const NewBhpForm = React.lazy(() =>
-  import('./screens/dashboard/maintenance/BHP.jsx').then((m) => ({ default: m.NewBhpForm }))
+  import('./screens/dashboard/maintenance/BHP').then((m) => ({ default: m.NewBhpForm }))
 );
 
 const LogoutModal = React.lazy(() =>
-  import('./screens/dashboard/settings/LogoutModal.jsx').then((m) => ({ default: m.LogoutModal }))
+  import('./screens/dashboard/settings/LogoutModal').then((m) => ({ default: m.LogoutModal }))
 );
 const ChangePasswordModal = React.lazy(() =>
-  import('./screens/dashboard/settings/ChangePasswordModal.jsx').then((m) => ({
+  import('./screens/dashboard/settings/ChangePasswordModal').then((m) => ({
     default: m.ChangePasswordModal,
   }))
 );
 const AuditDetailModal = React.lazy(() =>
-  import('./screens/dashboard/admin/AuditDetailModal.jsx').then((m) => ({
+  import('./screens/dashboard/admin/AuditDetailModal').then((m) => ({
     default: m.AuditDetailModal,
   }))
 );
@@ -85,7 +85,7 @@ import { AuthInitializer } from './components/AuthInitializer';
 import { LoginScreen } from './screens/auth/LoginScreen';
 
 const AiPredictiveModal = React.lazy(() =>
-  import('./components/AiPredictiveModal.jsx').then((m) => ({ default: m.AiPredictiveModal }))
+  import('./components/AiPredictiveModal').then((m) => ({ default: m.AiPredictiveModal }))
 );
 const ConfirmModal = React.lazy(() =>
   import('./components/ConfirmModal').then((m) => ({ default: m.ConfirmModal }))
@@ -131,7 +131,7 @@ Object.assign(ModalContent, {
   confirm: ConfirmModal,
 });
 
-function Shell({ onLogout }) {
+function Shell({ onLogout }: { onLogout: () => void }) {
   const { state, dispatch } = useStore();
   useKeyboardShortcuts(dispatch);
   useRevealFallback();
@@ -142,8 +142,8 @@ function Shell({ onLogout }) {
 
   // OWASP Idle Session Monitor (Auto-logout after 15 minutes of inactivity)
   useEffect(() => {
-    let idleTimer = null;
-    let warningTimer = null;
+    let idleTimer: any = null;
+    let warningTimer: any = null;
     const IDLE_LIMIT = 15 * 60 * 1000;
     const WARNING_BEFORE = 60 * 1000;
 
@@ -200,7 +200,7 @@ function Shell({ onLogout }) {
       wheelMultiplier: 1.0,
     });
 
-    function raf(time) {
+    function raf(time: number) {
       lenis.raf(time);
       requestAnimationFrame(raf);
     }
@@ -224,11 +224,12 @@ function Shell({ onLogout }) {
     <div
       className="app"
       data-screen-label={
-        D.roles.find((r) => r.id === state.role).short +
+        (D.roles.find((r: any) => r.id === state.role) || { short: '' }).short +
         ' · ' +
         (state.screen === 'settings'
           ? 'Pengaturan'
-          : D.nav[state.role].find((n) => n.id === state.screen)?.label || 'Dashboard')
+          : (D.nav as any)[state.role].find((n: any) => n.id === state.screen)?.label ||
+            'Dashboard')
       }
     >
       <CursorEnabler />
@@ -259,7 +260,7 @@ function AppRoutes() {
   // Verify token or local storage login indicator
   const isLoggedIn = getToken() || localStorage.getItem('loka_logged_in') === 'true';
 
-  function handleLogin(user) {
+  function handleLogin(user: any) {
     if (user && user.role) {
       setPendingRole(user.role);
       try {
@@ -333,4 +334,4 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+ReactDOM.createRoot(document.getElementById('root')!).render(<App />);

@@ -1,4 +1,4 @@
-import { useStore, D, Icon, QR, downloadQR } from '../../../components/app-shell';
+import { useStore, Icon, QR, downloadQR } from '../../../components/app-shell';
 
 export function InventoryDetail({ payload, close }: { payload: any; close: () => void }) {
   const it = payload;

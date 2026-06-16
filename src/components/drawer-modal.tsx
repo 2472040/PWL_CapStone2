@@ -1,11 +1,11 @@
 import React, { useRef, useEffect, useState, Suspense } from 'react';
 import { useStore } from './store-context';
 
-export const DrawerContent = {};
-export const ModalContent = {};
+export const DrawerContent: Record<string, React.ComponentType<any>> = {};
+export const ModalContent: Record<string, React.ComponentType<any>> = {};
 
 // Helper component to delay the appearance of the loading indicator
-function DelayedFallback({ message }) {
+function DelayedFallback({ message }: { message: string }) {
   const [show, setShow] = useState(false);
   useEffect(() => {
     const timer = setTimeout(() => setShow(true), 200);
@@ -25,11 +25,11 @@ function DelayedFallback({ message }) {
 // =========================================================
 export function Drawer() {
   const { state, dispatch } = useStore();
-  const ref = useRef();
-  const backdropRef = useRef();
+  const ref = useRef<HTMLDivElement>(null);
+  const backdropRef = useRef<HTMLDivElement>(null);
   const drawer = state.drawer;
 
-  const [activeDrawer, setActiveDrawer] = useState(null);
+  const [activeDrawer, setActiveDrawer] = useState<any>(null);
   const [isClosing, setIsClosing] = useState(false);
 
   // Sync state.drawer to activeDrawer
@@ -39,10 +39,11 @@ export function Drawer() {
       setIsClosing(false);
     } else if (activeDrawer) {
       setIsClosing(true);
-      if (window.gsap && ref.current && backdropRef.current) {
-        window.gsap.killTweensOf([ref.current, backdropRef.current]);
-        window.gsap.to(backdropRef.current, { opacity: 0, duration: 0.25, ease: 'power3.inOut' });
-        window.gsap.to(ref.current, {
+      const win = window as any;
+      if (win.gsap && ref.current && backdropRef.current) {
+        win.gsap.killTweensOf([ref.current, backdropRef.current]);
+        win.gsap.to(backdropRef.current, { opacity: 0, duration: 0.25, ease: 'power3.inOut' });
+        win.gsap.to(ref.current, {
           x: 80,
           opacity: 0,
           duration: 0.3,
@@ -63,21 +64,21 @@ export function Drawer() {
   useEffect(() => {
     if (!activeDrawer || isClosing || !ref.current) return;
     const drawerEl = ref.current;
-    const focusable = drawerEl.querySelectorAll(
+    const focusable = drawerEl.querySelectorAll<HTMLElement>(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
     if (first) first.focus();
 
-    const trap = (e) => {
+    const trap = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') return;
       if (e.shiftKey && document.activeElement === first) {
         e.preventDefault();
-        last.focus();
+        last?.focus();
       } else if (!e.shiftKey && document.activeElement === last) {
         e.preventDefault();
-        first.focus();
+        first?.focus();
       }
     };
     drawerEl.addEventListener('keydown', trap);
@@ -86,14 +87,16 @@ export function Drawer() {
 
   // Entrance animation + form field stagger
   useEffect(() => {
-    if (!activeDrawer || isClosing || !ref.current || !window.gsap) return;
-    window.gsap.killTweensOf([ref.current, backdropRef.current]);
-    window.gsap.fromTo(
+    if (!activeDrawer || isClosing || !ref.current) return;
+    const win = window as any;
+    if (!win.gsap) return;
+    win.gsap.killTweensOf([ref.current, backdropRef.current]);
+    win.gsap.fromTo(
       backdropRef.current,
       { opacity: 0 },
       { opacity: 1, duration: 0.28, ease: 'power3.out' }
     );
-    window.gsap.fromTo(
+    win.gsap.fromTo(
       ref.current,
       { x: 80, opacity: 0 },
       {
@@ -103,18 +106,20 @@ export function Drawer() {
         ease: 'power4.out',
         onComplete: () => {
           // Stagger form fields after drawer settles
-          const fields = ref.current.querySelectorAll(
-            '.form-group, .form-row, .form-actions, .settings-row'
-          );
-          if (fields.length > 0) {
-            window.gsap.from(fields, {
-              y: 10,
-              opacity: 0,
-              duration: 0.35,
-              ease: 'power3.out',
-              stagger: 0.04,
-              clearProps: 'transform',
-            });
+          if (ref.current) {
+            const fields = ref.current.querySelectorAll(
+              '.form-group, .form-row, .form-actions, .settings-row'
+            );
+            if (fields.length > 0) {
+              win.gsap.from(fields, {
+                y: 10,
+                opacity: 0,
+                duration: 0.35,
+                ease: 'power3.out',
+                stagger: 0.04,
+                clearProps: 'transform',
+              });
+            }
           }
         },
       }
@@ -153,11 +158,11 @@ export function Drawer() {
 // =========================================================
 export function Modal() {
   const { state, dispatch } = useStore();
-  const ref = useRef();
-  const backdropRef = useRef();
+  const ref = useRef<HTMLDivElement>(null);
+  const backdropRef = useRef<HTMLDivElement>(null);
   const modal = state.modal;
 
-  const [activeModal, setActiveModal] = useState(null);
+  const [activeModal, setActiveModal] = useState<any>(null);
   const [isClosing, setIsClosing] = useState(false);
 
   // Sync state.modal to activeModal
@@ -167,10 +172,11 @@ export function Modal() {
       setIsClosing(false);
     } else if (activeModal) {
       setIsClosing(true);
-      if (window.gsap && ref.current && backdropRef.current) {
-        window.gsap.killTweensOf([ref.current, backdropRef.current]);
-        window.gsap.to(backdropRef.current, { opacity: 0, duration: 0.2, ease: 'power3.inOut' });
-        window.gsap.to(ref.current, {
+      const win = window as any;
+      if (win.gsap && ref.current && backdropRef.current) {
+        win.gsap.killTweensOf([ref.current, backdropRef.current]);
+        win.gsap.to(backdropRef.current, { opacity: 0, duration: 0.2, ease: 'power3.inOut' });
+        win.gsap.to(ref.current, {
           y: 20,
           scale: 0.95,
           opacity: 0,
@@ -192,21 +198,21 @@ export function Modal() {
   useEffect(() => {
     if (!activeModal || isClosing || !ref.current) return;
     const modalEl = ref.current;
-    const focusable = modalEl.querySelectorAll(
+    const focusable = modalEl.querySelectorAll<HTMLElement>(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
     if (first) first.focus();
 
-    const trap = (e) => {
+    const trap = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') return;
       if (e.shiftKey && document.activeElement === first) {
         e.preventDefault();
-        last.focus();
+        last?.focus();
       } else if (!e.shiftKey && document.activeElement === last) {
         e.preventDefault();
-        first.focus();
+        first?.focus();
       }
     };
     modalEl.addEventListener('keydown', trap);
@@ -215,14 +221,16 @@ export function Modal() {
 
   // Entrance animation + form field stagger
   useEffect(() => {
-    if (!activeModal || isClosing || !ref.current || !window.gsap) return;
-    window.gsap.killTweensOf([ref.current, backdropRef.current]);
-    window.gsap.fromTo(
+    if (!activeModal || isClosing || !ref.current) return;
+    const win = window as any;
+    if (!win.gsap) return;
+    win.gsap.killTweensOf([ref.current, backdropRef.current]);
+    win.gsap.fromTo(
       backdropRef.current,
       { opacity: 0 },
       { opacity: 1, duration: 0.25, ease: 'power3.out' }
     );
-    window.gsap.fromTo(
+    win.gsap.fromTo(
       ref.current,
       { y: 20, scale: 0.96, opacity: 0 },
       {
@@ -233,18 +241,20 @@ export function Modal() {
         ease: 'power4.out',
         onComplete: () => {
           // Stagger form fields after modal settles
-          const fields = ref.current.querySelectorAll(
-            '.form-group, .form-row, .form-actions, .settings-row'
-          );
-          if (fields.length > 0) {
-            window.gsap.from(fields, {
-              y: 8,
-              opacity: 0,
-              duration: 0.3,
-              ease: 'power3.out',
-              stagger: 0.04,
-              clearProps: 'transform',
-            });
+          if (ref.current) {
+            const fields = ref.current.querySelectorAll(
+              '.form-group, .form-row, .form-actions, .settings-row'
+            );
+            if (fields.length > 0) {
+              win.gsap.from(fields, {
+                y: 8,
+                opacity: 0,
+                duration: 0.3,
+                ease: 'power3.out',
+                stagger: 0.04,
+                clearProps: 'transform',
+              });
+            }
           }
         },
       }

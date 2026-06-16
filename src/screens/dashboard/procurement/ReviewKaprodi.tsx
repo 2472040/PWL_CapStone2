@@ -3,7 +3,7 @@ import { useStore, D, useSearch, useToast, Icon } from '../../../components/app-
 import { apiFetch } from '../../../services/api';
 import { DraftDetail } from './DraftDetail';
 
-function formatThousand(val) {
+function formatThousand(val: any) {
   if (!val) return '0';
   return Number(val).toLocaleString('id-ID');
 }
@@ -11,19 +11,19 @@ function formatThousand(val) {
 export function ReviewKaprodi() {
   const { state, dispatch } = useStore();
   const { query } = useSearch();
-  const role = D.roles.find((r) => r.id === 'kaprodi');
+  const role = D.roles.find((r: any) => r.id === 'kaprodi') || { accent: 'var(--color-violet)' };
   const toast = useToast();
 
   useEffect(() => {
     async function loadReviewDrafts() {
       try {
         const res = await apiFetch('/procurement/review');
-        const validDrafts = (res.data || []).map((d) => ({
+        const validDrafts = (res.data || []).map((d: any) => ({
           ...d,
           by: d.creator?.name || d.by,
           role: d.creator?.role || d.role,
           items:
-            d.items?.map((it) => ({
+            d.items?.map((it: any) => ({
               ...it,
               approval:
                 it.approval?.status === 'approved'
@@ -41,7 +41,7 @@ export function ReviewKaprodi() {
     loadReviewDrafts();
   }, [dispatch]);
 
-  const inbox = state.drafts.filter((d) => {
+  const inbox = state.drafts.filter((d: any) => {
     if (d.status !== 'submitted') return false;
     if (!query) return true;
     const q = query.toLowerCase();
@@ -52,17 +52,17 @@ export function ReviewKaprodi() {
     );
   });
 
-  const [openCode, setOpenCode] = useState(null);
+  const [openCode, setOpenCode] = useState<string | null>(null);
 
   if (openCode) {
-    const opened = state.drafts.find((d) => d.code === openCode && d.status === 'submitted');
+    const opened = state.drafts.find((d: any) => d.code === openCode && d.status === 'submitted');
     if (opened) {
       return <DraftDetail draft={opened} onBack={() => setOpenCode(null)} mode="kaprodi" />;
     }
   }
 
   return (
-    <div className="page" style={{ '--role-accent': role.accent }}>
+    <div className="page" style={{ '--role-accent': role.accent } as React.CSSProperties}>
       <div className="page-head" data-reveal>
         <div>
           <h1 className="page-title">
@@ -89,7 +89,7 @@ export function ReviewKaprodi() {
         </div>
       ) : (
         <div className="flex flex-col gap-4" data-reveal-children>
-          {inbox.map((d) => (
+          {inbox.map((d: any) => (
             <ReviewCard
               key={d.code}
               d={d}
@@ -105,24 +105,32 @@ export function ReviewKaprodi() {
   );
 }
 
-function ReviewCard({ d, accent, toast, dispatch, onOpen }) {
+interface ReviewCardProps {
+  d: any;
+  accent: string;
+  toast: any;
+  dispatch: any;
+  onOpen: () => void;
+}
+
+function ReviewCard({ d, accent, toast, dispatch, onOpen }: ReviewCardProps) {
   const [loading, setLoading] = useState(false);
 
   const totals = useMemo(() => {
     let all = 0,
       approved = 0;
-    d.items.forEach((it) => {
+    d.items.forEach((it: any) => {
       const sub = it.qty * it.price;
       all += sub;
       if (it.approval === 'ok') approved += sub;
     });
-    const ok = d.items.filter((it) => it.approval === 'ok').length;
-    const no = d.items.filter((it) => it.approval === 'no').length;
+    const ok = d.items.filter((it: any) => it.approval === 'ok').length;
+    const no = d.items.filter((it: any) => it.approval === 'no').length;
     const pending = d.items.length - ok - no;
     return { all, approved, ok, no, pending };
   }, [d]);
 
-  async function handleApproveReject(itemId, status) {
+  async function handleApproveReject(itemId: any, status: string) {
     try {
       setLoading(true);
       await apiFetch(`/procurement/drafts/${d.id}/approve`, {
@@ -137,7 +145,7 @@ function ReviewCard({ d, accent, toast, dispatch, onOpen }) {
         itemId,
         status: status === 'approved' ? 'ok' : 'no',
       });
-    } catch (err) {
+    } catch (err: any) {
       toast(err.message, 'warn');
     } finally {
       setLoading(false);
@@ -148,8 +156,8 @@ function ReviewCard({ d, accent, toast, dispatch, onOpen }) {
     try {
       setLoading(true);
       const decisions = d.items
-        .filter((it) => !it.approval)
-        .map((it) => ({
+        .filter((it: any) => !it.approval)
+        .map((it: any) => ({
           item_id: it.id,
           status: 'approved',
         }));
@@ -161,7 +169,7 @@ function ReviewCard({ d, accent, toast, dispatch, onOpen }) {
       }
       dispatch({ type: 'APPROVE_ALL', code: d.code });
       toast('Semua item disetujui', 'ok');
-    } catch (err) {
+    } catch (err: any) {
       toast(err.message, 'warn');
     } finally {
       setLoading(false);
@@ -178,7 +186,7 @@ function ReviewCard({ d, accent, toast, dispatch, onOpen }) {
       await apiFetch(`/procurement/drafts/${d.id}/finalize`, { method: 'POST' });
       dispatch({ type: 'FINALIZE_DRAFT', code: d.code });
       toast('Draf difinalisasi & dikunci', 'ok');
-    } catch (err) {
+    } catch (err: any) {
       toast(err.message, 'warn');
     } finally {
       setLoading(false);
@@ -188,7 +196,9 @@ function ReviewCard({ d, accent, toast, dispatch, onOpen }) {
   return (
     <div
       className="card"
-      style={{ '--role-accent': accent, position: 'relative', overflow: 'hidden' }}
+      style={
+        { '--role-accent': accent, position: 'relative', overflow: 'hidden' } as React.CSSProperties
+      }
     >
       <div
         style={{
@@ -245,7 +255,7 @@ function ReviewCard({ d, accent, toast, dispatch, onOpen }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-line-2/50">
-            {d.items.map((it) => (
+            {d.items.map((it: any) => (
               <tr key={it.id} className="hover:bg-surface-2 transition-colors">
                 <td className="px-3 py-2.5">
                   <div className="fw-5">{it.name}</div>

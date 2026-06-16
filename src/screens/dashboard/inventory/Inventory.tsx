@@ -1,12 +1,5 @@
 import { useState, useEffect } from 'react';
-import {
-  useStore,
-  D,
-  Icon,
-  QR,
-  useSearch,
-  CustomSelect,
-} from '../../../components/app-shell';
+import { useStore, D, Icon, QR, useSearch, CustomSelect } from '../../../components/app-shell';
 import { apiFetch } from '../../../services/api';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
@@ -66,7 +59,9 @@ export function Inventory() {
       try {
         const res = await apiFetch('/inventory?limit=1000');
         if (res.data) {
-          const uniqueCats = ['all', ...new Set(res.data.map((i: any) => i.category))].filter(Boolean) as string[];
+          const uniqueCats = ['all', ...new Set(res.data.map((i: any) => i.category))].filter(
+            Boolean
+          ) as string[];
           const uniqueYears = [
             ...new Set(
               res.data.map((i: any) => (i.acquired_date ? i.acquired_date.split('-')[0] : null))

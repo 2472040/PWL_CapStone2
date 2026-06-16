@@ -30,7 +30,7 @@ const monthOptions = [
 export function PengadaanKalab() {
   const { state, dispatch } = useStore();
   const { query } = useSearch();
-  const role = D.roles.find((r) => r.id === state.role);
+  const role = D.roles.find((r: any) => r.id === state.role) || { accent: 'var(--color-violet)' };
   const toast = useToast();
 
   useEffect(() => {
@@ -38,19 +38,19 @@ export function PengadaanKalab() {
       try {
         const res = await apiFetch('/procurement/drafts');
         if (res.data) {
-          const formatted = res.data.map((d) => ({
-            ...d,
-            by: d.creator?.name || d.by || 'Kepala Lab',
-            role: d.creator?.role || d.role || 'kalab',
-            submitted: d.submitted_at
-              ? new Date(d.submitted_at).toLocaleDateString('id-ID', {
+          const formatted = res.data.map((draftObj: any) => ({
+            ...draftObj,
+            by: draftObj.creator?.name || draftObj.by || 'Kepala Lab',
+            role: draftObj.creator?.role || draftObj.role || 'kalab',
+            submitted: draftObj.submitted_at
+              ? new Date(draftObj.submitted_at).toLocaleDateString('id-ID', {
                   day: 'numeric',
                   month: 'short',
                   year: 'numeric',
                 })
               : '-',
             items:
-              d.items?.map((it) => ({
+              draftObj.items?.map((it: any) => ({
                 ...it,
                 approval:
                   it.approval?.status === 'approved'
@@ -63,7 +63,7 @@ export function PengadaanKalab() {
           }));
           dispatch({ type: 'SET_DRAFTS', drafts: formatted });
         }
-      } catch (err) {
+      } catch (err: any) {
         toast('Gagal memuat data draf: ' + err.message, 'warn');
       }
     }
@@ -75,7 +75,7 @@ export function PengadaanKalab() {
   const [sortOrder, setSortOrder] = useState('desc');
 
   const myDrafts = state.drafts
-    .filter((d) => {
+    .filter((d: any) => {
       if (yearFilter !== 'all' || monthFilter !== 'all') {
         if (!d.submitted_at) return false;
         const dateObj = new Date(d.submitted_at);
@@ -91,10 +91,10 @@ export function PengadaanKalab() {
         d.title.toLowerCase().includes(q) ||
         d.code.toLowerCase().includes(q) ||
         (d.by && d.by.toLowerCase().includes(q)) ||
-        d.items.some((it) => it.name.toLowerCase().includes(q))
+        d.items.some((it: any) => it.name.toLowerCase().includes(q))
       );
     })
-    .sort((a, b) => {
+    .sort((a: any, b: any) => {
       const dateA = a.submitted_at
         ? new Date(a.submitted_at).getTime()
         : a.created_at
@@ -110,7 +110,7 @@ export function PengadaanKalab() {
 
   const years = [
     ...new Set(
-      state.drafts.map((d) =>
+      state.drafts.map((d: any) =>
         d.submitted_at ? String(new Date(d.submitted_at).getFullYear()) : null
       )
     ),
@@ -118,8 +118,8 @@ export function PengadaanKalab() {
     .filter(Boolean)
     .sort();
 
-  const [openCode, setOpenCode] = useState(null);
-  const opened = state.drafts.find((d) => d.code === openCode);
+  const [openCode, setOpenCode] = useState<string | null>(null);
+  const opened = state.drafts.find((d: any) => d.code === openCode);
 
   return (
     <AnimatePresence mode="wait">
@@ -142,7 +142,7 @@ export function PengadaanKalab() {
           exit={{ opacity: 0, scale: 0.98 }}
           transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
           className="page"
-          style={{ '--role-accent': role.accent }}
+          style={{ '--role-accent': role.accent } as React.CSSProperties}
         >
           <div className="page-head" data-reveal>
             <div>
@@ -175,7 +175,7 @@ export function PengadaanKalab() {
               onChange={setYearFilter}
               options={[
                 { value: 'all', label: 'Semua Tahun' },
-                ...years.map((y) => ({ value: y, label: y })),
+                ...years.map((y: any) => ({ value: y, label: y })),
               ]}
               style={{ width: '130px' }}
               placeholder="Semua Tahun"
@@ -215,7 +215,7 @@ export function PengadaanKalab() {
             }}
             data-reveal-children
           >
-            {myDrafts.map((d) => (
+            {myDrafts.map((d: any) => (
               <DraftCard
                 key={d.code}
                 d={d}
@@ -230,10 +230,16 @@ export function PengadaanKalab() {
   );
 }
 
-export function DraftCard({ d, onClick, accent }) {
-  const total = d.items.reduce((s, it) => s + it.qty * it.price, 0);
-  const approvedCount = d.items.filter((it) => it.approval === 'ok').length;
-  const receivedCount = d.items.filter((it) => it.received).length;
+interface DraftCardProps {
+  d: any;
+  onClick: () => void;
+  accent: string;
+}
+
+export function DraftCard({ d, onClick, accent }: DraftCardProps) {
+  const total = d.items.reduce((s: number, it: any) => s + it.qty * it.price, 0);
+  const approvedCount = d.items.filter((it: any) => it.approval === 'ok').length;
+  const receivedCount = d.items.filter((it: any) => it.received).length;
   const pct =
     d.status === 'completed'
       ? 100
@@ -266,14 +272,16 @@ export function DraftCard({ d, onClick, accent }) {
         <span className="dot" /> Butuh Revisi
       </span>
     ),
-  }[d.status];
+  }[d.status as 'submitted' | 'finalized' | 'completed' | 'draft' | 'revision'];
+
+  const win = window as any;
 
   return (
     <div
       className="draft-card tilt-card"
       data-reveal
       onClick={onClick}
-      style={{ '--role-accent': accent, cursor: 'pointer' }}
+      style={{ '--role-accent': accent, cursor: 'pointer' } as React.CSSProperties}
     >
       <div className="tilt-shine" />
       <div className="draft-card-head">
@@ -288,12 +296,12 @@ export function DraftCard({ d, onClick, accent }) {
       </div>
       <div className="flex items-baseline justify-between mt-3.5">
         <div className="draft-card-totals">
-          <span className="v mono">{window.fmtRpShort(total)}</span>
+          <span className="v mono">{win.fmtRpShort(total)}</span>
           <span className="l">· {d.items.length} item</span>
         </div>
         <span className="text-3 text-xs mono">{d.submitted}</span>
       </div>
-      <div className="draft-card-progress" style={{ '--p': pct + '%' }} />
+      <div className="draft-card-progress" style={{ '--p': pct + '%' } as React.CSSProperties} />
     </div>
   );
 }

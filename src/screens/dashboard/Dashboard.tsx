@@ -1,14 +1,16 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useStore, StatTile, D, Icon } from '../../components/app-shell';
 import { apiFetch } from '../../services/api';
-import { FinancialChart } from '../../components/FinancialChart';
 
 export function Dashboard() {
   const { state, dispatch } = useStore();
-  const role = D.roles.find((r) => r.id === state.role);
-  const me = state.currentUser || D.me[state.role];
-  const [dashboardData, setDashboardData] = useState(null);
-  const containerRef = useRef(null);
+  const role = D.roles.find((r: any) => r.id === state.role) || {
+    accent: 'var(--color-violet)',
+    title: 'User',
+  };
+  const me = state.currentUser || (D.me as any)[state.role];
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function loadStats() {
@@ -31,18 +33,22 @@ export function Dashboard() {
   const stats = useMemo(() => {
     const totalAssets = state.inventory.length;
     const bhpItems = state.bhp.length;
-    const lowBhp = state.bhp.filter((b) => b.stock <= b.min).length;
-    const draftsActive = state.drafts.filter((d) => d.status === 'submitted').length;
-    const draftsFinalized = state.drafts.filter((d) => d.status === 'finalized').length;
-    const inMaint = state.inventory.filter((i) => i.cond === 'Maintenance').length;
-    const needCheck = state.inventory.filter((i) => i.cond === 'Perlu cek').length;
+    const lowBhp = state.bhp.filter((b: any) => b.stock <= b.min).length;
+    const draftsActive = state.drafts.filter((d: any) => d.status === 'submitted').length;
+    const draftsFinalized = state.drafts.filter((d: any) => d.status === 'finalized').length;
+    const inMaint = state.inventory.filter((i: any) => i.cond === 'Maintenance').length;
+    const needCheck = state.inventory.filter((i: any) => i.cond === 'Perlu cek').length;
 
     // Fall back to state values if backend stats are still loading
     const totalDraftValue =
       dashboardData?.totalDraftValue ||
       state.drafts
-        .filter((d) => d.status === 'submitted')
-        .reduce((sum, d) => sum + d.items.reduce((s, it) => s + it.qty * it.price, 0), 0);
+        .filter((d: any) => d.status === 'submitted')
+        .reduce(
+          (sum: number, d: any) =>
+            sum + d.items.reduce((s: number, it: any) => s + it.qty * it.price, 0),
+          0
+        );
 
     return {
       totalAssets,
@@ -64,7 +70,7 @@ export function Dashboard() {
     ) {
       return [];
     }
-    return dashboardData.recentActivity.map((act) => {
+    return dashboardData.recentActivity.map((act: any) => {
       let actionText = act.action;
       if (act.action === 'auth.login') actionText = 'telah login masuk ke sistem';
       else if (act.action === 'user.create') actionText = 'menambahkan pengguna baru';
@@ -99,7 +105,7 @@ export function Dashboard() {
 
       // Format time
       const date = new Date(act.created_at || act.ts);
-      const diffMs = new Date() - date;
+      const diffMs = new Date().getTime() - date.getTime();
       const diffMins = Math.floor(diffMs / 60000);
       let timeText = 'baru saja';
       if (diffMins > 0) {
@@ -132,7 +138,7 @@ export function Dashboard() {
     });
   }, [dashboardData]);
 
-  const tilesByRole = {
+  const tilesByRole: Record<string, any[]> = {
     sysadmin: [
       { l: 'Total pengguna', v: state.users.length, i: 'users', f: 'int' },
       { l: 'Ruangan aktif', v: state.rooms.length, i: 'room', f: 'int' },
@@ -181,10 +187,10 @@ export function Dashboard() {
       {
         l: 'Item siap diterima',
         v: state.drafts
-          .filter((d) => d.status === 'finalized')
+          .filter((d: any) => d.status === 'finalized')
           .reduce(
-            (s, d) =>
-              s + d.items.filter((it) => it.approval === 'ok' || it.approval === null).length,
+            (s: number, d: any) =>
+              s + d.items.filter((it: any) => it.approval === 'ok' || it.approval === null).length,
             0
           ),
         i: 'truck',
@@ -193,11 +199,17 @@ export function Dashboard() {
       },
       {
         l: 'Sudah dilabeli',
-        v: state.drafts.reduce((s, d) => s + d.items.filter((it) => it.received).length, 0),
+        v: state.drafts.reduce(
+          (s: number, d: any) => s + d.items.filter((it: any) => it.received).length,
+          0
+        ),
         i: 'qr',
         f: 'int',
         p: Math.round(
-          (state.drafts.reduce((s, d) => s + d.items.filter((it) => it.received).length, 0) /
+          (state.drafts.reduce(
+            (s: number, d: any) => s + d.items.filter((it: any) => it.received).length,
+            0
+          ) /
             Math.max(1, stats.totalAssets)) *
             100
         ),
@@ -267,7 +279,7 @@ export function Dashboard() {
       // Tambahkan Aktivitas Terbaru
       csvRows.push(`"AKTIVITAS TERBARU"`);
       csvRows.push(`"Nama","Peran","Aktivitas","Target","Waktu"`);
-      activities.forEach((act) => {
+      activities.forEach((act: any) => {
         csvRows.push(
           `"${act.who.replace(/"/g, '""')}","${act.role.replace(/"/g, '""')}","${act.act.replace(/"/g, '""')}","${act.target.replace(/"/g, '""')}","${act.when.replace(/"/g, '""')}"`
         );
@@ -289,7 +301,7 @@ export function Dashboard() {
       if (window.showToast) {
         window.showToast('Dashboard berhasil diekspor ke CSV!', 'ok', 'download');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to export CSV', err);
       if (window.showToast) {
         window.showToast('Gagal mengekspor data: ' + err.message, 'warn');
@@ -298,7 +310,11 @@ export function Dashboard() {
   };
 
   return (
-    <div ref={containerRef} className="page" style={{ '--role-accent': role.accent }}>
+    <div
+      ref={containerRef}
+      className="page"
+      style={{ '--role-accent': role.accent } as React.CSSProperties}
+    >
       <div className="page-head" data-reveal>
         <div>
           <h1 className="page-title">
@@ -330,7 +346,7 @@ export function Dashboard() {
       </div>
 
       <div className="stats">
-        {tilesByRole[state.role].map((t, i) => (
+        {tilesByRole[state.role]?.map((t: any, i: number) => (
           <StatTile
             key={i}
             label={t.l}
@@ -345,7 +361,11 @@ export function Dashboard() {
       </div>
 
       <div className="grid gap-3.5 mb-6">
-        <div className="card glow" style={{ '--role-accent': role.accent }} data-reveal>
+        <div
+          className="card glow"
+          style={{ '--role-accent': role.accent } as React.CSSProperties}
+          data-reveal
+        >
           <div className="flex between aic mb-4">
             <div>
               <div className="text-3 text-xs mono tracking-[0.1em] uppercase">— Aktivitas tim</div>
@@ -372,8 +392,12 @@ export function Dashboard() {
                 </p>
               </div>
             ) : (
-              activities.slice(0, 6).map((a, i) => (
-                <div key={i} className="act-row" style={{ '--role-accent': role.accent }}>
+              activities.slice(0, 6).map((a: any, i: number) => (
+                <div
+                  key={i}
+                  className="act-row"
+                  style={{ '--role-accent': role.accent } as React.CSSProperties}
+                >
                   <div className="act-avatar">{a.who[0]}</div>
                   <div className="act-text">
                     <b>{a.who}</b>
@@ -399,7 +423,7 @@ export function Dashboard() {
             className="flex flex-col gap-4 overflow-y-auto"
             style={{ maxHeight: '250px', paddingRight: '6px', marginTop: '4px' }}
           >
-            {state.rooms.map((r) => {
+            {state.rooms.map((r: any) => {
               const pct = Math.min(100, ((Number(r.assets) || 0) / 35) * 100);
               return (
                 <div key={r.code} className="flex flex-col gap-2">
@@ -437,9 +461,11 @@ export function Dashboard() {
           <div className="flex flex-col sm:flex-row gap-5 items-center justify-center py-2 h-full">
             {/* SVG Donut Chart */}
             {(() => {
-              const baikCount = state.inventory.filter((i) => i.cond === 'Baik').length;
-              const cekCount = state.inventory.filter((i) => i.cond === 'Perlu cek').length;
-              const maintCount = state.inventory.filter((i) => i.cond === 'Maintenance').length;
+              const baikCount = state.inventory.filter((i: any) => i.cond === 'Baik').length;
+              const cekCount = state.inventory.filter((i: any) => i.cond === 'Perlu cek').length;
+              const maintCount = state.inventory.filter(
+                (i: any) => i.cond === 'Maintenance'
+              ).length;
               const totalItems = baikCount + cekCount + maintCount || 1;
               const pctBaik = (baikCount / totalItems) * 100;
               const pctCek = (cekCount / totalItems) * 100;
@@ -552,7 +578,10 @@ export function Dashboard() {
       {(state.role === 'kaprodi' || state.role === 'kalab') && (
         <div className="grid md:grid-cols-2 gap-3.5 mt-6" data-reveal>
           {/* Average Approval Card */}
-          <div className="card glow" style={{ '--role-accent': 'var(--color-violet)' }}>
+          <div
+            className="card glow"
+            style={{ '--role-accent': 'var(--color-violet)' } as React.CSSProperties}
+          >
             <div className="text-3 text-xs mono mb-3 tracking-[0.1em] uppercase">
               — Durasi Persetujuan
             </div>
@@ -572,14 +601,17 @@ export function Dashboard() {
           </div>
 
           {/* Low-stock BHP Alert Widget */}
-          <div className="card" style={{ '--role-accent': 'var(--color-cyan)' }}>
+          <div
+            className="card"
+            style={{ '--role-accent': 'var(--color-cyan)' } as React.CSSProperties}
+          >
             <div className="text-3 text-xs mono mb-3 tracking-[0.1em] uppercase">
               — Sisa Stok BHP Kritis
             </div>
             <h3 className="text-xl fw-5 mb-4 tracking-tight">BHP Perlu Restock Segera</h3>
             <div className="flex flex-col gap-3.5 w-full">
               {dashboardData?.top3LowBhp && dashboardData.top3LowBhp.length > 0 ? (
-                dashboardData.top3LowBhp.map((b) => (
+                dashboardData.top3LowBhp.map((b: any) => (
                   <div key={b.code}>
                     <div className="flex between aic mb-1.5">
                       <div className="text-[13px]">
@@ -621,14 +653,18 @@ export function Dashboard() {
 
       {/* ── Laboratory Maintenance Load Heatmap (Staf Lab & Kalab only) ── */}
       {(state.role === 'staflab' || state.role === 'kalab') && (
-        <div className="card mt-6" data-reveal style={{ '--role-accent': 'var(--color-violet)' }}>
+        <div
+          className="card mt-6"
+          data-reveal
+          style={{ '--role-accent': 'var(--color-violet)' } as React.CSSProperties}
+        >
           <div className="text-3 text-xs mono mb-3 tracking-[0.1em] uppercase">
             — Beban Kerusakan Ruangan
           </div>
           <h3 className="text-xl fw-5 mb-4 tracking-tight">Radar Pemeliharaan Lab (MySQL)</h3>
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 mt-2">
             {dashboardData?.maintLoadByRoom && dashboardData.maintLoadByRoom.length > 0 ? (
-              dashboardData.maintLoadByRoom.map((r, idx) => {
+              dashboardData.maintLoadByRoom.map((r: any, idx: number) => {
                 const isHighest = idx === 0;
                 return (
                   <div

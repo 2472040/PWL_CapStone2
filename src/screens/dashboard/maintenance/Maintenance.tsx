@@ -81,7 +81,12 @@ export function Maintenance() {
     loadBhpData();
   }, [dispatch]);
 
-  function handleQuickResolve(inventoryId: number, code: string, condition: string, actionText: string) {
+  function handleQuickResolve(
+    inventoryId: number,
+    code: string,
+    condition: string,
+    actionText: string
+  ) {
     dispatch({
       type: 'OPEN_MODAL',
       modal: {
@@ -692,7 +697,8 @@ export function Maintenance() {
                             </td>
                           </tr>
                         ))}
-                      {state.inventory.filter((i: any) => i.cond === 'Maintenance').length === 0 && (
+                      {state.inventory.filter((i: any) => i.cond === 'Maintenance').length ===
+                        0 && (
                         <tr>
                           <td colSpan={5} className="text-center text-xs text-ink-3 py-6">
                             Tidak ada aset yang sedang dalam maintenance! 🎉

@@ -1,16 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { useStore, useToast, D, Icon } from '../../../components/app-shell';
+import { useState } from 'react';
+import { useStore, useToast, Icon } from '../../../components/app-shell';
 import { apiFetch } from '../../../services/api';
 import { createDraftSchema } from '../../../schemas/procurementSchema';
 
-function formatThousand(val) {
+function formatThousand(val: any) {
   if (val === undefined || val === null || val === '') return '';
   const numString = String(val).replace(/\D/g, ''); // strip non-digits
   if (!numString) return '';
   return Number(numString).toLocaleString('id-ID'); // formats with dot separators in Indonesian locale
 }
 
-export function NewDraftForm({ close }) {
+interface NewDraftFormProps {
+  close: () => void;
+}
+
+export function NewDraftForm({ close }: NewDraftFormProps) {
   const { state, dispatch } = useStore();
   const toast = useToast();
   const isStaflab = state.role === 'staflab';
@@ -18,7 +22,7 @@ export function NewDraftForm({ close }) {
   const [title, setTitle] = useState(
     isStaflab ? 'Pengadaan BHP Lab · Q3 2026' : 'Pengadaan Lab Komputer · Q3 2026'
   );
-  const [items, setItems] = useState([
+  const [items, setItems] = useState<any[]>([
     {
       id: 'I-N1',
       kind: defaultKind,
@@ -32,7 +36,7 @@ export function NewDraftForm({ close }) {
   ]);
   const [loading, setLoading] = useState(false);
 
-  function update(i, patch) {
+  function update(i: number, patch: any) {
     setItems((arr) => arr.map((x, j) => (j === i ? { ...x, ...patch } : x)));
   }
   function add() {
@@ -50,7 +54,7 @@ export function NewDraftForm({ close }) {
       },
     ]);
   }
-  function remove(i) {
+  function remove(i: number) {
     setItems((arr) => arr.filter((_, j) => j !== i));
   }
 
@@ -84,7 +88,7 @@ export function NewDraftForm({ close }) {
     // Client-side Zod validation
     const validationResult = createDraftSchema.safeParse(payload);
     if (!validationResult.success) {
-      const firstError = validationResult.error.errors[0]?.message || 'Input data tidak valid.';
+      const firstError = validationResult.error.issues[0]?.message || 'Input data tidak valid.';
       toast(firstError, 'warn');
       return;
     }
@@ -114,19 +118,19 @@ export function NewDraftForm({ close }) {
 
       const refreshRes = await apiFetch('/procurement/drafts');
       if (refreshRes.data) {
-        const formatted = refreshRes.data.map((d) => ({
-          ...d,
-          by: d.creator?.name || d.by || 'Kepala Lab',
-          role: d.creator?.role || d.role || 'kalab',
-          submitted: d.submitted_at
-            ? new Date(d.submitted_at).toLocaleDateString('id-ID', {
+        const formatted = refreshRes.data.map((draftObj: any) => ({
+          ...draftObj,
+          by: draftObj.creator?.name || draftObj.by || 'Kepala Lab',
+          role: draftObj.creator?.role || draftObj.role || 'kalab',
+          submitted: draftObj.submitted_at
+            ? new Date(draftObj.submitted_at).toLocaleDateString('id-ID', {
                 day: 'numeric',
                 month: 'short',
                 year: 'numeric',
               })
             : '-',
           items:
-            d.items?.map((it) => ({
+            draftObj.items?.map((it: any) => ({
               ...it,
               approval:
                 it.approval?.status === 'approved'
@@ -141,12 +145,14 @@ export function NewDraftForm({ close }) {
       }
 
       close();
-    } catch (err) {
+    } catch (err: any) {
       toast('Gagal memproses draf: ' + err.message, 'warn');
     } finally {
       setLoading(false);
     }
   }
+
+  const win = window as any;
 
   return (
     <>
@@ -266,7 +272,7 @@ export function NewDraftForm({ close }) {
               />
             )}
             <div className="text-xs text-3 mono mt-2 fw-5 text-right">
-              Subtotal: {window.fmtRp((Number(it.qty) || 0) * (Number(it.price) || 0))}
+              Subtotal: {win.fmtRp((Number(it.qty) || 0) * (Number(it.price) || 0))}
             </div>
           </div>
         ))}
@@ -282,7 +288,7 @@ export function NewDraftForm({ close }) {
             >
               Estimasi total
             </div>
-            <div className="mono text-xl fw-5 text-violet">{window.fmtRp(total)}</div>
+            <div className="mono text-xl fw-5 text-violet">{win.fmtRp(total)}</div>
           </div>
         </div>
       </div>

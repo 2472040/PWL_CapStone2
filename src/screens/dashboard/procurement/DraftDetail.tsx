@@ -4,15 +4,21 @@ import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../../../services/api';
 import { AdminReceiveGrid } from './ReceivingAdmin';
 
-function formatThousand(val) {
+function formatThousand(val: any) {
   if (val === undefined || val === null || val === '') return '';
   const numString = String(val).replace(/\D/g, ''); // strip non-digits
   if (!numString) return '';
   return Number(numString).toLocaleString('id-ID'); // formats with dot separators in Indonesian locale
 }
 
-export function DraftDetail({ draft, onBack, mode }) {
-  const { state, dispatch } = useStore();
+interface DraftDetailProps {
+  draft: any;
+  onBack: () => void;
+  mode: string;
+}
+
+export function DraftDetail({ draft, onBack, mode }: DraftDetailProps) {
+  const { dispatch } = useStore();
   const toast = useToast();
   const navigate = useNavigate();
   const role = D.roles.find((r) => r.id === mode);
@@ -36,7 +42,7 @@ export function DraftDetail({ draft, onBack, mode }) {
       'Mengganti Aset',
       'Status Persetujuan',
     ];
-    const data = d.items.map((it) => [
+    const data = d.items.map((it: any) => [
       it.id,
       it.kind,
       it.name,
@@ -51,9 +57,9 @@ export function DraftDetail({ draft, onBack, mode }) {
 
     const csvRows = [
       headers.join(','),
-      ...data.map((row) =>
+      ...data.map((row: any) =>
         row
-          .map((val) => {
+          .map((val: any) => {
             const escaped = String(val).replace(/"/g, '""');
             return `"${escaped}"`;
           })
@@ -100,7 +106,7 @@ export function DraftDetail({ draft, onBack, mode }) {
 
   const [deleteCandidateId, setDeleteCandidateId] = useState(null);
 
-  function startEdit(it) {
+  function startEdit(it: any) {
     setEditingItemId(it.id);
     setEditFields({
       kind: it.kind,
@@ -123,7 +129,7 @@ export function DraftDetail({ draft, onBack, mode }) {
       all = 0,
       approved = 0,
       received = 0;
-    d.items.forEach((it) => {
+    d.items.forEach((it: any) => {
       const sub = it.qty * it.price;
       all += sub;
       if (it.kind === 'Inventaris') inv += sub;
@@ -131,18 +137,18 @@ export function DraftDetail({ draft, onBack, mode }) {
       if (it.approval === 'ok') approved += sub;
       if (it.received) received += sub;
     });
-    const ok = d.items.filter((it) => it.approval === 'ok').length;
-    const no = d.items.filter((it) => it.approval === 'no').length;
+    const ok = d.items.filter((it: any) => it.approval === 'ok').length;
+    const no = d.items.filter((it: any) => it.approval === 'no').length;
     const pending = d.items.length - ok - no;
-    const rec = d.items.filter((it) => it.received).length;
+    const rec = d.items.filter((it: any) => it.received).length;
     return { inv, bhp, all, approved, received, ok, no, pending, rec };
   }, [d]);
 
   async function approveAll() {
     try {
       const decisions = d.items
-        .filter((it) => !it.approval)
-        .map((it) => ({
+        .filter((it: any) => !it.approval)
+        .map((it: any) => ({
           item_id: it.id,
           status: 'approved',
         }));
@@ -154,7 +160,7 @@ export function DraftDetail({ draft, onBack, mode }) {
       }
       dispatch({ type: 'APPROVE_ALL', code: d.code });
       toast('Semua item disetujui', 'ok');
-    } catch (err) {
+    } catch (err: any) {
       toast(err.message, 'warn');
     }
   }
@@ -169,7 +175,7 @@ export function DraftDetail({ draft, onBack, mode }) {
       dispatch({ type: 'FINALIZE_DRAFT', code: d.code });
       toast('Draf difinalisasi & dikunci → Staf Admin', 'ok');
       onBack();
-    } catch (err) {
+    } catch (err: any) {
       toast(err.message, 'warn');
     }
   }
@@ -189,13 +195,13 @@ export function DraftDetail({ draft, onBack, mode }) {
       dispatch({ type: 'REQUEST_REVISION', code: d.code, notes });
       toast('Permintaan revisi dikirim ke Kepala Lab', 'ok');
       onBack();
-    } catch (err) {
+    } catch (err: any) {
       toast(err.message, 'warn');
     }
   }
 
-  async function markReceived(itemId, formData) {
-    const item = d.items.find((it) => it.id === itemId);
+  async function markReceived(itemId: any, formData: any) {
+    const item = d.items.find((it: any) => it.id === itemId);
     // Remove the `if (!item.received)` check because partial receiving means an item can be received multiple times
     try {
       await apiFetch(`/procurement/receiving`, {
@@ -210,14 +216,14 @@ export function DraftDetail({ draft, onBack, mode }) {
       });
       dispatch({ type: 'MARK_RECEIVED', code: d.code, itemId, date: formData.received_date });
       toast('Barang ditandai telah diterima', 'ok');
-    } catch (err) {
+    } catch (err: any) {
       toast(err.message, 'warn');
     }
   }
 
-  async function setApproval(itemId, value) {
+  async function setApproval(itemId: any, value: any) {
     try {
-      const currentVal = d.items.find((it) => it.id === itemId)?.approval;
+      const currentVal = d.items.find((it: any) => it.id === itemId)?.approval;
       const newVal = currentVal === value ? null : value;
       const mappedVal = newVal === 'ok' ? 'approved' : newVal === 'no' ? 'rejected' : 'delete';
 
@@ -227,24 +233,24 @@ export function DraftDetail({ draft, onBack, mode }) {
       });
 
       dispatch({ type: 'SET_APPROVAL', code: d.code, itemId, value: newVal });
-    } catch (err) {
+    } catch (err: any) {
       toast(err.message, 'warn');
     }
   }
 
-  async function handleRemoveItem(itemId) {
+  async function handleRemoveItem(itemId: any) {
     try {
       await apiFetch(`/procurement/items/${itemId}`, { method: 'DELETE' });
       dispatch({ type: 'REMOVE_DRAFT_ITEM', code: d.code, itemId });
       setDeleteCandidateId(null);
       toast('Item berhasil dihapus', 'ok');
-    } catch (err) {
+    } catch (err: any) {
       toast('Gagal menghapus item: ' + err.message, 'warn');
       setDeleteCandidateId(null);
     }
   }
 
-  async function handleSaveItem(itemId) {
+  async function handleSaveItem(itemId: any) {
     if (
       !editFields.name.trim() ||
       !editFields.qty ||
@@ -282,12 +288,12 @@ export function DraftDetail({ draft, onBack, mode }) {
         toast('Item berhasil diperbarui', 'ok');
         setEditingItemId(null);
       }
-    } catch (err) {
+    } catch (err: any) {
       toast('Gagal memperbarui item: ' + err.message, 'warn');
     }
   }
 
-  async function handleAddItem(e) {
+  async function handleAddItem(e: React.FormEvent) {
     e.preventDefault();
     if (!newItem.name.trim() || !newItem.qty || !newItem.unit.trim() || !newItem.price) {
       toast('Mohon isi semua field wajib (*)', 'warn');
@@ -330,7 +336,7 @@ export function DraftDetail({ draft, onBack, mode }) {
         });
         setShowAddForm(false);
       }
-    } catch (err) {
+    } catch (err: any) {
       toast('Gagal menambahkan item: ' + err.message, 'warn');
     } finally {
       setAddingItem(false);
@@ -343,19 +349,19 @@ export function DraftDetail({ draft, onBack, mode }) {
 
       const res = await apiFetch('/procurement/drafts');
       if (res.data) {
-        const formatted = res.data.map((d) => ({
-          ...d,
-          by: d.creator?.name || d.by || 'Kepala Lab',
-          role: d.creator?.role || d.role || 'kalab',
-          submitted: d.submitted_at
-            ? new Date(d.submitted_at).toLocaleDateString('id-ID', {
+        const formatted = res.data.map((draftObj: any) => ({
+          ...draftObj,
+          by: draftObj.creator?.name || draftObj.by || 'Kepala Lab',
+          role: draftObj.creator?.role || draftObj.role || 'kalab',
+          submitted: draftObj.submitted_at
+            ? new Date(draftObj.submitted_at).toLocaleDateString('id-ID', {
                 day: 'numeric',
                 month: 'short',
                 year: 'numeric',
               })
             : '-',
           items:
-            d.items?.map((it) => ({
+            draftObj.items?.map((it: any) => ({
               ...it,
               approval:
                 it.approval?.status === 'approved'
@@ -370,13 +376,13 @@ export function DraftDetail({ draft, onBack, mode }) {
       }
       toast('Draf diajukan · menunggu Kaprodi', 'ok');
       onBack();
-    } catch (err) {
+    } catch (err: any) {
       toast('Gagal mengajukan draf: ' + err.message, 'warn');
     }
   }
 
   async function completeReceiving() {
-    if (totals.rec < d.items.filter((it) => it.approval !== 'no').length) {
+    if (totals.rec < d.items.filter((it: any) => it.approval !== 'no').length) {
       toast('Masih ada item yang belum diterima', 'warn');
       return;
     }
@@ -385,13 +391,16 @@ export function DraftDetail({ draft, onBack, mode }) {
       dispatch({ type: 'COMPLETE_DRAFT', code: d.code });
       toast('Penerimaan diselesaikan', 'ok');
       onBack();
-    } catch (err) {
+    } catch (err: any) {
       toast(err.message, 'warn');
     }
   }
 
   return (
-    <div className="page" style={{ '--role-accent': role.accent }}>
+    <div
+      className="page"
+      style={{ '--role-accent': role?.accent || 'var(--color-violet)' } as React.CSSProperties}
+    >
       <div data-reveal className="mb-[18px]">
         <button className="btn sm" onClick={onBack}>
           <Icon name="chevL" size={12} /> Kembali
@@ -736,7 +745,7 @@ export function DraftDetail({ draft, onBack, mode }) {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in">
           <div
             className="card max-w-[400px] w-full p-6 shadow-2xl border border-rose/30 bg-surface-2 flex flex-col gap-4 text-center animate-slide-up"
-            style={{ '--role-accent': 'var(--color-rose)' }}
+            style={{ '--role-accent': 'var(--color-rose)' } as React.CSSProperties}
           >
             <div className="mx-auto p-3 rounded-full bg-rose/10 text-rose w-max shrink-0 animate-bounce">
               <Icon name="alert" size={24} />
@@ -745,8 +754,8 @@ export function DraftDetail({ draft, onBack, mode }) {
               <h3 className="text-lg font-bold text-ink">Hapus Item Pengadaan?</h3>
               <p className="text-xs text-ink-3 mt-1.5 leading-relaxed">
                 Apakah Anda yakin ingin menghapus item{' '}
-                <b>{d.items.find((it) => it.id === deleteCandidateId)?.name}</b>? Tindakan ini tidak
-                dapat dibatalkan.
+                <b>{d.items.find((it: any) => it.id === deleteCandidateId)?.name}</b>? Tindakan ini
+                tidak dapat dibatalkan.
               </p>
             </div>
             <div className="flex gap-2.5 mt-2 justify-center">
@@ -776,8 +785,23 @@ export function DraftDetail({ draft, onBack, mode }) {
   );
 }
 
-function eligibleCount(items) {
-  return items.filter((it) => it.approval !== 'no').length;
+function eligibleCount(items: any) {
+  return items.filter((it: any) => it.approval !== 'no').length;
+}
+
+interface KalabKaprodiItemsProps {
+  draft: any;
+  mode: string;
+  locked: boolean;
+  setApproval: (itemId: any, value: any) => Promise<void>;
+  totals: any;
+  onRemoveItem: (itemId: any) => void;
+  editingItemId: any;
+  editFields: any;
+  setEditFields: any;
+  startEdit: (it: any) => void;
+  onSaveItem: (itemId: any) => Promise<void>;
+  onCancelEdit: () => void;
 }
 
 export function KalabKaprodiItems({
@@ -793,7 +817,7 @@ export function KalabKaprodiItems({
   startEdit,
   onSaveItem,
   onCancelEdit,
-}) {
+}: KalabKaprodiItemsProps) {
   const isStaflab = mode === 'staflab';
   return (
     <>
@@ -805,7 +829,7 @@ export function KalabKaprodiItems({
           <div className="ar">Subtotal (Harga Satuan)</div>
           <div className="ar">{mode === 'kaprodi' && !locked ? 'Keputusan' : 'Aksi'}</div>
         </div>
-        {draft.items.map((it) => {
+        {draft.items.map((it: any) => {
           const st = it.approval;
           const isEditing = editingItemId === it.id;
 
@@ -828,7 +852,9 @@ export function KalabKaprodiItems({
                     <select
                       className="select sm"
                       value={editFields.kind}
-                      onChange={(e) => setEditFields((prev) => ({ ...prev, kind: e.target.value }))}
+                      onChange={(e) =>
+                        setEditFields((prev: any) => ({ ...prev, kind: e.target.value }))
+                      }
                       style={{ width: '100%' }}
                     >
                       <option value="Inventaris">Inventaris</option>
@@ -852,13 +878,17 @@ export function KalabKaprodiItems({
                   <input
                     className="input sm font-bold"
                     value={editFields.name}
-                    onChange={(e) => setEditFields((prev) => ({ ...prev, name: e.target.value }))}
+                    onChange={(e) =>
+                      setEditFields((prev: any) => ({ ...prev, name: e.target.value }))
+                    }
                     placeholder="Nama barang..."
                   />
                   <input
                     className="input sm text-xs mono"
                     value={editFields.link || ''}
-                    onChange={(e) => setEditFields((prev) => ({ ...prev, link: e.target.value }))}
+                    onChange={(e) =>
+                      setEditFields((prev: any) => ({ ...prev, link: e.target.value }))
+                    }
                     placeholder="Link pembelian"
                   />
                   {!isStaflab && editFields.kind === 'Inventaris' && (
@@ -866,7 +896,7 @@ export function KalabKaprodiItems({
                       className="input sm text-xs"
                       value={editFields.replaces || ''}
                       onChange={(e) =>
-                        setEditFields((prev) => ({ ...prev, replaces: e.target.value }))
+                        setEditFields((prev: any) => ({ ...prev, replaces: e.target.value }))
                       }
                       placeholder="Mengganti aset"
                     />
@@ -879,12 +909,16 @@ export function KalabKaprodiItems({
                     type="number"
                     min="1"
                     value={editFields.qty}
-                    onChange={(e) => setEditFields((prev) => ({ ...prev, qty: e.target.value }))}
+                    onChange={(e) =>
+                      setEditFields((prev: any) => ({ ...prev, qty: e.target.value }))
+                    }
                   />
                   <input
                     className="input sm text-xs text-center"
                     value={editFields.unit}
-                    onChange={(e) => setEditFields((prev) => ({ ...prev, unit: e.target.value }))}
+                    onChange={(e) =>
+                      setEditFields((prev: any) => ({ ...prev, unit: e.target.value }))
+                    }
                     placeholder="satuan"
                   />
                 </div>
@@ -896,7 +930,7 @@ export function KalabKaprodiItems({
                     value={formatThousand(editFields.price)}
                     onChange={(e) => {
                       const cleanVal = e.target.value.replace(/\D/g, '');
-                      setEditFields((prev) => ({ ...prev, price: cleanVal }));
+                      setEditFields((prev: any) => ({ ...prev, price: cleanVal }));
                     }}
                     placeholder="Harga (Rp)"
                   />

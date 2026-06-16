@@ -1,8 +1,14 @@
 // Shared icon system (Lucide-style inline SVGs)
 import React from 'react';
 
-function Icon({ name, size = 16, strokeWidth = 1.6, ...rest }) {
-  const paths = {
+interface IconProps extends React.SVGProps<SVGSVGElement> {
+  name: string;
+  size?: number | string;
+  strokeWidth?: number;
+}
+
+function Icon({ name, size = 16, strokeWidth = 1.6, ...rest }: IconProps) {
+  const paths: Record<string, React.ReactNode> = {
     grid: (
       <>
         <rect x="3" y="3" width="7" height="7" rx="1.5" />
@@ -256,8 +262,14 @@ function Icon({ name, size = 16, strokeWidth = 1.6, ...rest }) {
   );
 }
 
+interface QRProps {
+  seed: string;
+  size?: number;
+  cls?: string;
+}
+
 // High-fidelity standard QR code generator using open API
-function QR({ seed, size = 7, cls = '' }) {
+function QR({ seed, size = 7, cls = '' }: QRProps) {
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(seed)}`;
 
   return (
@@ -281,7 +293,7 @@ function QR({ seed, size = 7, cls = '' }) {
   );
 }
 
-async function downloadQR(seed) {
+async function downloadQR(seed: string) {
   try {
     const res = await fetch(
       `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(seed)}`

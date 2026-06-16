@@ -88,7 +88,9 @@ export function BHP() {
         if (res.data) {
           const uniqueYears = [
             ...new Set(
-              res.data.map((b: any) => (b.last_in && b.last_in !== '-' ? b.last_in.split('-')[0] : null))
+              res.data.map((b: any) =>
+                b.last_in && b.last_in !== '-' ? b.last_in.split('-')[0] : null
+              )
             ),
           ]
             .filter(Boolean)
@@ -631,7 +633,9 @@ export function BHP() {
                         </select>
                         <button
                           className="x-btn"
-                          onClick={() => setRestockRows((r: RestockRow[]) => r.filter((_, j) => j !== i))}
+                          onClick={() =>
+                            setRestockRows((r: RestockRow[]) => r.filter((_, j) => j !== i))
+                          }
                           disabled={submittingRestock || restockRows.length <= 1}
                         >
                           <Icon name="x" size={12} />

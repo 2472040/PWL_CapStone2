@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useStore, D, QR, Icon, useSearch, useToast } from '../../../components/app-shell';
+import { useStore, D, Icon, useSearch, useToast } from '../../../components/app-shell';
 import { apiFetch } from '../../../services/api';
 import { DraftDetail } from './DraftDetail';
 import { DraftCard } from './PengadaanKalab';
 
-function generateNextLabel(baseLabel, index) {
+function generateNextLabel(baseLabel: string, index: number) {
   if (index === 0) return baseLabel;
   const match = baseLabel.match(/^(.*?)(\d+)$/);
   if (!match) {
@@ -20,18 +20,18 @@ function generateNextLabel(baseLabel, index) {
 export function ReceivingAdmin() {
   const { state, dispatch } = useStore();
   const { query } = useSearch();
-  const role = D.roles.find((r) => r.id === 'admin');
+  const role = D.roles.find((r: any) => r.id === 'admin') || { accent: 'var(--color-violet)' };
 
   useEffect(() => {
     async function loadReceiving() {
       try {
         const res = await apiFetch('/procurement/receiving');
-        const validDrafts = (res.data || []).map((d) => ({
+        const validDrafts = (res.data || []).map((d: any) => ({
           ...d,
           by: d.creator?.name || d.by,
           role: d.creator?.role || d.role,
           items:
-            d.items?.map((it) => ({
+            d.items?.map((it: any) => ({
               ...it,
               approval:
                 it.approval?.status === 'approved'
@@ -54,7 +54,7 @@ export function ReceivingAdmin() {
     loadReceiving();
   }, [dispatch]);
 
-  const queue = state.drafts.filter((d) => {
+  const queue = state.drafts.filter((d: any) => {
     if (d.status !== 'finalized' && d.status !== 'completed') return false;
     if (!query) return true;
     const q = query.toLowerCase();
@@ -65,11 +65,11 @@ export function ReceivingAdmin() {
     );
   });
 
-  const [openCode, setOpenCode] = useState(null);
+  const [openCode, setOpenCode] = useState<string | null>(null);
 
   if (openCode) {
     const opened = state.drafts.find(
-      (d) => d.code === openCode && (d.status === 'finalized' || d.status === 'completed')
+      (d: any) => d.code === openCode && (d.status === 'finalized' || d.status === 'completed')
     );
     if (opened) {
       return <DraftDetail draft={opened} onBack={() => setOpenCode(null)} mode="admin" />;
@@ -77,7 +77,7 @@ export function ReceivingAdmin() {
   }
 
   return (
-    <div className="page" style={{ '--role-accent': role.accent }}>
+    <div className="page" style={{ '--role-accent': role.accent } as React.CSSProperties}>
       <div className="page-head" data-reveal>
         <div>
           <h1 className="page-title">Penerimaan barang</h1>
@@ -106,7 +106,7 @@ export function ReceivingAdmin() {
           style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}
           data-reveal-children
         >
-          {queue.map((d) => (
+          {queue.map((d: any) => (
             <DraftCard
               key={d.code}
               d={d}
@@ -120,25 +120,31 @@ export function ReceivingAdmin() {
   );
 }
 
-export function AdminReceiveGrid({ draft, totals, onToggle }) {
+interface AdminReceiveGridProps {
+  draft: any;
+  totals: any;
+  onToggle: (itemId: any, data: any) => Promise<void>;
+}
+
+export function AdminReceiveGrid({ draft, totals: _totals, onToggle }: AdminReceiveGridProps) {
   const { dispatch } = useStore();
   const toast = useToast();
-  const [openForms, setOpenForms] = useState({});
-  const [formsData, setFormsData] = useState({});
+  const [openForms, setOpenForms] = useState<Record<string, boolean>>({});
+  const [formsData, setFormsData] = useState<Record<string, any>>({});
 
   // Bulk Receive state
   const [showBulk, setShowBulk] = useState(false);
   const [bulkItemId, setBulkItemId] = useState('');
   const [bulkDate, setBulkDate] = useState(new Date().toISOString().substring(0, 10));
   const [bulkStartCode, setBulkStartCode] = useState('');
-  const [bulkQrPhoto, setBulkQrPhoto] = useState(null);
-  const [bulkProgress, setBulkProgress] = useState(null); // { current, total, label }
+  const [bulkQrPhoto, setBulkQrPhoto] = useState<any>(null);
+  const [bulkProgress, setBulkProgress] = useState<any>(null); // { current, total, label }
   const [bulkLoading, setBulkLoading] = useState(false);
 
-  const eligible = draft.items.filter((it) => it.approval !== 'no');
+  const eligible = draft.items.filter((it: any) => it.approval !== 'no');
 
-  const displayCards = [];
-  eligible.forEach((it) => {
+  const displayCards: any[] = [];
+  eligible.forEach((it: any) => {
     if (it.kind === 'Inventaris') {
       const receivings = it.receivings || [];
       for (let i = 0; i < it.qty; i++) {
@@ -155,7 +161,7 @@ export function AdminReceiveGrid({ draft, totals, onToggle }) {
     } else {
       const receivings = it.receivings || [];
       const totalReceived = receivings.reduce(
-        (sum, r) => sum + (parseFloat(r.qty_received) || 0),
+        (sum: number, r: any) => sum + (parseFloat(r.qty_received) || 0),
         0
       );
       displayCards.push({
@@ -169,7 +175,7 @@ export function AdminReceiveGrid({ draft, totals, onToggle }) {
     }
   });
 
-  const handleOpenForm = (cardId, maxQty) => {
+  const handleOpenForm = (cardId: string, maxQty: number) => {
     setOpenForms((prev) => ({ ...prev, [cardId]: true }));
     setFormsData((prev) => ({
       ...prev,
@@ -182,22 +188,26 @@ export function AdminReceiveGrid({ draft, totals, onToggle }) {
     }));
   };
 
-  const handleCancelForm = (cardId) => {
+  const handleCancelForm = (cardId: string) => {
     setOpenForms((prev) => ({ ...prev, [cardId]: false }));
   };
 
-  const handleChange = (cardId, field, value) => {
+  const handleChange = (cardId: string, field: string, value: any) => {
     setFormsData((prev) => ({ ...prev, [cardId]: { ...prev[cardId], [field]: value } }));
   };
 
-  const handleFileChange = (cardId, file) => {
+  const handleFileChange = (cardId: string, file: File | null) => {
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (e) => handleChange(cardId, 'qr_photo', e.target.result);
+    reader.onload = (e) => {
+      if (e?.target) {
+        handleChange(cardId, 'qr_photo', e.target.result);
+      }
+    };
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = (card) => {
+  const handleSubmit = (card: any) => {
     const data = formsData[card.cardId];
     if (card.kind === 'Inventaris' && (!data.code || !data.qr_photo)) {
       toast(
@@ -214,12 +224,12 @@ export function AdminReceiveGrid({ draft, totals, onToggle }) {
   };
 
   const unreceivedItems = eligible
-    .filter((it) => {
+    .filter((it: any) => {
       if (it.kind !== 'Inventaris') return false;
       const recCount = (it.receivings || []).length;
       return recCount < it.qty;
     })
-    .map((it) => {
+    .map((it: any) => {
       const recCount = (it.receivings || []).length;
       const remaining = it.qty - recCount;
       return {
@@ -267,7 +277,9 @@ export function AdminReceiveGrid({ draft, totals, onToggle }) {
                   value={bulkItemId}
                   onChange={(e) => {
                     setBulkItemId(e.target.value);
-                    const selected = unreceivedItems.find((it) => String(it.id) === e.target.value);
+                    const selected = unreceivedItems.find(
+                      (it: any) => String(it.id) === e.target.value
+                    );
                     if (selected) {
                       setBulkStartCode(
                         `INV-${new Date().getFullYear()}-${String(selected.id).padStart(3, '0')}-001`
@@ -277,7 +289,7 @@ export function AdminReceiveGrid({ draft, totals, onToggle }) {
                   disabled={bulkLoading}
                 >
                   <option value="">Pilih barang...</option>
-                  {unreceivedItems.map((it) => (
+                  {unreceivedItems.map((it: any) => (
                     <option key={it.id} value={it.id}>
                       {it.name} ({it.remaining} unit belum diterima)
                     </option>
@@ -321,10 +333,14 @@ export function AdminReceiveGrid({ draft, totals, onToggle }) {
                   className="input text-xs w-full"
                   accept="image/*"
                   onChange={(e) => {
-                    const file = e.target.files[0];
+                    const file = e.target.files?.[0];
                     if (file) {
                       const reader = new FileReader();
-                      reader.onload = (el) => setBulkQrPhoto(el.target.result);
+                      reader.onload = (el) => {
+                        if (el.target) {
+                          setBulkQrPhoto(el.target.result as any);
+                        }
+                      };
                       reader.readAsDataURL(file);
                     }
                   }}
@@ -337,7 +353,7 @@ export function AdminReceiveGrid({ draft, totals, onToggle }) {
           {showBulk && bulkItemId && (
             <div className="mt-3 p-3 bg-surface/50 border border-line-2 rounded-lg flex flex-col gap-3">
               {(() => {
-                const sel = unreceivedItems.find((it) => String(it.id) === bulkItemId);
+                const sel = unreceivedItems.find((it: any) => String(it.id) === bulkItemId);
                 if (!sel) return null;
                 return (
                   <div className="text-xs text-3 leading-relaxed">
@@ -383,7 +399,7 @@ export function AdminReceiveGrid({ draft, totals, onToggle }) {
                   className="btn primary"
                   disabled={bulkLoading || !bulkStartCode || !bulkQrPhoto}
                   onClick={async () => {
-                    const sel = unreceivedItems.find((it) => String(it.id) === bulkItemId);
+                    const sel = unreceivedItems.find((it: any) => String(it.id) === bulkItemId);
                     if (!sel) return;
                     setBulkLoading(true);
                     try {
@@ -409,12 +425,12 @@ export function AdminReceiveGrid({ draft, totals, onToggle }) {
 
                       // Refresh drafts state to update the UI
                       const res = await apiFetch('/procurement/receiving');
-                      const validDrafts = (res.data || []).map((d) => ({
+                      const validDrafts = (res.data || []).map((d: any) => ({
                         ...d,
                         by: d.creator?.name || d.by,
                         role: d.creator?.role || d.role,
                         items:
-                          d.items?.map((it) => ({
+                          d.items?.map((it: any) => ({
                             ...it,
                             approval:
                               it.approval?.status === 'approved'
@@ -439,7 +455,7 @@ export function AdminReceiveGrid({ draft, totals, onToggle }) {
                       setBulkQrPhoto(null);
                       setBulkProgress(null);
                       setShowBulk(false);
-                    } catch (err) {
+                    } catch (err: any) {
                       toast('Gagal memproses penerimaan massal: ' + err.message, 'warn');
                     } finally {
                       setBulkLoading(false);
@@ -550,7 +566,10 @@ export function AdminReceiveGrid({ draft, totals, onToggle }) {
                           type="file"
                           className="input text-xs"
                           accept="image/*"
-                          onChange={(e) => handleFileChange(card.cardId, e.target.files[0])}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            handleFileChange(card.cardId, file || null);
+                          }}
                         />
                       </div>
                     </>

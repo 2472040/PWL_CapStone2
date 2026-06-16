@@ -2,10 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useStore, Icon } from './app-shell';
 import { apiFetch } from '../services/api';
 
-export function AiPredictiveModal({ payload, close }) {
-  const { state } = useStore();
+interface AiPredictiveModalProps {
+  payload: {
+    bhpId: string | number;
+    bhpName: string;
+  };
+  close: () => void;
+}
+
+export function AiPredictiveModal({ payload, close }: AiPredictiveModalProps) {
+  useStore();
   const { bhpId, bhpName } = payload;
-  const [data, setData] = useState(null);
+  const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [training, setTraining] = useState(true);
   const [epoch, setEpoch] = useState(0);
@@ -31,7 +39,7 @@ export function AiPredictiveModal({ payload, close }) {
   useEffect(() => {
     if (loading || !data) return;
 
-    let timer;
+    let timer: any;
     const maxEpochs = data.epochsTrained || 50;
 
     const trainStep = () => {
@@ -100,13 +108,8 @@ export function AiPredictiveModal({ payload, close }) {
     coordinates,
     usagesCount,
     aiAnalysis,
-    riskTitle,
-    riskColor,
     slopeSe,
-    tStatistic,
     pValueScore,
-    mLowerBound,
-    mUpperBound,
     confLowerDays,
     confUpperDays,
   } = data;
@@ -121,13 +124,13 @@ export function AiPredictiveModal({ payload, close }) {
   let regressionPath = '';
 
   if (hasCoordinates) {
-    const maxX = Math.max(30, ...coordinates.map((c) => c.x));
-    const maxY = Math.max(10, ...coordinates.map((c) => c.y), currentStock * 1.5);
+    const maxX = Math.max(30, ...coordinates.map((c: any) => c.x));
+    const maxY = Math.max(10, ...coordinates.map((c: any) => c.y), currentStock * 1.5);
 
-    const getX = (val) => padding + (val / maxX) * (width - 2 * padding);
-    const getY = (val) => height - padding - (val / maxY) * (height - 2 * padding);
+    const getX = (val: number) => padding + (val / maxX) * (width - 2 * padding);
+    const getY = (val: number) => height - padding - (val / maxY) * (height - 2 * padding);
 
-    points = coordinates.map((c) => ({
+    points = coordinates.map((c: any) => ({
       cx: getX(c.x),
       cy: getY(c.y),
       x: c.x,
@@ -196,10 +199,12 @@ export function AiPredictiveModal({ payload, close }) {
             {/* Main Alert Card */}
             <div
               className="card compact glow flex items-start gap-3 p-4"
-              style={{
-                '--role-accent': predictedDays < 15 ? 'var(--color-rose)' : 'var(--color-cyan)',
-                background: 'rgba(255,255,255,0.01)',
-              }}
+              style={
+                {
+                  '--role-accent': predictedDays < 15 ? 'var(--color-rose)' : 'var(--color-cyan)',
+                  background: 'rgba(255,255,255,0.01)',
+                } as React.CSSProperties
+              }
             >
               <div className="p-2 rounded bg-surface-2 flex items-center justify-center shrink-0">
                 <Icon
@@ -262,11 +267,13 @@ export function AiPredictiveModal({ payload, close }) {
             {aiAnalysis && (
               <div
                 className="card compact glow flex items-start gap-3 p-4"
-                style={{
-                  '--role-accent': 'var(--color-violet)',
-                  background: 'rgba(183,148,255,0.03)',
-                  borderColor: 'rgba(183,148,255,0.15)',
-                }}
+                style={
+                  {
+                    '--role-accent': 'var(--color-violet)',
+                    background: 'rgba(183,148,255,0.03)',
+                    borderColor: 'rgba(183,148,255,0.15)',
+                  } as React.CSSProperties
+                }
               >
                 <div className="p-2 rounded bg-violet/10 flex items-center justify-center text-violet shrink-0">
                   <Icon name="bolt" size={18} className="animate-pulse" />
@@ -343,7 +350,7 @@ export function AiPredictiveModal({ payload, close }) {
                   )}
 
                   {/* Historical Scatter plot points */}
-                  {points.map((p, idx) => (
+                  {points.map((p: any, idx: number) => (
                     <g key={idx} className="group">
                       <circle
                         cx={p.cx}
