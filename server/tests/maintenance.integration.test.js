@@ -7,6 +7,7 @@ const { MaintenanceLog, Bhp, Inventory, Room, sequelize } = require('../models')
 describe('Maintenance and BHP Integration Test', () => {
   let staffToken = null;
   let adminToken = null;
+  let sysadminToken = null;
   let testRoomId = null;
   let testInventoryId = null;
   let testMaintenanceLogId = null;
@@ -35,6 +36,13 @@ describe('Maintenance and BHP Integration Test', () => {
       .send({ email: 'faqih@kampus.id', password: 'password123' });
     expect(resAdmin.status).toBe(200);
     adminToken = resAdmin.body.data.token;
+
+    // 3. Log in as sysadmin
+    const resSys = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: 'anindita@kampus.id', password: 'password123' });
+    expect(resSys.status).toBe(200);
+    sysadminToken = resSys.body.data.token;
 
     // 3. Create a room
     const room = await Room.create({
@@ -159,5 +167,26 @@ describe('Maintenance and BHP Integration Test', () => {
       .set('Authorization', `Bearer ${adminToken}`);
     // Should be 403 Forbidden
     expect(resGetBad.status).toBe(403);
+  });
+
+  it('should block sysadmin from viewing BHP list', async () => {
+    const resBhpBad = await request(app)
+      .get('/api/v1/bhp')
+      .set('Authorization', `Bearer ${sysadminToken}`);
+    expect(resBhpBad.status).toBe(403);
+  });
+
+  it('should block admin from modifying BHP', async () => {
+    const resCreateBad = await request(app)
+      .post('/api/v1/bhp')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Cookie', 'csrfToken=test_csrf')
+      .set('x-csrf-token', 'test_csrf')
+      .send({
+        code: 'BHP-ADMIN-BAD',
+        name: 'Bad Stuff',
+        unit: 'pcs',
+      });
+    expect(resCreateBad.status).toBe(403);
   });
 });

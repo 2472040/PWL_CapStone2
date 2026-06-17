@@ -40,6 +40,11 @@ const Bhp = sequelize.define(
       type: DataTypes.STRING(50),
       allowNull: true,
     },
+    room_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: { model: 'rooms', key: 'id' },
+    },
   },
   {
     tableName: 'bhp',

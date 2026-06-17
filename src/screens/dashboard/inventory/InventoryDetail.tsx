@@ -1,11 +1,63 @@
-import { useStore, Icon, QR, downloadQR } from '../../../components/app-shell';
+import { useRef } from 'react';
+import { useStore, Icon, QR, downloadQR, useToast } from '../../../components/app-shell';
+import { apiFetch } from '../../../services/api';
+import jsQR from 'jsqr';
 
 export function InventoryDetail({ payload, close }: { payload: any; close: () => void }) {
   const it = payload;
   const { state, dispatch } = useStore();
+  const toast = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const logs = state.maintLog.filter((l: any) => l.asset === it.code);
   const canMaintain = state.role === 'staflab';
   const canEdit = state.role === 'admin';
+
+  const handleLabelUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const base64 = evt.target?.result as string;
+      const img = new Image();
+      img.onload = async () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        ctx.drawImage(img, 0, 0);
+        try {
+          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const decoded = jsQR(imgData.data, imgData.width, imgData.height);
+          const qrDataVal = decoded && decoded.data ? decoded.data.trim() : `UNIV-${it.code}`;
+
+          const res = await apiFetch(`/inventory/${it.id}/label`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              label_number: it.code,
+              qr_data: qrDataVal,
+              photo_url: base64,
+            }),
+          });
+
+          if (res.data) {
+            const updatedInv = state.inventory.map((item: any) =>
+              item.id === it.id ? { ...item, photo_url: base64 } : item
+            );
+            dispatch({ type: 'SET_INVENTORY', inventory: updatedInv });
+            toast('Label dan foto QR Universitas berhasil diperbarui!', 'ok');
+            close();
+          }
+        } catch (err: any) {
+          console.error('Error updating label:', err);
+          toast('Gagal memperbarui label: ' + err.message, 'warn');
+        }
+      };
+      img.src = base64;
+    };
+    reader.readAsDataURL(file);
+  };
 
   return (
     <>
@@ -116,11 +168,18 @@ export function InventoryDetail({ payload, close }: { payload: any; close: () =>
         )}
       </div>
       <div className="drawer-foot">
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleLabelUpload}
+        />
         <button className="btn" onClick={() => downloadQR(it.code)}>
           <Icon name="download" size={12} /> Unduh QR
         </button>
         {canEdit && (
-          <button className="btn">
+          <button className="btn" onClick={() => fileInputRef.current?.click()}>
             <Icon name="edit" size={12} /> Update label
           </button>
         )}

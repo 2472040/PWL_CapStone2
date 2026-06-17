@@ -337,6 +337,7 @@ async function seed() {
         min_stock: 50,
         last_in: '2026-03-12',
         category: 'Networking',
+        room_id: r('R-303').id,
       },
       {
         code: 'B-002',
@@ -346,6 +347,7 @@ async function seed() {
         min_stock: 100,
         last_in: '2026-02-08',
         category: 'Networking',
+        room_id: r('R-303').id,
       },
       {
         code: 'B-003',
@@ -355,6 +357,7 @@ async function seed() {
         min_stock: 4,
         last_in: '2026-04-02',
         category: 'Workstation',
+        room_id: r('R-301').id,
       },
       {
         code: 'B-004',
@@ -364,6 +367,7 @@ async function seed() {
         min_stock: 5,
         last_in: '2026-04-21',
         category: 'Fabrikasi',
+        room_id: r('R-101').id,
       },
       {
         code: 'B-005',
@@ -373,6 +377,7 @@ async function seed() {
         min_stock: 5,
         last_in: '2026-03-30',
         category: 'Fabrikasi',
+        room_id: r('R-101').id,
       },
       {
         code: 'B-006',
@@ -382,6 +387,7 @@ async function seed() {
         min_stock: 3,
         last_in: '2026-04-05',
         category: 'Instrumen',
+        room_id: r('R-205').id,
       },
       {
         code: 'B-007',
@@ -391,6 +397,7 @@ async function seed() {
         min_stock: 30,
         last_in: '2026-04-05',
         category: 'Embedded',
+        room_id: r('R-204').id,
       },
       {
         code: 'B-008',
@@ -400,6 +407,7 @@ async function seed() {
         min_stock: 20,
         last_in: '2026-04-21',
         category: 'Embedded',
+        room_id: r('R-204').id,
       },
       {
         code: 'B-009',
@@ -409,6 +417,7 @@ async function seed() {
         min_stock: 3,
         last_in: '2026-04-15',
         category: 'General',
+        room_id: r('R-102').id,
       },
       {
         code: 'B-010',
@@ -418,6 +427,7 @@ async function seed() {
         min_stock: 2,
         last_in: '2026-02-20',
         category: 'General',
+        room_id: r('R-102').id,
       },
     ]);
     console.log(`✅ ${bhpItems.length} BHP items seeded`);

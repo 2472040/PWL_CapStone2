@@ -1054,9 +1054,9 @@ Untuk memenuhi kepatuhan audit sistem informasi dan pemantauan kesalahan aktif, 
 
 ## 12. Pengujian Keamanan
 
-**File**: `server/tests/security.test.cjs`
+**File**: `server/tests/security.test.js`
 
-Suite pengujian otomatis mencakup **10 test cases** di 5 kategori:
+Suite pengujian otomatis mencakup **18 test cases** di 6 kategori:
 
 ### Hasil Pengujian
 
@@ -1065,35 +1065,45 @@ Suite pengujian otomatis mencakup **10 test cases** di 5 kategori:
 ==================================================
 
 📋 Password Hashing Tests:
-  ✅ bcrypt hash is generated with salt rounds >= 10
-  ✅ bcrypt correctly verifies matching password
-  ✅ bcrypt rejects wrong password
+  ✓ bcrypt hash is generated with salt rounds >= 10
+  ✓ bcrypt correctly verifies matching password
+  ✓ bcrypt rejects wrong password
 
 📋 JWT Token Security Tests:
-  ✅ JWT token contains required security claims (jti, tokenVersion)
-  ✅ JWT token with wrong secret is rejected
-  ✅ Expired JWT token is rejected
+  ✓ JWT token contains required security claims (jti, tokenVersion)
+  ✓ JWT token with wrong secret is rejected
+  ✓ Expired JWT token is rejected
 
 📋 AES-256-GCM Encryption Tests:
-  ✅ AES-256-GCM encryption and decryption works correctly
-  ✅ AES-256-GCM detects tampered ciphertext (integrity check)
+  ✓ AES-256-GCM encryption and decryption works correctly
+  ✓ AES-256-GCM detects tampered ciphertext (integrity check)
 
 📋 Token Version Validation Tests:
-  ✅ Token with outdated tokenVersion should be detectable
+  ✓ Token with outdated tokenVersion should be detectable
 
 📋 Audit Log Hash Chaining Tests:
-  ✅ Audit log hash chain computes correctly
-  ✅ Tampered audit log breaks the hash chain
+  ✓ Audit log hash chain computes correctly
+  ✓ Tampered audit log breaks the hash chain
+
+📋 Double Submit CSRF Protection Tests:
+  ✓ should bypass safe methods (GET, HEAD, OPTIONS)
+  ✓ should bypass whitelisted routes (login and refresh)
+  ✓ should reject request when Origin header is invalid
+  ✓ should reject request when Referer header is invalid
+  ✓ should reject when CSRF token cookie is missing
+  ✓ should reject when CSRF token header is missing
+  ✓ should reject when cookie and header CSRF tokens mismatch
+  ✓ should allow request when Origin and Double Submit Cookie CSRF token match
 
 ==================================================
-📊 Results: 10 passed, 0 failed, 10 total
+📊 Results: 18 passed, 0 failed, 18 total
 ✅ All security tests passed!
 ```
 
 ### Cara Menjalankan
 
 ```bash
-node server/tests/security.test.cjs
+npm run security-test
 ```
 
 ---

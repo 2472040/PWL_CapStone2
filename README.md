@@ -42,13 +42,13 @@ graph TD
 
 LokaLab membagi tanggung jawab kerja secara ketat menggunakan model RBAC (_Role-Based Access Control_) guna memastikan pemisahan tugas (_Segregation of Duties_) terlaksana dengan baik:
 
-| Peran (Role)                | Tanggung Jawab Utama                              | Akses Fitur Utama                                                                |
-| :-------------------------- | :------------------------------------------------ | :------------------------------------------------------------------------------- |
-| **🛠️ System Administrator** | Pengelolaan pengguna dan audit keamanan global.   | CRUD Pengguna, CRUD Ruangan, Verifikasi Integritas Kriptografis Audit Logs.      |
-| **🧪 Kepala Laboratorium**  | Perencanaan draf pengadaan tahunan.               | Inisiasi Draf Pengadaan (Aset & BHP), Pengajuan Draf ke Program Studi.           |
-| **🎓 Ketua Program Studi**  | Pengendalian anggaran dan persetujuan pengadaan.  | Review Item Draf, Menyetujui/Menolak Pengajuan, Finalisasi Draf (Freeze State).  |
-| **💼 Staf Administrasi**    | Logistik penerimaan barang dan asetisasi.         | Penerimaan Barang Terfinalisasi, Cetak Label QR Aset, Unduh PDF BAST Resmi.      |
-| **🔧 Staf Laboratorium**    | Operasional harian laboratorium dan pemeliharaan. | Pencatatan Pemeliharaan Aset, Pengelolaan & Pencatatan Penggunaan BHP (Restock). |
+| Peran (Role)                | Tanggung Jawab Utama                              | Akses Fitur Utama                                                                                                                                                                                                                              |
+| :-------------------------- | :------------------------------------------------ | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **🛠️ System Administrator** | Pengelolaan pengguna dan audit keamanan global.   | CRUD Pengguna, CRUD Ruangan, Verifikasi Integritas Kriptografis Audit Logs. (Catatan: Dibatasi sepenuhnya dari menu/data Inventaris & BHP).                                                                                                    |
+| **🧪 Kepala Laboratorium**  | Perencanaan draf pengadaan tahunan.               | Inisiasi Draf Pengadaan (Aset & BHP), Pengajuan Draf ke Program Studi.                                                                                                                                                                         |
+| **🎓 Ketua Program Studi**  | Pengendalian anggaran dan persetujuan pengadaan.  | Review Item Draf, Menyetujui/Menolak Pengajuan, Finalisasi Draf (Freeze State).                                                                                                                                                                |
+| **💼 Staf Administrasi**    | Logistik penerimaan barang dan asetisasi.         | Penerimaan Barang Terfinalisasi (opsi kondisi cacad), Cetak Label QR Aset (unggah QR Univ untuk generate QR baru), Unduh PDF BAST Resmi, Lihat Inventaris & BHP, serta Pengajuan Restock BHP (diblokir dari manipulasi database BHP langsung). |
+| **🔧 Staf Laboratorium**    | Operasional harian laboratorium dan pemeliharaan. | Pencatatan Pemeliharaan Aset (multi-aset), Pengelolaan & Pencatatan Penggunaan BHP (Room Filter), serta Pengajuan Restock BHP.                                                                                                                 |
 
 ---
 

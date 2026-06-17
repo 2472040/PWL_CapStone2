@@ -34,7 +34,7 @@ router.use(authenticate);
  *       401:
  *         description: Tidak terautentikasi
  */
-router.get('/', getInventory);
+router.get('/', authorize('staflab', 'kalab', 'admin', 'kaprodi'), getInventory);
 
 /**
  * @swagger
@@ -73,7 +73,7 @@ router.get('/manage/labels', authorize('admin'), getLabels);
  *       404:
  *         description: Aset tidak ditemukan
  */
-router.get('/:id', getInventoryDetail);
+router.get('/:id', authorize('staflab', 'kalab', 'admin', 'kaprodi'), getInventoryDetail);
 
 /**
  * @swagger
@@ -105,9 +105,9 @@ router.get('/:id', getInventoryDetail);
  *       201:
  *         description: Aset berhasil dibuat
  *       403:
- *         description: Hak akses ditolak (Hanya sysadmin, admin, staflab)
+ *         description: Hak akses ditolak (Hanya admin, staflab)
  */
-router.post('/', authorize('sysadmin', 'admin', 'staflab'), createInventory);
+router.post('/', authorize('admin', 'staflab'), createInventory);
 
 /**
  * @swagger
@@ -135,7 +135,7 @@ router.post('/', authorize('sysadmin', 'admin', 'staflab'), createInventory);
  *       403:
  *         description: Hak akses ditolak
  */
-router.put('/:id', authorize('sysadmin', 'admin', 'staflab'), updateInventory);
+router.put('/:id', authorize('admin', 'staflab'), updateInventory);
 
 /**
  * @swagger

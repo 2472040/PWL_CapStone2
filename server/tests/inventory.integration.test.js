@@ -148,4 +148,16 @@ describe('Inventory CRUD Integration Test', () => {
       .set('x-csrf-token', 'test_csrf');
     expect(resDeleteBad.status).toBe(403);
   });
+
+  it('should block sysadmin from reading inventory list and detail', async () => {
+    const resListBad = await request(app)
+      .get('/api/v1/inventory')
+      .set('Authorization', `Bearer ${sysadminToken}`);
+    expect(resListBad.status).toBe(403);
+
+    const resDetailBad = await request(app)
+      .get('/api/v1/inventory/1')
+      .set('Authorization', `Bearer ${sysadminToken}`);
+    expect(resDetailBad.status).toBe(403);
+  });
 });

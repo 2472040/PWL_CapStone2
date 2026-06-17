@@ -46,6 +46,7 @@ export interface BhpItem {
   min: number;
   lastIn: string;
   cat: string;
+  roomName?: string;
 }
 
 export interface DraftItem {

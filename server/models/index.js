@@ -28,6 +28,10 @@ User.hasMany(Room, { as: 'managedRooms', foreignKey: 'pic_user_id' });
 Inventory.belongsTo(Room, { foreignKey: 'room_id' });
 Room.hasMany(Inventory, { foreignKey: 'room_id' });
 
+// Bhp ↔ Room
+Bhp.belongsTo(Room, { foreignKey: 'room_id' });
+Room.hasMany(Bhp, { foreignKey: 'room_id' });
+
 // Draft ↔ User (creator)
 Draft.belongsTo(User, { as: 'creator', foreignKey: 'created_by' });
 User.hasMany(Draft, { as: 'drafts', foreignKey: 'created_by' });

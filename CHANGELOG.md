@@ -4,6 +4,28 @@ Semua pembaruan penting pada proyek LokaLab Suite akan dicatat di dokumen ini. F
 
 ---
 
+## [3.2.0] - 2026-06-17
+
+Rilis versi ini mengimplementasikan 12 persyaratan operasional baru untuk tata kelola laboratorium kelas enterprise, meningkatkan pengujian integrasi menjadi 41 test case, serta memperbarui validasi dual QR dan pembatasan peran akses.
+
+### Added
+
+- **Penyaringan BHP Berbasis Ruangan**: Menambahkan kolom `room_id` pada tabel `bhp` beserta relasi model Sequelize dan filter dropdown ruangan di antarmuka pengguna BHP.
+- **Skenario Dual QR**: Integrasi pustaka `jsQR` di frontend untuk mendekode barcode QR Universitas yang diunggah dan menghasilkan label QR sistem yang sesuai secara dinamis.
+- **Pencatatan Kondisi Barang Saat Diterima**: Formulir penerimaan barang oleh Staff Admin mendukung opsi penetapan kondisi fisik unit (Baik, Perlu cek, Rusak).
+- **Penguncian Draf Pengadaan**: Mengunci draf pengadaan (`submitted`) setelah diajukan oleh Kalab agar tidak dapat diedit secara sepihak sebelum ditinjau oleh Kaprodi.
+- **Dukungan Multi-Aset Pemeliharaan**: Formulir pencatatan pemeliharaan aset fisik kini mendukung pemilihan beberapa unit sekaligus melalui checkbox.
+- **Rangkaian Uji Integrasi Vitest Lengkap**: Mengembangkan suite pengujian hingga mencapai total 41 test case untuk memastikan stabilitas RBAC dan fungsionalitas operasional.
+
+### Changed
+
+- **Restriksi Ketat Peran RBAC**:
+  - System Administrator (Sysadmin / Administrasi) diblokir sepenuhnya dari akses membaca menu Inventaris & BHP.
+  - Staf Admin (Admin) diblokir dari melakukan modifikasi stok BHP secara langsung, tetapi diberikan hak akses untuk mengajukan draf restock BHP.
+  - Staf Lab & Staf Admin kini dapat mengajukan restock BHP melalui tombol "Ajukan Restock".
+
+---
+
 ## [3.1.0] - 2026-06-15
 
 Versi rilis ini berfokus pada refactoring arsitektur frontend (routing dinamis berbasis URL dan state management tersentralisasi dengan Zustand), pemisahan logika bisnis backend ke Service Layer, migrasi database formal dengan Sequelize CLI, dan penambahan sistem pembatasan laju (sliding-window rate limiter) berbasis Redis.

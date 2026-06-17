@@ -65,11 +65,13 @@ sequenceDiagram
    - Setelah selesai, klik **Finalisasi Draf** untuk membekukan data pengadaan (_freeze_).
 4. **Fase 4: Penerimaan Logistik & Asetisasi**
    - Masuk sebagai **Admin** (`faqih@kampus.id`).
-   - Buka menu _Penerimaan Barang_. Terima item-item yang telah disetujui oleh Kaprodi.
-   - Simulasikan pencetakan label QR aset untuk barang yang masuk, kemudian klik **Cetak BAST (PDF)** untuk mengunduh dokumen serah terima resmi berformat PDF.
+   - Buka menu _Penerimaan Barang_. Terima item-item yang telah disetujui oleh Kaprodi. Pada formulir penerimaan, Anda dapat memilih kondisi barang (Baik, Perlu cek, Rusak) sehingga unit cacad dapat ditandai dengan tepat.
+   - Pindai / Unggah foto QR Universitas yang ada pada aset fisik. Sistem akan mendekode QR kampus tersebut secara otomatis menggunakan pustaka `jsQR` dan menghasilkan barcode/label QR sistem yang disesuaikan secara dinamis. Klik **Cetak BAST (PDF)** untuk mengunduh dokumen serah terima resmi.
 5. **Fase 5: Operasional & Pemeliharaan**
-   - Masuk sebagai **Staf Lab** (`maharani@kampus.id`).
-   - Buka menu _Pemeliharaan_, catat pemeliharaan aset menggunakan nomor inventaris yang terdaftar.
-   - Catat penggunaan BHP (misal: kabel RJ45 berkurang 5 unit) dan verifikasi bahwa stok BHP di basis data berkurang secara _real-time_.
+   - Masuk sebagai **Staf Lab** (`maharani@kampus.id`) atau **Admin** (`faqih@kampus.id`).
+   - Buka menu _BHP_. Gunakan filter ruangan (Room Filter) di bagian atas untuk menyaring daftar BHP yang dialokasikan ke ruangan tertentu.
+   - Untuk **Staf Lab** atau **Admin**, jika stok BHP menipis, Anda dapat menekan tombol **Ajukan Restock** untuk mengirim draf pengadaan BHP baru ke Kaprodi.
+   - Catatan: Peran **Admin** (Staff Admin) diblokir dari memodifikasi langsung stok BHP di database (hanya boleh melalui pengajuan restock), sedangkan **Staf Lab** tetap dapat mencatat penggunaan/pengurangan operasional BHP.
+   - Buka menu _Pemeliharaan_ untuk mencatat aktivitas pemeliharaan fisik. Sistem mendukung pemilihan beberapa aset sekaligus (multi-aset) melalui daftar centang (checkbox).
 6. **Fase 6: Evaluasi Dashboard**
    - Buka dasbor utama untuk melihat visualisasi bagan kondisi aset (_Donut Chart_) dan _Audit Trail_ global yang ter-update secara otomatis tanpa perlu memuat ulang halaman.

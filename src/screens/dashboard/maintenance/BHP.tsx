@@ -67,6 +67,7 @@ export function BHP() {
 
   const [monthFilter, setMonthFilter] = useState('all');
   const [yearFilter, setYearFilter] = useState('all');
+  const [roomFilter, setRoomFilter] = useState('all');
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -75,12 +76,12 @@ export function BHP() {
   const [loadingList, setLoadingList] = useState(true);
   const [bhpList, setBhpList] = useState<BhpItem[]>([]);
   const limit = 10;
-  const prevDeps = useRef({ currentPage, monthFilter, yearFilter, query });
+  const prevDeps = useRef({ currentPage, monthFilter, yearFilter, roomFilter, query });
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [monthFilter, yearFilter, query]);
+  }, [monthFilter, yearFilter, roomFilter, query]);
 
   // Fetch unique last_in years once on mount
   useEffect(() => {
@@ -113,9 +114,10 @@ export function BHP() {
       prevDeps.current.currentPage !== currentPage ||
       prevDeps.current.monthFilter !== monthFilter ||
       prevDeps.current.yearFilter !== yearFilter ||
+      prevDeps.current.roomFilter !== roomFilter ||
       prevDeps.current.query !== query;
 
-    prevDeps.current = { currentPage, monthFilter, yearFilter, query };
+    prevDeps.current = { currentPage, monthFilter, yearFilter, roomFilter, query };
 
     async function loadBhpData(silent = false) {
       if (!silent) setLoadingList(true);
@@ -126,6 +128,7 @@ export function BHP() {
         });
         if (monthFilter !== 'all') params.append('month', monthFilter);
         if (yearFilter !== 'all') params.append('year', yearFilter);
+        if (roomFilter !== 'all') params.append('room_id', roomFilter);
         if (query) params.append('search', query);
 
         const res = await apiFetch(`/bhp?${params.toString()}`);
@@ -140,6 +143,7 @@ export function BHP() {
             min: parseFloat(b.min_stock) || 0,
             lastIn: b.last_in || '-',
             cat: b.category || 'General',
+            roomName: b.Room?.name || 'Gudang',
           }));
           setBhpList(formatted);
           if (res.pagination) {
@@ -162,7 +166,7 @@ export function BHP() {
     return () => {
       active = false;
     };
-  }, [state.bhp, currentPage, monthFilter, yearFilter, query]);
+  }, [state.bhp, currentPage, monthFilter, yearFilter, roomFilter, query]);
 
   async function submitRestock() {
     if (!restockItem) return;
@@ -260,7 +264,7 @@ export function BHP() {
             historis dan riwayat maintenance aset di lab.
           </p>
         </div>
-        {state.role === 'staflab' && (
+        {(state.role === 'staflab' || state.role === 'admin') && (
           <button
             className="btn primary"
             onClick={() => {
@@ -301,6 +305,19 @@ export function BHP() {
           ]}
           style={{ width: '130px' }}
           placeholder="Semua Tahun"
+        />
+        <CustomSelect
+          value={roomFilter}
+          onChange={setRoomFilter}
+          options={[
+            { value: 'all', label: 'Semua Ruangan' },
+            ...state.rooms.map((r: any) => ({
+              value: r.id.toString(),
+              label: `${r.code} - ${r.name}`,
+            })),
+          ]}
+          style={{ width: '180px' }}
+          placeholder="Semua Ruangan"
         />
       </div>
 
@@ -444,7 +461,9 @@ export function BHP() {
                 <div className="bhp-id">{b.id}</div>
                 <div>
                   <div className="bhp-name">{b.name}</div>
-                  <div className="bhp-cat">{b.cat}</div>
+                  <div className="bhp-cat">
+                    {b.cat} · {b.roomName || 'Gudang'}
+                  </div>
                 </div>
                 <div className="bhp-stock-v">
                   {b.stock}

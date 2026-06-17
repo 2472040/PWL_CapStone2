@@ -212,6 +212,8 @@ export function DraftDetail({ draft, onBack, mode }: DraftDetailProps) {
           received_date: formData.received_date,
           code: formData.code,
           qr_photo: formData.qr_photo,
+          condition: formData.condition,
+          qr_data: formData.decoded_qr || formData.code,
         }),
       });
       dispatch({ type: 'MARK_RECEIVED', code: d.code, itemId, date: formData.received_date });

@@ -1,4 +1,4 @@
-const { MaintenanceLog, MaintenanceBhp, Bhp, Inventory, User } = require('../models');
+const { MaintenanceLog, MaintenanceBhp, Bhp, Inventory, User, Room } = require('../models');
 const { logAudit } = require('../middleware/audit');
 const sequelize = require('../config/database');
 const { Op } = require('sequelize');
@@ -92,7 +92,7 @@ const createMaintenance = asyncHandler(async (req, res) => {
 // =============================================
 
 const getBhp = asyncHandler(async (req, res) => {
-  const { page, limit, search, year, month } = req.query;
+  const { page, limit, search, year, month, room_id } = req.query;
   const parsedLimit = Math.min(parseInt(limit) || 200, 1000);
   const parsedPage = Math.max(parseInt(page) || 1, 1);
   const offset = (parsedPage - 1) * parsedLimit;
@@ -110,9 +110,13 @@ const getBhp = asyncHandler(async (req, res) => {
     where[Op.and] = where[Op.and] || [];
     where[Op.and].push(sequelize.where(sequelize.fn('MONTH', sequelize.col('last_in')), month));
   }
+  if (room_id && room_id !== 'all') {
+    where.room_id = room_id;
+  }
 
   const { count, rows } = await Bhp.findAndCountAll({
     where,
+    include: [{ model: Room, attributes: ['id', 'code', 'name'] }],
     order: [['code', 'ASC']],
     limit: parsedLimit,
     offset,

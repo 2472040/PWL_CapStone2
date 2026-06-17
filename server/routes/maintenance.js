@@ -97,7 +97,7 @@ router.post('/maintenance', authorize('staflab'), createMaintenance);
  */
 router.put('/maintenance/:id', authorize('staflab'), updateMaintenance);
 
-// BHP — staf lab & kalab & admin & sysadmin can view, staflab & admin can modify
+// BHP — staf lab & kalab & admin & kaprodi can view, staflab can modify (sysadmin excluded, admin cannot modify directly)
 /**
  * @swagger
  * /bhp:
@@ -110,7 +110,7 @@ router.put('/maintenance/:id', authorize('staflab'), updateMaintenance);
  *       200:
  *         description: Berhasil mengambil daftar stok BHP
  */
-router.get('/bhp', authorize('staflab', 'kalab', 'admin', 'sysadmin'), getBhp);
+router.get('/bhp', authorize('staflab', 'kalab', 'admin', 'kaprodi'), getBhp);
 
 /**
  * @swagger
@@ -132,7 +132,7 @@ router.get('/bhp', authorize('staflab', 'kalab', 'admin', 'sysadmin'), getBhp);
  */
 router.get(
   '/bhp/:id/predictive',
-  authorize('staflab', 'kalab', 'admin', 'sysadmin'),
+  authorize('staflab', 'kalab', 'admin', 'kaprodi'),
   getBhpPrediction
 );
 
@@ -165,7 +165,7 @@ router.get(
  *       201:
  *         description: Stok BHP berhasil ditambahkan
  */
-router.post('/bhp', authorize('staflab', 'admin'), createBhp);
+router.post('/bhp', authorize('staflab'), createBhp);
 
 /**
  * @swagger
@@ -191,6 +191,6 @@ router.post('/bhp', authorize('staflab', 'admin'), createBhp);
  *       200:
  *         description: Data BHP berhasil diperbarui
  */
-router.put('/bhp/:id', authorize('staflab', 'admin'), updateBhp);
+router.put('/bhp/:id', authorize('staflab'), updateBhp);
 
 module.exports = router;

@@ -464,7 +464,7 @@ const receiveItem = asyncHandler(async (req, res) => {
         received_by: req.user.id,
         received_date,
         qty_received: qty_received || draftItem.qty,
-        notes,
+        notes: req.body.notes,
       },
       { transaction: t }
     );
@@ -480,7 +480,7 @@ const receiveItem = asyncHandler(async (req, res) => {
           code,
           name: draftItem.name,
           category: 'Umum',
-          condition: 'Baik',
+          condition: req.body.condition || 'Baik',
           acquired_date: received_date,
           value: draftItem.price,
           specs: draftItem.qty + ' ' + draftItem.unit,

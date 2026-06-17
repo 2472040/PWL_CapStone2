@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore, D, Icon, useSearch, useToast } from '../../../components/app-shell';
 import { apiFetch } from '../../../services/api';
+import jsQR from 'jsqr';
 import { DraftDetail } from './DraftDetail';
 import { DraftCard } from './PengadaanKalab';
 
@@ -184,6 +185,8 @@ export function AdminReceiveGrid({ draft, totals: _totals, onToggle }: AdminRece
         code: '',
         qr_photo: null,
         qty_received: maxQty,
+        condition: 'Baik',
+        decoded_qr: '',
       },
     }));
   };
@@ -201,7 +204,38 @@ export function AdminReceiveGrid({ draft, totals: _totals, onToggle }: AdminRece
     const reader = new FileReader();
     reader.onload = (e) => {
       if (e?.target) {
-        handleChange(cardId, 'qr_photo', e.target.result);
+        const base64 = e.target.result as string;
+        handleChange(cardId, 'qr_photo', base64);
+
+        // Decode QR from the uploaded image
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0);
+            try {
+              const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+              const decoded = jsQR(imgData.data, imgData.width, imgData.height);
+              if (decoded && decoded.data) {
+                const val = decoded.data.trim();
+                handleChange(cardId, 'decoded_qr', val);
+                toast(
+                  `QR Universitas terdeteksi: "${val}". QR Baru akan dibuat berdasarkan data ini.`,
+                  'ok'
+                );
+              } else {
+                handleChange(cardId, 'decoded_qr', '');
+              }
+            } catch (err) {
+              console.error('QR decode error:', err);
+              handleChange(cardId, 'decoded_qr', '');
+            }
+          }
+        };
+        img.src = base64;
       }
     };
     reader.readAsDataURL(file);
@@ -571,6 +605,20 @@ export function AdminReceiveGrid({ draft, totals: _totals, onToggle }: AdminRece
                             handleFileChange(card.cardId, file || null);
                           }}
                         />
+                      </div>
+                      <div className="field mb-0">
+                        <div className="field-lbl">
+                          Kondisi Barang saat Diterima <span className="req">*</span>
+                        </div>
+                        <select
+                          className="select text-xs w-full"
+                          value={data.condition || 'Baik'}
+                          onChange={(e) => handleChange(card.cardId, 'condition', e.target.value)}
+                        >
+                          <option value="Baik">Baik</option>
+                          <option value="Perlu cek">Perlu cek</option>
+                          <option value="Rusak">Rusak (Cacad)</option>
+                        </select>
                       </div>
                     </>
                   )}
