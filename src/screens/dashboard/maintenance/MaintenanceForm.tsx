@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useStore, useToast, Icon, QR } from '../../../components/app-shell';
+import { useStore, useToast, Icon, QR, CustomSelect } from '../../../components/app-shell';
 import { apiFetch } from '../../../services/api';
 
 interface BhpRow {
@@ -190,22 +190,23 @@ export function MaintenanceForm({ payload, close }: { payload?: any; close: () =
           <div className="field-lbl">
             Ruangan <span className="req">*</span>
           </div>
-          <select
-            className="select"
+          <CustomSelect
             value={selectedRoomId}
-            onChange={(e) => {
-              setSelectedRoomId(e.target.value);
+            onChange={(val) => {
+              setSelectedRoomId(val);
               setSelectedAssets([]);
             }}
+            options={[
+              { value: '', label: 'Pilih ruangan…' },
+              ...state.rooms.map((r: any) => ({
+                value: r.id.toString(),
+                label: r.name,
+              })),
+            ]}
             disabled={loading || isEdit}
-          >
-            <option value="">Pilih ruangan…</option>
-            {state.rooms.map((r: any) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-              </option>
-            ))}
-          </select>
+            style={{ width: '100%' }}
+            placeholder="Pilih ruangan…"
+          />
         </div>
 
         <div className="field">

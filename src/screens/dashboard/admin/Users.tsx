@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useStore, useToast, D, Icon, StatTile, useSearch } from '../../../components/app-shell';
+import { useStore, useToast, D, Icon, StatTile, useSearch, CustomSelect } from '../../../components/app-shell';
 import { apiFetch } from '../../../services/api';
 import { User, UserRole } from '../../../store/store.types';
 
@@ -400,18 +400,17 @@ export function NewUserForm({ payload, close }: { payload?: User; close: () => v
         </div>
         <div className="field">
           <div className="field-lbl">Role</div>
-          <select
-            className="select"
+          <CustomSelect
             value={role}
-            onChange={(e) => setRole(e.target.value as UserRole)}
+            onChange={(val) => setRole(val as UserRole)}
+            options={D.roles.map((r) => ({
+              value: r.id,
+              label: r.title,
+            }))}
             disabled={loading}
-          >
-            {D.roles.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.title}
-              </option>
-            ))}
-          </select>
+            style={{ width: '100%' }}
+            placeholder="Pilih role…"
+          />
         </div>
         <div className="field">
           <div className="field-lbl">

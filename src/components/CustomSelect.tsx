@@ -12,9 +12,10 @@ interface CustomSelectProps {
   options: CustomSelectOption[];
   style?: React.CSSProperties;
   placeholder?: string;
+  disabled?: boolean;
 }
 
-export function CustomSelect({ value, onChange, options, style, placeholder }: CustomSelectProps) {
+export function CustomSelect({ value, onChange, options, style, placeholder, disabled }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -37,13 +38,14 @@ export function CustomSelect({ value, onChange, options, style, placeholder }: C
   return (
     <div
       ref={containerRef}
-      className="custom-select-container"
+      className={`custom-select-container ${isOpen ? 'is-open' : ''}`}
       style={{ position: 'relative', display: 'inline-block', ...style }}
     >
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="custom-select-trigger"
+        disabled={disabled}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        className={`custom-select-trigger ${disabled ? 'disabled' : ''}`}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
@@ -52,7 +54,13 @@ export function CustomSelect({ value, onChange, options, style, placeholder }: C
       </button>
 
       {isOpen && (
-        <ul className="custom-select-options" role="listbox" data-lenis-prevent>
+        <ul
+          className="custom-select-options"
+          role="listbox"
+          data-lenis-prevent
+          onWheel={(e) => e.stopPropagation()}
+          onTouchMove={(e) => e.stopPropagation()}
+        >
           {options.map((opt) => (
             <li
               key={opt.value}
