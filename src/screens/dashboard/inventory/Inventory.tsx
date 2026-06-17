@@ -353,7 +353,7 @@ export function Inventory() {
         ))}
       </div>
 
-      <div className="inv-grid">
+      <div className="inv-grid" data-reveal>
         {loading ? (
           Array.from({ length: 6 }).map((_, idx) => (
             <div key={idx} className="skeleton-card shimmer">
@@ -453,7 +453,6 @@ export function Inventory() {
             <div
               key={it.code}
               className="inv-card tilt-card"
-              data-reveal
               onClick={() =>
                 dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'inventory', payload: it } })
               }
