@@ -288,7 +288,11 @@ export function BHP() {
         )}
       </div>
 
-      <div data-reveal className="flex flex-wrap gap-2 mb-[18px]">
+      <div
+        data-reveal
+        className="flex flex-wrap gap-2 mb-[18px]"
+        style={{ position: 'relative', zIndex: 10 }}
+      >
         <CustomSelect
           value={monthFilter}
           onChange={setMonthFilter}

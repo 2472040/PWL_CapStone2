@@ -15,7 +15,14 @@ interface CustomSelectProps {
   disabled?: boolean;
 }
 
-export function CustomSelect({ value, onChange, options, style, placeholder, disabled }: CustomSelectProps) {
+export function CustomSelect({
+  value,
+  onChange,
+  options,
+  style,
+  placeholder,
+  disabled,
+}: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 

@@ -315,7 +315,11 @@ export function Inventory() {
         </div>
       </div>
 
-      <div data-reveal className="flex flex-wrap gap-2 mb-[18px]">
+      <div
+        data-reveal
+        className="flex flex-wrap gap-2 mb-[18px]"
+        style={{ position: 'relative', zIndex: 10 }}
+      >
         <div className="searchbox min-w-[260px]">
           <Icon name="search" size={13} strokeWidth={2} className="text-ink-3" />
           <input
