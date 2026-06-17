@@ -7,6 +7,10 @@ services:
     # Override ports — don't expose MySQL in production
     ports: []
 
+  redis:
+    # Don't expose Redis port externally in production
+    ports: []
+
   app:
     build:
       context: .
@@ -25,7 +29,7 @@ services:
       - DB_PORT=3306
       - DB_NAME=lokalab_db
       - DB_USER=lokalab_user
-      - DB_PASS=${DB_PASS:-lokalab_password}
+      - DB_PASS=${DB_PASS}
     # No bind mount in production — everything is baked into the image
     volumes: []
     deploy:
