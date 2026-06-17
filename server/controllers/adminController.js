@@ -93,10 +93,16 @@ const updateUser = asyncHandler(async (req, res) => {
   const diffs = [];
 
   if (role && role !== user.role) {
+    if (user.id === req.user.id) {
+      throw new BadRequestError('Anda tidak diperbolehkan mengubah peran (role) akun sendiri.');
+    }
     diffs.push(`Role: ${user.role} ➔ ${role}`);
     credentialsChanged = true;
   }
   if (status && status !== user.status) {
+    if (user.id === req.user.id && status !== 'active') {
+      throw new BadRequestError('Anda tidak diperbolehkan menonaktifkan akun sendiri.');
+    }
     diffs.push(`Status: ${user.status} ➔ ${status}`);
     credentialsChanged = true;
   }

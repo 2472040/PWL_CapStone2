@@ -42,6 +42,10 @@ export function Users() {
   });
 
   async function toggleStatus(user: User) {
+    if (user.id === state.user?.id) {
+      toast('Anda tidak diperbolehkan menonaktifkan akun sendiri.', 'warn');
+      return;
+    }
     const newStatus = user.status === 'active' ? 'paused' : 'active';
     try {
       const res = await apiFetch(`/users/${user.id}`, {
@@ -58,6 +62,10 @@ export function Users() {
   }
 
   function handleDeleteUser(user: User) {
+    if (user.id === state.user?.id) {
+      toast('Anda tidak diperbolehkan menghapus atau menonaktifkan akun sendiri.', 'warn');
+      return;
+    }
     const neverLoggedIn = !user.last_login && !user.lastLogin;
     const msg = neverLoggedIn
       ? `Apakah Anda yakin ingin menghapus permanen pengguna "${user.name}" yang belum pernah login ini?`
@@ -278,7 +286,17 @@ export function Users() {
                       <button
                         className="act-btn"
                         onClick={() => toggleStatus(u)}
-                        title="Aktif/Pause Pengguna"
+                        disabled={u.id === state.user?.id}
+                        style={
+                          u.id === state.user?.id
+                            ? { opacity: 0.5, cursor: 'not-allowed' }
+                            : undefined
+                        }
+                        title={
+                          u.id === state.user?.id
+                            ? 'Tidak dapat menonaktifkan akun sendiri'
+                            : 'Aktif/Pause Pengguna'
+                        }
                         aria-label={`Toggle status ${u.name}`}
                       >
                         <Icon name="swap" size={12} />
@@ -296,7 +314,17 @@ export function Users() {
                       <button
                         className="act-btn danger"
                         onClick={() => handleDeleteUser(u)}
-                        title="Hapus (Nonaktifkan)"
+                        disabled={u.id === state.user?.id}
+                        style={
+                          u.id === state.user?.id
+                            ? { opacity: 0.5, cursor: 'not-allowed' }
+                            : undefined
+                        }
+                        title={
+                          u.id === state.user?.id
+                            ? 'Tidak dapat menghapus akun sendiri'
+                            : 'Hapus (Nonaktifkan)'
+                        }
                         aria-label={`Hapus ${u.name}`}
                       >
                         <Icon name="trash" size={12} />
@@ -314,7 +342,7 @@ export function Users() {
 }
 
 export function NewUserForm({ payload, close }: { payload?: User; close: () => void }) {
-  const { dispatch } = useStore();
+  const { state, dispatch } = useStore();
   const toast = useToast();
   const isEdit = !!payload;
 
@@ -415,7 +443,7 @@ export function NewUserForm({ payload, close }: { payload?: User; close: () => v
               value: r.id,
               label: r.title,
             }))}
-            disabled={loading}
+            disabled={loading || (isEdit && payload?.id === state.user?.id)}
             style={{ width: '100%' }}
             placeholder="Pilih role…"
           />
