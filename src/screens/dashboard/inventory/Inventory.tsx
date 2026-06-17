@@ -215,10 +215,19 @@ export function Inventory() {
         {
           table: {
             headerRows: 1,
-            widths: [20, 70, 130, 70, 70, 50, 80],
+            widths: [15, 55, '*', 55, 60, 50, 75],
             body: tableBody,
           },
-          layout: 'lightHorizontalLines',
+          layout: {
+            hLineWidth: (i: number, node: any) =>
+              i === 0 || i === node.table.body.length ? 0 : 0.5,
+            vLineWidth: () => 0,
+            hLineColor: () => '#e2e8f0',
+            paddingLeft: () => 4,
+            paddingRight: () => 4,
+            paddingTop: () => 5,
+            paddingBottom: () => 5,
+          },
         },
         { text: '\n' },
 

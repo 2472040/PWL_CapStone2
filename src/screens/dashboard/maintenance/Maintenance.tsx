@@ -243,10 +243,19 @@ export function Maintenance() {
         {
           table: {
             headerRows: 1,
-            widths: [20, 65, 60, 110, 140, 60, 60],
+            widths: [15, 45, 55, 100, '*', 55, 55],
             body: tableBody,
           },
-          layout: 'lightHorizontalLines',
+          layout: {
+            hLineWidth: (i: number, node: any) =>
+              i === 0 || i === node.table.body.length ? 0 : 0.5,
+            vLineWidth: () => 0,
+            hLineColor: () => '#e2e8f0',
+            paddingLeft: () => 4,
+            paddingRight: () => 4,
+            paddingTop: () => 5,
+            paddingBottom: () => 5,
+          },
         },
         { text: '\n' },
 
