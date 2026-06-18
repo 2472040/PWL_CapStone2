@@ -91,12 +91,13 @@ export const loginRateLimiter: RequestHandler = async (
         await new Promise((resolve) => setTimeout(resolve, delayMs));
       }
 
-      // Track attempt
+      // Track attempt with unique member to support multiple requests within the same millisecond (e.g. in tests/concurrency)
+      const member = `${now}:${Math.random()}`;
       const multi = redisClient.multi();
-      multi.zadd(ipKey, now, now);
+      multi.zadd(ipKey, now, member);
       multi.expire(ipKey, 900); // 15 mins
       if (userKey) {
-        multi.zadd(userKey, now, now);
+        multi.zadd(userKey, now, member);
         multi.expire(userKey, 900);
       }
       await multi.exec();
@@ -209,7 +210,8 @@ export const publicVerifyRateLimiter: RequestHandler = async (
         });
       }
 
-      await redisClient.multi().zadd(ipKey, now, now).expire(ipKey, 60).exec();
+      const member = `${now}:${Math.random()}`;
+      await redisClient.multi().zadd(ipKey, now, member).expire(ipKey, 60).exec();
     } catch (err: any) {
       console.warn(
         '[Rate Limiter] Redis error in publicVerifyRateLimiter, using in-memory fallback:',
