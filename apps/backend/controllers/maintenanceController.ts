@@ -1,4 +1,12 @@
-import { MaintenanceLog, MaintenanceBhp, Bhp, Inventory, User, Room, MaintenanceSchedule } from '../models';
+import {
+  MaintenanceLog,
+  MaintenanceBhp,
+  Bhp,
+  Inventory,
+  User,
+  Room,
+  MaintenanceSchedule,
+} from '../models';
 import { logAudit } from '../middleware/audit';
 import sequelize from '../config/database';
 import { Op } from 'sequelize';
@@ -356,7 +364,12 @@ export const getMaintenanceSchedules = asyncHandler(async (req: any, res: any) =
       },
     ],
     order: [
-      [sequelize.literal("CASE WHEN status = 'overdue' THEN 1 WHEN status = 'scheduled' THEN 2 ELSE 3 END"), 'ASC'],
+      [
+        sequelize.literal(
+          "CASE WHEN status = 'overdue' THEN 1 WHEN status = 'scheduled' THEN 2 ELSE 3 END"
+        ),
+        'ASC',
+      ],
       ['next_maintenance_date', 'ASC'],
     ],
   });
@@ -366,7 +379,7 @@ export const getMaintenanceSchedules = asyncHandler(async (req: any, res: any) =
 
 export const createMaintenanceSchedule = asyncHandler(async (req: any, res: any) => {
   const { inventory_id, title, frequency_days, next_maintenance_date, notes } = req.body;
-  
+
   // Verify inventory exists
   const inventory = await Inventory.findByPk(inventory_id);
   if (!inventory) {
@@ -423,7 +436,10 @@ export const updateMaintenanceSchedule = asyncHandler(async (req: any, res: any)
     diffs.push(`Judul: ${schedule.title} ➔ ${title}`);
     schedule.title = title;
   }
-  if (frequency_days !== undefined && parseInt(String(frequency_days)) !== schedule.frequency_days) {
+  if (
+    frequency_days !== undefined &&
+    parseInt(String(frequency_days)) !== schedule.frequency_days
+  ) {
     diffs.push(`Frekuensi: ${schedule.frequency_days} hari ➔ ${frequency_days} hari`);
     schedule.frequency_days = parseInt(String(frequency_days));
   }
@@ -442,7 +458,7 @@ export const updateMaintenanceSchedule = asyncHandler(async (req: any, res: any)
 
   if (diffs.length > 0) {
     await schedule.save();
-    
+
     await logAudit(
       req.user.id,
       'maintenance_schedule.update',

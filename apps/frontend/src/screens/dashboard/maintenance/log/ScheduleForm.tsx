@@ -7,11 +7,17 @@ export function ScheduleForm({ payload, close }: { payload?: any; close: () => v
   const toast = useToast();
 
   const isEdit = !!payload?.id;
-  const [inventoryId, setInventoryId] = useState(payload?.inventory_id ? String(payload.inventory_id) : '');
+  const [inventoryId, setInventoryId] = useState(
+    payload?.inventory_id ? String(payload.inventory_id) : ''
+  );
   const [title, setTitle] = useState(payload?.title || '');
-  const [frequencyDays, setFrequencyDays] = useState(payload?.frequency_days ? String(payload.frequency_days) : '30');
+  const [frequencyDays, setFrequencyDays] = useState(
+    payload?.frequency_days ? String(payload.frequency_days) : '30'
+  );
   const [nextMaintenanceDate, setNextMaintenanceDate] = useState(
-    payload?.next_maintenance_date ? payload.next_maintenance_date.substring(0, 10) : new Date().toISOString().substring(0, 10)
+    payload?.next_maintenance_date
+      ? payload.next_maintenance_date.substring(0, 10)
+      : new Date().toISOString().substring(0, 10)
   );
   const [notes, setNotes] = useState(payload?.notes || '');
   const [status, setStatus] = useState(payload?.status || 'scheduled');

@@ -190,10 +190,7 @@ const publicVerifyRateLimiter = async (req, res, next) => {
                     error: 'Terlalu banyak permintaan verifikasi. Silakan coba lagi nanti.',
                 });
             }
-            await redis_1.default.multi()
-                .zadd(ipKey, now, now)
-                .expire(ipKey, 60)
-                .exec();
+            await redis_1.default.multi().zadd(ipKey, now, now).expire(ipKey, 60).exec();
         }
         catch (err) {
             console.warn('[Rate Limiter] Redis error in publicVerifyRateLimiter, using in-memory fallback:', err.message);

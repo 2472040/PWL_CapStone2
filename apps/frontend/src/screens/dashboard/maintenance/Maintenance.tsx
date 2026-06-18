@@ -460,29 +460,30 @@ export function Maintenance() {
             </>
           )}
 
-          {activeTab === 'logs' ? (
-            state.role === 'staflab' && (
-              <button
-                className="btn primary"
-                onClick={() =>
-                  dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'maintenance', payload: {} } })
-                }
-              >
-                <Icon name="plus" size={13} strokeWidth={2.4} /> Log baru
-              </button>
-            )
-          ) : (
-            state.role === 'staflab' && (
-              <button
-                className="btn primary"
-                onClick={() =>
-                  dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'maintSchedule', payload: {} } })
-                }
-              >
-                <Icon name="plus" size={13} strokeWidth={2.4} /> Jadwal baru
-              </button>
-            )
-          )}
+          {activeTab === 'logs'
+            ? state.role === 'staflab' && (
+                <button
+                  className="btn primary"
+                  onClick={() =>
+                    dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'maintenance', payload: {} } })
+                  }
+                >
+                  <Icon name="plus" size={13} strokeWidth={2.4} /> Log baru
+                </button>
+              )
+            : state.role === 'staflab' && (
+                <button
+                  className="btn primary"
+                  onClick={() =>
+                    dispatch({
+                      type: 'OPEN_DRAWER',
+                      drawer: { kind: 'maintSchedule', payload: {} },
+                    })
+                  }
+                >
+                  <Icon name="plus" size={13} strokeWidth={2.4} /> Jadwal baru
+                </button>
+              )}
         </div>
       </div>
 
@@ -540,7 +541,10 @@ export function Maintenance() {
       </div>
 
       {/* Tabs */}
-      <div className="tabs flex gap-6 border-b border-line mb-6" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+      <div
+        className="tabs flex gap-6 border-b border-line mb-6"
+        style={{ borderColor: 'rgba(255,255,255,0.08)' }}
+      >
         <button
           className={`pb-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
             activeTab === 'logs'
@@ -565,15 +569,16 @@ export function Maintenance() {
         </button>
       </div>
 
-      {query && (activeTab === 'logs' ? filteredLogs.length === 0 : filteredSchedules.length === 0) && (
-        <div className="empty" data-reveal>
-          <div className="ico">
-            <Icon name="search" size={20} />
+      {query &&
+        (activeTab === 'logs' ? filteredLogs.length === 0 : filteredSchedules.length === 0) && (
+          <div className="empty" data-reveal>
+            <div className="ico">
+              <Icon name="search" size={20} />
+            </div>
+            <h4>Tidak ada hasil cocok</h4>
+            <div>Coba kata kunci lain.</div>
           </div>
-          <h4>Tidak ada hasil cocok</h4>
-          <div>Coba kata kunci lain.</div>
-        </div>
-      )}
+        )}
 
       {activeTab === 'logs' ? (
         <MaintenanceTable filteredLogs={filteredLogs} dispatch={dispatch} />
@@ -581,7 +586,9 @@ export function Maintenance() {
         <ScheduleTable
           schedules={filteredSchedules}
           role={state.role}
-          onEdit={(s) => dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'maintSchedule', payload: s } })}
+          onEdit={(s) =>
+            dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'maintSchedule', payload: s } })
+          }
           onDelete={handleDeleteSchedule}
         />
       )}

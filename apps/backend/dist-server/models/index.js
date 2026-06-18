@@ -71,7 +71,11 @@ MaintenanceLog_1.default.belongsTo(Inventory_1.default, { foreignKey: 'inventory
 Inventory_1.default.hasMany(MaintenanceLog_1.default, { as: 'maintenanceLogs', foreignKey: 'inventory_id' });
 // MaintenanceSchedule ↔ Inventory
 MaintenanceSchedule_1.default.belongsTo(Inventory_1.default, { foreignKey: 'inventory_id' });
-Inventory_1.default.hasMany(MaintenanceSchedule_1.default, { as: 'maintenanceSchedules', foreignKey: 'inventory_id', onDelete: 'CASCADE' });
+Inventory_1.default.hasMany(MaintenanceSchedule_1.default, {
+    as: 'maintenanceSchedules',
+    foreignKey: 'inventory_id',
+    onDelete: 'CASCADE',
+});
 // MaintenanceLog ↔ User (technician)
 MaintenanceLog_1.default.belongsTo(User_1.default, { as: 'technician', foreignKey: 'tech_user_id' });
 // MaintenanceLog ↔ MaintenanceBhp

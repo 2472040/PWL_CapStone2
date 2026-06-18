@@ -49,7 +49,10 @@ export function QRScanner({ close }: { close: () => void }) {
       }
     } catch (err: any) {
       console.error('Error accessing camera:', err);
-      toast('Gagal mengakses kamera. Pastikan izin telah diberikan dan koneksi aman (HTTPS).', 'warn');
+      toast(
+        'Gagal mengakses kamera. Pastikan izin telah diberikan dan koneksi aman (HTTPS).',
+        'warn'
+      );
       setIsCameraActive(false);
     }
   };

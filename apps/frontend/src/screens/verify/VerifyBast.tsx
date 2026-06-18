@@ -23,9 +23,11 @@ export function VerifyBast() {
   useEffect(() => {
     async function performVerification() {
       try {
-        const res = await apiFetch<{ verified: boolean; message?: string; data?: VerificationData }>(
-          `/procurement/verify-bast/${id}/${hash}`
-        );
+        const res = await apiFetch<{
+          verified: boolean;
+          message?: string;
+          data?: VerificationData;
+        }>(`/procurement/verify-bast/${id}/${hash}`);
         if (res.verified && res.data) {
           setVerified(true);
           setData(res.data);
@@ -91,7 +93,9 @@ export function VerifyBast() {
               className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet mb-4"
               style={{ borderTopColor: 'transparent', borderLeftColor: 'transparent' }}
             />
-            <span className="text-xs text-ink-3 font-medium">Memverifikasi tanda tangan digital...</span>
+            <span className="text-xs text-ink-3 font-medium">
+              Memverifikasi tanda tangan digital...
+            </span>
           </div>
         ) : verified && data ? (
           <div className="animate-fade-in">
@@ -113,9 +117,12 @@ export function VerifyBast() {
               >
                 <Icon name="check" size={20} strokeWidth={2.4} />
               </div>
-              <h2 className="text-sm fw-6 text-green tracking-wide">DOKUMEN ASLI & TERVERIFIKASI</h2>
+              <h2 className="text-sm fw-6 text-green tracking-wide">
+                DOKUMEN ASLI & TERVERIFIKASI
+              </h2>
               <p className="text-xs text-ink-3 mt-1 max-w-[280px]">
-                Integritas data dokumen ini dijamin 100% valid dan belum pernah dimodifikasi sejak disetujui.
+                Integritas data dokumen ini dijamin 100% valid dan belum pernah dimodifikasi sejak
+                disetujui.
               </p>
             </div>
 
@@ -133,9 +140,7 @@ export function VerifyBast() {
                 </div>
                 <div className="flex between py-1 border-b border-white/[0.03]">
                   <span className="text-ink-3">Total Transaksi:</span>
-                  <span className="fw-6 text-green">
-                    Rp {data.total.toLocaleString('id-ID')}
-                  </span>
+                  <span className="fw-6 text-green">Rp {data.total.toLocaleString('id-ID')}</span>
                 </div>
                 <div className="flex between py-1 border-b border-white/[0.03]">
                   <span className="text-ink-3">Jumlah Item:</span>
@@ -194,7 +199,8 @@ export function VerifyBast() {
               </div>
               <h2 className="text-sm fw-6 text-rose tracking-wide">VERIFIKASI DOKUMEN GAGAL</h2>
               <p className="text-xs text-ink-3 mt-1 max-w-[280px]">
-                Tanda tangan digital tidak valid atau tidak terdaftar di server LokaLab. Dokumen ini kemungkinan besar palsu atau telah dimodifikasi secara ilegal.
+                Tanda tangan digital tidak valid atau tidak terdaftar di server LokaLab. Dokumen ini
+                kemungkinan besar palsu atau telah dimodifikasi secara ilegal.
               </p>
             </div>
 
@@ -202,7 +208,9 @@ export function VerifyBast() {
               <span className="text-ink fw-5 block mb-1">Rincian Error:</span>
               {errorMsg}
               <div className="mt-4 text-[10px] text-ink-3 bg-black/20 p-2.5 rounded border border-white/[0.02]">
-                <b>Keamanan BAST LokaLab Suite:</b> Setiap BAST memiliki tanda tangan digital unik yang dihasilkan dari data riil pengadaan barang di basis data kami. Jika isi dokumen diubah sekalipun hanya satu huruf, validasi akan langsung ditolak.
+                <b>Keamanan BAST LokaLab Suite:</b> Setiap BAST memiliki tanda tangan digital unik
+                yang dihasilkan dari data riil pengadaan barang di basis data kami. Jika isi dokumen
+                diubah sekalipun hanya satu huruf, validasi akan langsung ditolak.
               </div>
             </div>
           </div>

@@ -20,13 +20,17 @@ const fonts = {
 };
 const printer = new PdfPrinter(fonts);
 const calculateDraftHash = (draft, items) => {
-    const secret = process.env.DOCUMENT_SIGNING_SECRET || process.env.JWT_SECRET || 'lokalab-secure-document-salt-2026';
+    const secret = process.env.DOCUMENT_SIGNING_SECRET ||
+        process.env.JWT_SECRET ||
+        'lokalab-secure-document-salt-2026';
     const serialized = JSON.stringify({
         code: draft.code,
         finalized_at: draft.finalized_at,
         creator_id: draft.created_by,
         total: items.reduce((sum, it) => sum + it.qty * Number(it.price), 0),
-        items: items.map((it) => ({ id: it.id, qty: it.qty, price: it.price })).sort((a, b) => a.id - b.id),
+        items: items
+            .map((it) => ({ id: it.id, qty: it.qty, price: it.price }))
+            .sort((a, b) => a.id - b.id),
     });
     return crypto_1.default.createHmac('sha256', secret).update(serialized).digest('hex');
 };
@@ -230,20 +234,29 @@ exports.verifyBastDocument = (0, asyncHandler_1.default)(async (req, res) => {
     });
     if (!draft) {
         console.warn(`[Security Alert] Verification attempted for non-existent draft ID ${draftId} from IP ${ip}`);
-        return res.status(200).json({ verified: false, message: 'Dokumen BAST tidak terdaftar di database.' });
+        return res
+            .status(200)
+            .json({ verified: false, message: 'Dokumen BAST tidak terdaftar di database.' });
     }
     if (draft.status !== 'finalized' && draft.status !== 'completed') {
         console.warn(`[Security Alert] Verification attempted for unfinalized draft ID ${draftId} (status: ${draft.status}) from IP ${ip}`);
-        return res.status(200).json({ verified: false, message: 'Dokumen BAST belum difinalisasi oleh Ketua Program Studi.' });
+        return res.status(200).json({
+            verified: false,
+            message: 'Dokumen BAST belum difinalisasi oleh Ketua Program Studi.',
+        });
     }
     const items = draft.items.filter((it) => !it.approval || it.approval.status === 'approved');
     const computedHash = (0, exports.calculateDraftHash)(draft, items);
     // Use timingSafeEqual to protect against timing attacks
     const computedBuffer = Buffer.from(computedHash, 'hex');
     const inputBuffer = Buffer.from(hash, 'hex');
-    if (computedBuffer.length !== inputBuffer.length || !crypto_1.default.timingSafeEqual(computedBuffer, inputBuffer)) {
+    if (computedBuffer.length !== inputBuffer.length ||
+        !crypto_1.default.timingSafeEqual(computedBuffer, inputBuffer)) {
         console.warn(`[Security Alert] Failed BAST verification attempt: Hash mismatch for draft ID ${draftId} from IP ${ip}`);
-        return res.status(200).json({ verified: false, message: 'Verifikasi gagal. Tanda tangan dokumen tidak cocok (telah dimanipulasi).' });
+        return res.status(200).json({
+            verified: false,
+            message: 'Verifikasi gagal. Tanda tangan dokumen tidak cocok (telah dimanipulasi).',
+        });
     }
     const totalValuation = items.reduce((sum, it) => sum + it.qty * Number(it.price), 0);
     res.status(200).json({
@@ -256,6 +269,6 @@ exports.verifyBastDocument = (0, asyncHandler_1.default)(async (req, res) => {
             finalizer: draft.finalizer?.name || 'Ketua Prodi',
             total: totalValuation,
             itemCount: items.length,
-        }
+        },
     });
 });

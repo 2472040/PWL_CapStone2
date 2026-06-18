@@ -1,7 +1,7 @@
 # 🔒 Dokumentasi Keamanan Sistem LokaLab
 
-> **Versi**: 2.0  
-> **Terakhir Diperbarui**: 27 Mei 2026  
+> **Versi**: 3.0  
+> **Terakhir Diperbarui**: 17 Juni 2026  
 > **Standar Acuan**: OWASP Top 10:2025 · NIST SP 800-63B · CWE/SANS Top 25
 
 ---

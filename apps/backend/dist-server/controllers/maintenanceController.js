@@ -324,7 +324,10 @@ exports.getMaintenanceSchedules = (0, asyncHandler_1.default)(async (req, res) =
             },
         ],
         order: [
-            [database_1.default.literal("CASE WHEN status = 'overdue' THEN 1 WHEN status = 'scheduled' THEN 2 ELSE 3 END"), 'ASC'],
+            [
+                database_1.default.literal("CASE WHEN status = 'overdue' THEN 1 WHEN status = 'scheduled' THEN 2 ELSE 3 END"),
+                'ASC',
+            ],
             ['next_maintenance_date', 'ASC'],
         ],
     });
@@ -373,7 +376,8 @@ exports.updateMaintenanceSchedule = (0, asyncHandler_1.default)(async (req, res)
         diffs.push(`Judul: ${schedule.title} ➔ ${title}`);
         schedule.title = title;
     }
-    if (frequency_days !== undefined && parseInt(String(frequency_days)) !== schedule.frequency_days) {
+    if (frequency_days !== undefined &&
+        parseInt(String(frequency_days)) !== schedule.frequency_days) {
         diffs.push(`Frekuensi: ${schedule.frequency_days} hari ➔ ${frequency_days} hari`);
         schedule.frequency_days = parseInt(String(frequency_days));
     }

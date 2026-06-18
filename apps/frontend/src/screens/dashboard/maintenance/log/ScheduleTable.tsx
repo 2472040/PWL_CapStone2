@@ -28,7 +28,7 @@ export function ScheduleTable({ schedules, role, onEdit, onDelete }: ScheduleTab
           {schedules.map((s: any) => {
             const assetCode = s.Inventory?.code || '—';
             const assetName = s.Inventory?.name || 'Aset Terhapus';
-            
+
             // Format dates
             const lastMaint = s.last_maintenance_date
               ? new Date(s.last_maintenance_date).toLocaleDateString('id-ID', {

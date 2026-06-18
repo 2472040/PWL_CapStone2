@@ -1,4 +1,10 @@
-import { InventoryItem, MaintenanceLog, MaintenanceSchedule, AppStoreState, AppAction } from './store.types';
+import {
+  InventoryItem,
+  MaintenanceLog,
+  MaintenanceSchedule,
+  AppStoreState,
+  AppAction,
+} from './store.types';
 
 export interface InventoryState {
   inventory: InventoryItem[];

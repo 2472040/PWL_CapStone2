@@ -1,5 +1,5 @@
 // app-main.jsx — wires up landing page + shell + screens + drawer registry
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
 import { removeToken, getToken } from './services/api';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
@@ -63,7 +63,9 @@ const NewBhpForm = React.lazy(() =>
 );
 
 const ScheduleForm = React.lazy(() =>
-  import('./screens/dashboard/maintenance/log/ScheduleForm').then((m) => ({ default: m.ScheduleForm }))
+  import('./screens/dashboard/maintenance/log/ScheduleForm').then((m) => ({
+    default: m.ScheduleForm,
+  }))
 );
 
 const VerifyBast = React.lazy(() =>
@@ -319,11 +321,16 @@ function AppRoutes() {
         <Route
           path="/verify-bast/:id/:hash"
           element={
-            <Suspense fallback={
-              <div className="min-h-screen flex items-center justify-center text-stone-500 font-medium" style={{ background: '#08070d' }}>
-                Memuat halaman verifikasi...
-              </div>
-            }>
+            <Suspense
+              fallback={
+                <div
+                  className="min-h-screen flex items-center justify-center text-stone-500 font-medium"
+                  style={{ background: '#08070d' }}
+                >
+                  Memuat halaman verifikasi...
+                </div>
+              }
+            >
               <VerifyBast />
             </Suspense>
           }

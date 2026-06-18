@@ -147,7 +147,6 @@ describe('Maintenance and BHP Integration Test', () => {
       .set('Authorization', `Bearer ${staffToken}`);
     expect(resPredict.status).toBe(200);
     expect(resPredict.body.data).toBeDefined();
-
   });
 
   it('should restrict unauthorized roles from getting maintenance logs', async () => {

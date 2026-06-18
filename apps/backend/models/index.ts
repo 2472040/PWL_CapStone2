@@ -61,7 +61,11 @@ Inventory.hasMany(MaintenanceLog, { as: 'maintenanceLogs', foreignKey: 'inventor
 
 // MaintenanceSchedule ↔ Inventory
 MaintenanceSchedule.belongsTo(Inventory, { foreignKey: 'inventory_id' });
-Inventory.hasMany(MaintenanceSchedule, { as: 'maintenanceSchedules', foreignKey: 'inventory_id', onDelete: 'CASCADE' });
+Inventory.hasMany(MaintenanceSchedule, {
+  as: 'maintenanceSchedules',
+  foreignKey: 'inventory_id',
+  onDelete: 'CASCADE',
+});
 
 // MaintenanceLog ↔ User (technician)
 MaintenanceLog.belongsTo(User, { as: 'technician', foreignKey: 'tech_user_id' });

@@ -215,12 +215,12 @@ export const publicVerifyRateLimiter: RequestHandler = async (
         });
       }
 
-      await redisClient.multi()
-        .zadd(ipKey, now, now)
-        .expire(ipKey, 60)
-        .exec();
+      await redisClient.multi().zadd(ipKey, now, now).expire(ipKey, 60).exec();
     } catch (err: any) {
-      console.warn('[Rate Limiter] Redis error in publicVerifyRateLimiter, using in-memory fallback:', err.message);
+      console.warn(
+        '[Rate Limiter] Redis error in publicVerifyRateLimiter, using in-memory fallback:',
+        err.message
+      );
       return handleInMemoryVerifyLimit(ip, now, timeframe, maxAttempts, res, next);
     }
   } else {

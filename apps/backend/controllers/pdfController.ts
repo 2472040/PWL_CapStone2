@@ -18,13 +18,18 @@ const fonts = {
 const printer = new PdfPrinter(fonts);
 
 export const calculateDraftHash = (draft: any, items: any[]) => {
-  const secret = process.env.DOCUMENT_SIGNING_SECRET || process.env.JWT_SECRET || 'lokalab-secure-document-salt-2026';
+  const secret =
+    process.env.DOCUMENT_SIGNING_SECRET ||
+    process.env.JWT_SECRET ||
+    'lokalab-secure-document-salt-2026';
   const serialized = JSON.stringify({
     code: draft.code,
     finalized_at: draft.finalized_at,
     creator_id: draft.created_by,
     total: items.reduce((sum: number, it: any) => sum + it.qty * Number(it.price), 0),
-    items: items.map((it: any) => ({ id: it.id, qty: it.qty, price: it.price })).sort((a: any, b: any) => a.id - b.id),
+    items: items
+      .map((it: any) => ({ id: it.id, qty: it.qty, price: it.price }))
+      .sort((a: any, b: any) => a.id - b.id),
   });
   return crypto.createHmac('sha256', secret).update(serialized).digest('hex');
 };
@@ -247,13 +252,22 @@ export const verifyBastDocument = asyncHandler(async (req: any, res: any) => {
   });
 
   if (!draft) {
-    console.warn(`[Security Alert] Verification attempted for non-existent draft ID ${draftId} from IP ${ip}`);
-    return res.status(200).json({ verified: false, message: 'Dokumen BAST tidak terdaftar di database.' });
+    console.warn(
+      `[Security Alert] Verification attempted for non-existent draft ID ${draftId} from IP ${ip}`
+    );
+    return res
+      .status(200)
+      .json({ verified: false, message: 'Dokumen BAST tidak terdaftar di database.' });
   }
 
   if (draft.status !== 'finalized' && draft.status !== 'completed') {
-    console.warn(`[Security Alert] Verification attempted for unfinalized draft ID ${draftId} (status: ${draft.status}) from IP ${ip}`);
-    return res.status(200).json({ verified: false, message: 'Dokumen BAST belum difinalisasi oleh Ketua Program Studi.' });
+    console.warn(
+      `[Security Alert] Verification attempted for unfinalized draft ID ${draftId} (status: ${draft.status}) from IP ${ip}`
+    );
+    return res.status(200).json({
+      verified: false,
+      message: 'Dokumen BAST belum difinalisasi oleh Ketua Program Studi.',
+    });
   }
 
   const items = draft.items.filter((it: any) => !it.approval || it.approval.status === 'approved');
@@ -263,9 +277,17 @@ export const verifyBastDocument = asyncHandler(async (req: any, res: any) => {
   const computedBuffer = Buffer.from(computedHash, 'hex');
   const inputBuffer = Buffer.from(hash, 'hex');
 
-  if (computedBuffer.length !== inputBuffer.length || !crypto.timingSafeEqual(computedBuffer, inputBuffer)) {
-    console.warn(`[Security Alert] Failed BAST verification attempt: Hash mismatch for draft ID ${draftId} from IP ${ip}`);
-    return res.status(200).json({ verified: false, message: 'Verifikasi gagal. Tanda tangan dokumen tidak cocok (telah dimanipulasi).' });
+  if (
+    computedBuffer.length !== inputBuffer.length ||
+    !crypto.timingSafeEqual(computedBuffer, inputBuffer)
+  ) {
+    console.warn(
+      `[Security Alert] Failed BAST verification attempt: Hash mismatch for draft ID ${draftId} from IP ${ip}`
+    );
+    return res.status(200).json({
+      verified: false,
+      message: 'Verifikasi gagal. Tanda tangan dokumen tidak cocok (telah dimanipulasi).',
+    });
   }
 
   const totalValuation = items.reduce((sum: number, it: any) => sum + it.qty * Number(it.price), 0);
@@ -280,6 +302,6 @@ export const verifyBastDocument = asyncHandler(async (req: any, res: any) => {
       finalizer: draft.finalizer?.name || 'Ketua Prodi',
       total: totalValuation,
       itemCount: items.length,
-    }
+    },
   });
 });
