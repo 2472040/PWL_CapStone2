@@ -26,7 +26,7 @@
     "db:migrate:undo": "npm run db:migrate:undo --workspace=@loka/backend",
     "seed": "npm run seed --workspace=@loka/backend",
     "e2e:test": "npx playwright test",
-    "prepare": "node -e \"try { require('husky') } catch (e) { process.exit(0) }\" && husky"
+    "prepare": "node -e \"try { require('child_process').execSync('husky', { stdio: 'inherit' }) } catch (e) {}\""
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
