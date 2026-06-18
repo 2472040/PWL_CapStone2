@@ -4,6 +4,7 @@ import procurementService from '../../services/procurementService';
 import asyncHandler from '../../utils/asyncHandler';
 import { BadRequestError, NotFoundError, ForbiddenError } from '../../utils/errors';
 import sequelize from '../../config/database';
+import { clearDashboardCache } from '../../utils/cache';
 
 export const getDrafts = asyncHandler(async (req: any, res: any) => {
   const where: any = {};
@@ -49,6 +50,9 @@ export const createDraft = asyncHandler(async (req: any, res: any) => {
   await logAudit(req.user.id, 'draft.create', code, req.ip);
   const io = req.app.get('io');
   if (io) io.emit('data_changed', { type: 'draft' });
+  clearDashboardCache().catch((err) =>
+    console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+  );
   const result = await Draft.findByPk(draft.id, { include: [{ model: DraftItem, as: 'items' }] });
   res.status(201).json({ data: result });
 });
@@ -67,6 +71,9 @@ export const updateDraft = asyncHandler(async (req: any, res: any) => {
   await logAudit(req.user.id, 'draft.update', draft.code, req.ip);
   const io = req.app.get('io');
   if (io) io.emit('data_changed', { type: 'draft' });
+  clearDashboardCache().catch((err) =>
+    console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+  );
   res.json({ data: draft });
 });
 
@@ -111,6 +118,9 @@ export const submitDraft = asyncHandler(async (req: any, res: any) => {
         kind: 'info',
       });
     }
+    clearDashboardCache().catch((err) =>
+      console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+    );
     res.json({ data: draft });
   } catch (err) {
     if (t && !(t as any).finished) {
@@ -148,6 +158,9 @@ export const addDraftItem = asyncHandler(async (req: any, res: any) => {
   await logAudit(req.user.id, 'draft.addItem', `${draft.code} · ${name}`, req.ip);
   const io = req.app.get('io');
   if (io) io.emit('data_changed', { type: 'draft' });
+  clearDashboardCache().catch((err) =>
+    console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+  );
   res.status(201).json({ data: item });
 });
 
@@ -171,6 +184,9 @@ export const deleteDraftItem = asyncHandler(async (req: any, res: any) => {
   await logAudit(req.user.id, 'procurement.remove_item', `${itemName} dari ${draftCode}`, req.ip);
   const io = req.app.get('io');
   if (io) io.emit('data_changed', { type: 'draft' });
+  clearDashboardCache().catch((err) =>
+    console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+  );
   res.json({ message: 'Item draf berhasil dihapus.' });
 });
 
@@ -204,6 +220,9 @@ export const updateDraftItem = asyncHandler(async (req: any, res: any) => {
   await logAudit(req.user.id, 'draft.updateItem', `${item.draft.code} · ${name}`, req.ip);
   const io = req.app.get('io');
   if (io) io.emit('data_changed', { type: 'draft' });
+  clearDashboardCache().catch((err) =>
+    console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+  );
 
   res.json({ data: item });
 });

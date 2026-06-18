@@ -2,9 +2,23 @@ import { User, Room, Inventory, Bhp, Draft, MaintenanceLog, AuditLog } from '../
 import { Op } from 'sequelize';
 import sequelize from '../config/database';
 import asyncHandler from '../utils/asyncHandler';
+import redisClient from '../utils/redis';
 
 export const getDashboardStats = asyncHandler(async (req: any, res: any) => {
   const role = req.user.role;
+  const cacheKey = `dashboard:stats:${role}`;
+
+  if (redisClient && redisClient.status === 'ready') {
+    try {
+      const cached = await redisClient.get(cacheKey);
+      if (cached) {
+        return res.json({ data: JSON.parse(cached) });
+      }
+    } catch (err: any) {
+      console.warn('[Redis] Cache read error:', err.message);
+    }
+  }
+
   const stats: any = {};
 
   // Common stats
@@ -206,6 +220,14 @@ export const getDashboardStats = asyncHandler(async (req: any, res: any) => {
     });
   } else {
     stats.recentActivity = [];
+  }
+
+  if (redisClient && redisClient.status === 'ready') {
+    try {
+      await redisClient.setex(cacheKey, 300, JSON.stringify(stats));
+    } catch (err: any) {
+      console.warn('[Redis] Cache write error:', err.message);
+    }
   }
 
   res.json({ data: stats });

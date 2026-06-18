@@ -4,6 +4,7 @@ import asyncHandler from '../../utils/asyncHandler';
 import { BadRequestError, NotFoundError } from '../../utils/errors';
 import sequelize from '../../config/database';
 import { Op } from 'sequelize';
+import { clearDashboardCache } from '../../utils/cache';
 
 export const getDraftsForReview = asyncHandler(async (req: any, res: any) => {
   const { page, limit } = req.query;
@@ -99,6 +100,9 @@ export const approveDraftItems = asyncHandler(async (req: any, res: any) => {
         kind: 'info',
       });
     }
+    clearDashboardCache().catch((err) =>
+      console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+    );
     res.json({ message: 'Review berhasil disimpan.' });
   } catch (err) {
     if (t && !(t as any).finished) {
@@ -159,6 +163,9 @@ export const finalizeDraft = asyncHandler(async (req: any, res: any) => {
         kind: 'ok',
       });
     }
+    clearDashboardCache().catch((err) =>
+      console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+    );
     res.json({ data: draft });
   } catch (err) {
     if (t && !(t as any).finished) {
@@ -234,6 +241,9 @@ export const requestRevision = asyncHandler(async (req: any, res: any) => {
         kind: 'warn',
       });
     }
+    clearDashboardCache().catch((err) =>
+      console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+    );
 
     res.json({ data: draft });
   } catch (err) {

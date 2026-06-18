@@ -4,6 +4,7 @@ import asyncHandler from '../../utils/asyncHandler';
 import { BadRequestError, NotFoundError } from '../../utils/errors';
 import sequelize from '../../config/database';
 import { Op } from 'sequelize';
+import { clearDashboardCache } from '../../utils/cache';
 
 export const getReceiving = asyncHandler(async (req: any, res: any) => {
   const { page, limit } = req.query;
@@ -159,6 +160,9 @@ export const receiveItem = asyncHandler(async (req: any, res: any) => {
     await t.commit();
     const io = req.app.get('io');
     if (io) io.emit('data_changed', { type: 'draft' });
+    clearDashboardCache().catch((err) =>
+      console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+    );
     res.status(201).json({ data: receiving });
   } catch (err) {
     if (t && !(t as any).finished) {
@@ -222,6 +226,9 @@ export const completeDraft = asyncHandler(async (req: any, res: any) => {
 
     const io = req.app.get('io');
     if (io) io.emit('data_changed', { type: 'draft' });
+    clearDashboardCache().catch((err) =>
+      console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+    );
 
     res.json({ data: draft });
   } catch (err) {

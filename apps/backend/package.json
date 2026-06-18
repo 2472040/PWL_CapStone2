@@ -10,7 +10,7 @@
     "seed": "node dist-server/seeders/seed.js",
     "db:migrate": "sequelize-cli db:migrate",
     "db:migrate:undo": "sequelize-cli db:migrate:undo:all",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "test:watch": "vitest",
     "security-test": "vitest run tests/security.test.js"
   },
@@ -47,6 +47,7 @@
     "@types/supertest": "^7.2.0",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
+    "@vitest/coverage-v8": "^4.1.7",
     "sequelize-cli": "^6.6.2",
     "supertest": "^7.2.2",
     "typescript": "^6.0.3",

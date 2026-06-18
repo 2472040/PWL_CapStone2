@@ -4,6 +4,7 @@ import { logAudit } from '../middleware/audit';
 import sequelize from '../config/database';
 import asyncHandler from '../utils/asyncHandler';
 import { BadRequestError, NotFoundError, ConflictError } from '../utils/errors';
+import { clearDashboardCache } from '../utils/cache';
 
 export const getInventory = asyncHandler(async (req: any, res: any) => {
   const { category, room_id, condition, search, page, limit, include_deleted, year, month } =
@@ -124,6 +125,9 @@ export const createInventory = asyncHandler(async (req: any, res: any) => {
 
     const io = req.app.get('io');
     if (io) io.emit('data_changed', { type: 'inventory' });
+    clearDashboardCache().catch((err) =>
+      console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+    );
 
     res.status(201).json({ data: item });
   } catch (err) {
@@ -169,6 +173,9 @@ export const updateInventory = asyncHandler(async (req: any, res: any) => {
 
     const io = req.app.get('io');
     if (io) io.emit('data_changed', { type: 'inventory' });
+    clearDashboardCache().catch((err) =>
+      console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+    );
 
     res.json({ data: item });
   } catch (err) {
@@ -203,6 +210,9 @@ export const updateLabel = asyncHandler(async (req: any, res: any) => {
 
   const io = req.app.get('io');
   if (io) io.emit('data_changed', { type: 'inventory' });
+  clearDashboardCache().catch((err) =>
+    console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+  );
 
   res.json({ data: label });
 });
@@ -249,6 +259,9 @@ export const deleteInventory = asyncHandler(async (req: any, res: any) => {
 
     const io = req.app.get('io');
     if (io) io.emit('data_changed', { type: 'inventory' });
+    clearDashboardCache().catch((err) =>
+      console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+    );
 
     res.json({
       message: `Inventaris "${item.code}" berhasil dihapus (soft delete). Data masih dapat dipulihkan.`,
@@ -279,6 +292,9 @@ export const restoreInventory = asyncHandler(async (req: any, res: any) => {
 
   const io = req.app.get('io');
   if (io) io.emit('data_changed', { type: 'inventory' });
+  clearDashboardCache().catch((err) =>
+    console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+  );
 
   res.json({ message: `Inventaris "${item.code}" berhasil dipulihkan.` });
 });

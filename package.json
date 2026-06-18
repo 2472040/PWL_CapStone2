@@ -25,7 +25,8 @@
     "db:migrate": "npm run db:migrate --workspace=@loka/backend",
     "db:migrate:undo": "npm run db:migrate:undo --workspace=@loka/backend",
     "seed": "npm run seed --workspace=@loka/backend",
-    "e2e:test": "npx playwright test"
+    "e2e:test": "npx playwright test",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
@@ -36,9 +37,23 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.6.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.4.3",
     "prettier": "^3.8.4",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.61.1"
+  },
+  "lint-staged": {
+    "apps/**/*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "apps/**/*.{json,css,md}": [
+      "prettier --write"
+    ],
+    "tests/**/*.ts": [
+      "prettier --write"
+    ]
   },
   "overrides": {
     "uuid": "^11.0.0",

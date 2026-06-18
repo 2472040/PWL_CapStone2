@@ -6,6 +6,7 @@ import { logAudit } from '../middleware/audit';
 import sequelize from '../config/database';
 import asyncHandler from '../utils/asyncHandler';
 import { BadRequestError, NotFoundError, ConflictError } from '../utils/errors';
+import { clearDashboardCache } from '../utils/cache';
 
 // =============================================
 // USERS
@@ -79,6 +80,9 @@ export const createUser = asyncHandler(async (req: any, res: any) => {
   await logAudit(req.user.id, 'user.create', `${user.name} (${user.role})`, req.ip);
   const io = req.app.get('io');
   if (io) io.emit('data_changed', { type: 'user' });
+  clearDashboardCache().catch((err) =>
+    console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+  );
 
   const { password: _, ...userData } = user.toJSON();
   res.status(201).json({ data: userData });
@@ -148,6 +152,9 @@ export const updateUser = asyncHandler(async (req: any, res: any) => {
   // Emit WebSocket update
   const io = req.app.get('io');
   if (io) io.emit('data_changed', { type: 'user' });
+  clearDashboardCache().catch((err) =>
+    console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+  );
 
   const { password: _, ...userData } = user.toJSON();
   res.json({ data: userData });
@@ -172,6 +179,9 @@ export const deleteUser = asyncHandler(async (req: any, res: any) => {
 
     const io = req.app.get('io');
     if (io) io.emit('data_changed', { type: 'user' });
+    clearDashboardCache().catch((err) =>
+      console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+    );
 
     return res.json({ message: `Pengguna "${userName}" dihapus secara permanen.` });
   }
@@ -184,6 +194,9 @@ export const deleteUser = asyncHandler(async (req: any, res: any) => {
   await logAudit(req.user.id, 'user.deactivate', userName, req.ip);
   const io = req.app.get('io');
   if (io) io.emit('data_changed', { type: 'user' });
+  clearDashboardCache().catch((err) =>
+    console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+  );
 
   res.json({ message: `Pengguna "${userName}" dinonaktifkan.` });
 });
@@ -247,6 +260,9 @@ export const createRoom = asyncHandler(async (req: any, res: any) => {
   await logAudit(req.user.id, 'room.create', room.code, req.ip);
   const io = req.app.get('io');
   if (io) io.emit('data_changed', { type: 'room' });
+  clearDashboardCache().catch((err) =>
+    console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+  );
   res.status(201).json({ data: room });
 });
 
@@ -285,6 +301,9 @@ export const updateRoom = asyncHandler(async (req: any, res: any) => {
 
   const io = req.app.get('io');
   if (io) io.emit('data_changed', { type: 'room' });
+  clearDashboardCache().catch((err) =>
+    console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+  );
 
   res.json({ data: room });
 });
@@ -305,6 +324,9 @@ export const deleteRoom = asyncHandler(async (req: any, res: any) => {
   await room.destroy();
   const io = req.app.get('io');
   if (io) io.emit('data_changed', { type: 'room' });
+  clearDashboardCache().catch((err) =>
+    console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+  );
   res.json({ message: `Ruangan "${room.code}" dihapus.` });
 });
 

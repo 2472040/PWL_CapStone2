@@ -14,6 +14,7 @@ import maintenanceService from '../services/maintenanceService';
 import predictionService from '../services/predictionService';
 import asyncHandler from '../utils/asyncHandler';
 import { BadRequestError, NotFoundError } from '../utils/errors';
+import { clearDashboardCache } from '../utils/cache';
 
 // =============================================
 // MAINTENANCE (Staf Lab)
@@ -108,6 +109,9 @@ export const createMaintenance = asyncHandler(async (req: any, res: any) => {
       kind: 'info',
     });
   }
+  clearDashboardCache().catch((err) =>
+    console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+  );
 
   // Return the newly created logs
   const result = await MaintenanceLog.findAll({
@@ -213,6 +217,9 @@ export const updateBhp = asyncHandler(async (req: any, res: any) => {
 
     const io = req.app.get('io');
     if (io) io.emit('data_changed', { type: 'bhp' });
+    clearDashboardCache().catch((err) =>
+      console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+    );
     res.json({ data: bhp });
   } catch (err) {
     if (t && !(t as any).finished) {
@@ -251,6 +258,9 @@ export const createBhp = asyncHandler(async (req: any, res: any) => {
 
   const io = req.app.get('io');
   if (io) io.emit('data_changed', { type: 'bhp' });
+  clearDashboardCache().catch((err) =>
+    console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+  );
   res.status(201).json({ data: bhp });
 });
 
@@ -316,6 +326,9 @@ export const updateMaintenance = asyncHandler(async (req: any, res: any) => {
         kind: 'info',
       });
     }
+    clearDashboardCache().catch((err) =>
+      console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+    );
 
     const result = await MaintenanceLog.findByPk(log.id, {
       include: [
@@ -343,6 +356,10 @@ export const updateMaintenance = asyncHandler(async (req: any, res: any) => {
 
 export const getMaintenanceSchedules = asyncHandler(async (req: any, res: any) => {
   const today = new Date().toISOString().substring(0, 10);
+  const { page, limit } = req.query;
+  const parsedLimit = Math.min(parseInt(limit as string) || 200, 1000);
+  const parsedPage = Math.max(parseInt(page as string) || 1, 1);
+  const offset = (parsedPage - 1) * parsedLimit;
 
   // Auto-update overdue schedules first
   await MaintenanceSchedule.update(
@@ -355,7 +372,7 @@ export const getMaintenanceSchedules = asyncHandler(async (req: any, res: any) =
     }
   );
 
-  const schedules = await MaintenanceSchedule.findAll({
+  const { count, rows } = await MaintenanceSchedule.findAndCountAll({
     include: [
       {
         model: Inventory,
@@ -372,9 +389,19 @@ export const getMaintenanceSchedules = asyncHandler(async (req: any, res: any) =
       ],
       ['next_maintenance_date', 'ASC'],
     ],
+    limit: parsedLimit,
+    offset,
   });
 
-  res.json({ data: schedules });
+  res.json({
+    data: rows,
+    pagination: {
+      total: count,
+      page: parsedPage,
+      limit: parsedLimit,
+      pages: Math.ceil(count / parsedLimit),
+    },
+  });
 });
 
 export const createMaintenanceSchedule = asyncHandler(async (req: any, res: any) => {
@@ -412,6 +439,9 @@ export const createMaintenanceSchedule = asyncHandler(async (req: any, res: any)
       kind: 'info',
     });
   }
+  clearDashboardCache().catch((err) =>
+    console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+  );
 
   const result = await MaintenanceSchedule.findByPk(schedule.id, {
     include: [{ model: Inventory, attributes: ['id', 'code', 'name'] }],
@@ -471,6 +501,9 @@ export const updateMaintenanceSchedule = asyncHandler(async (req: any, res: any)
     if (io) {
       io.emit('data_changed', { type: 'maintenance_schedule' });
     }
+    clearDashboardCache().catch((err) =>
+      console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+    );
   }
 
   res.json({ data: schedule });
@@ -498,6 +531,9 @@ export const deleteMaintenanceSchedule = asyncHandler(async (req: any, res: any)
   if (io) {
     io.emit('data_changed', { type: 'maintenance_schedule' });
   }
+  clearDashboardCache().catch((err) =>
+    console.warn('[Cache] Failed to invalidate dashboard cache:', err.message)
+  );
 
   res.json({ message: 'Jadwal pemeliharaan berhasil dihapus.' });
 });
