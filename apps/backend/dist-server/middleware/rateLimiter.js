@@ -3,10 +3,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.clearLoginAttempts = exports.loginRateLimiter = void 0;
+exports.publicVerifyRateLimiter = exports.clearLoginAttempts = exports.loginRateLimiter = void 0;
 const redis_1 = __importDefault(require("../utils/redis"));
 const ipAttempts = new Map();
 const userAttempts = new Map();
+const verifyIpAttempts = new Map();
 // Periodically prune stale entries every 15 minutes to prevent memory leaks in the local fallback
 const CLEANUP_INTERVAL = 15 * 60 * 1000;
 const ENTRY_TTL = 15 * 60 * 1000;
@@ -25,6 +26,13 @@ setInterval(() => {
             userAttempts.delete(key);
         else
             userAttempts.set(key, fresh);
+    }
+    for (const [key, timestamps] of verifyIpAttempts) {
+        const fresh = timestamps.filter((t) => now - t < ENTRY_TTL);
+        if (fresh.length === 0)
+            verifyIpAttempts.delete(key);
+        else
+            verifyIpAttempts.set(key, fresh);
     }
 }, CLEANUP_INTERVAL).unref();
 /**
@@ -166,3 +174,47 @@ const clearLoginAttempts = (ip, email) => {
     }
 };
 exports.clearLoginAttempts = clearLoginAttempts;
+const publicVerifyRateLimiter = async (req, res, next) => {
+    const ip = req.ip || 'unknown-ip';
+    const now = Date.now();
+    const timeframe = 60 * 1000; // 1 minute
+    const maxAttempts = 15;
+    const useRedis = redis_1.default && redis_1.default.status === 'ready';
+    if (useRedis) {
+        try {
+            const ipKey = `rate:verify:ip:${ip}`;
+            await redis_1.default.zremrangebyscore(ipKey, 0, now - timeframe);
+            const ipAttemptsCount = await redis_1.default.zcard(ipKey);
+            if (ipAttemptsCount >= maxAttempts) {
+                return res.status(429).json({
+                    error: 'Terlalu banyak permintaan verifikasi. Silakan coba lagi nanti.',
+                });
+            }
+            await redis_1.default.multi()
+                .zadd(ipKey, now, now)
+                .expire(ipKey, 60)
+                .exec();
+        }
+        catch (err) {
+            console.warn('[Rate Limiter] Redis error in publicVerifyRateLimiter, using in-memory fallback:', err.message);
+            return handleInMemoryVerifyLimit(ip, now, timeframe, maxAttempts, res, next);
+        }
+    }
+    else {
+        return handleInMemoryVerifyLimit(ip, now, timeframe, maxAttempts, res, next);
+    }
+    next();
+};
+exports.publicVerifyRateLimiter = publicVerifyRateLimiter;
+function handleInMemoryVerifyLimit(ip, now, timeframe, maxAttempts, res, next) {
+    const timestamps = verifyIpAttempts.get(ip) || [];
+    const fresh = timestamps.filter((t) => now - t < timeframe);
+    if (fresh.length >= maxAttempts) {
+        return res.status(429).json({
+            error: 'Terlalu banyak permintaan verifikasi. Silakan coba lagi nanti.',
+        });
+    }
+    fresh.push(now);
+    verifyIpAttempts.set(ip, fresh);
+    next();
+}

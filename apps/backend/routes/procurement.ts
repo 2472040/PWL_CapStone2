@@ -19,9 +19,12 @@ import {
   completeDraft,
   requestRevision,
 } from '../controllers/procurementController';
-import { generateBastPdf } from '../controllers/pdfController';
+import { generateBastPdf, verifyBastDocument } from '../controllers/pdfController';
+import { publicVerifyRateLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
+
+router.get('/verify-bast/:id/:hash', publicVerifyRateLimiter, verifyBastDocument);
 
 /**
  * @swagger

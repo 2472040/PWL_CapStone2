@@ -9,6 +9,7 @@ import { RoomsSummary } from './home/RoomsSummary';
 import { AssetCondition } from './home/AssetCondition';
 import { CollaborationTracker } from './home/CollaborationTracker';
 import { MaintRadar } from './home/MaintRadar';
+import { FinancialChart } from '../../components/FinancialChart';
 
 interface MappedActivity {
   who: string;
@@ -378,6 +379,12 @@ export function Dashboard() {
           />
         ))}
       </div>
+
+      {state.role === 'kaprodi' && dashboardData?.financialAnalytics && (
+        <div className="grid gap-3.5 mb-6" data-reveal>
+          <FinancialChart data={dashboardData.financialAnalytics} />
+        </div>
+      )}
 
       <div className="grid gap-3.5 mb-6">
         <RecentActivity activities={activities} roleAccent={role.accent} />

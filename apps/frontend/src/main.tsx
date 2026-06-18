@@ -66,6 +66,10 @@ const ScheduleForm = React.lazy(() =>
   import('./screens/dashboard/maintenance/log/ScheduleForm').then((m) => ({ default: m.ScheduleForm }))
 );
 
+const VerifyBast = React.lazy(() =>
+  import('./screens/verify/VerifyBast').then((m) => ({ default: m.VerifyBast }))
+);
+
 const LogoutModal = React.lazy(() =>
   import('./screens/dashboard/settings/LogoutModal').then((m) => ({ default: m.LogoutModal }))
 );
@@ -310,6 +314,18 @@ function AppRoutes() {
             ) : (
               <LoginScreen onLogin={handleLogin} onBack={() => navigate('/')} />
             )
+          }
+        />
+        <Route
+          path="/verify-bast/:id/:hash"
+          element={
+            <Suspense fallback={
+              <div className="min-h-screen flex items-center justify-center text-stone-500 font-medium" style={{ background: '#08070d' }}>
+                Memuat halaman verifikasi...
+              </div>
+            }>
+              <VerifyBast />
+            </Suspense>
           }
         />
         <Route

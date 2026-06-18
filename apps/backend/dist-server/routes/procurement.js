@@ -6,7 +6,9 @@ const validation_1 = require("../middleware/validation");
 const procurement_1 = require("../schemas/procurement");
 const procurementController_1 = require("../controllers/procurementController");
 const pdfController_1 = require("../controllers/pdfController");
+const rateLimiter_1 = require("../middleware/rateLimiter");
 const router = (0, express_1.Router)();
+router.get('/verify-bast/:id/:hash', rateLimiter_1.publicVerifyRateLimiter, pdfController_1.verifyBastDocument);
 /**
  * @swagger
  * tags:

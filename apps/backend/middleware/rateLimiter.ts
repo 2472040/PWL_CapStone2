@@ -3,6 +3,7 @@ import { Request, Response, NextFunction, RequestHandler } from 'express';
 
 const ipAttempts = new Map<string, number[]>();
 const userAttempts = new Map<string, number[]>();
+const verifyIpAttempts = new Map<string, number[]>();
 
 // Periodically prune stale entries every 15 minutes to prevent memory leaks in the local fallback
 const CLEANUP_INTERVAL = 15 * 60 * 1000;
@@ -19,6 +20,11 @@ setInterval(() => {
     const fresh = timestamps.filter((t) => now - t < ENTRY_TTL);
     if (fresh.length === 0) userAttempts.delete(key);
     else userAttempts.set(key, fresh);
+  }
+  for (const [key, timestamps] of verifyIpAttempts) {
+    const fresh = timestamps.filter((t) => now - t < ENTRY_TTL);
+    if (fresh.length === 0) verifyIpAttempts.delete(key);
+    else verifyIpAttempts.set(key, fresh);
   }
 }, CLEANUP_INTERVAL).unref();
 
@@ -184,3 +190,63 @@ export const clearLoginAttempts = (ip?: string, email?: string): void => {
     }
   }
 };
+
+export const publicVerifyRateLimiter: RequestHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const ip = req.ip || 'unknown-ip';
+  const now = Date.now();
+  const timeframe = 60 * 1000; // 1 minute
+  const maxAttempts = 15;
+
+  const useRedis = redisClient && redisClient.status === 'ready';
+
+  if (useRedis) {
+    try {
+      const ipKey = `rate:verify:ip:${ip}`;
+      await redisClient.zremrangebyscore(ipKey, 0, now - timeframe);
+      const ipAttemptsCount = await redisClient.zcard(ipKey);
+
+      if (ipAttemptsCount >= maxAttempts) {
+        return res.status(429).json({
+          error: 'Terlalu banyak permintaan verifikasi. Silakan coba lagi nanti.',
+        });
+      }
+
+      await redisClient.multi()
+        .zadd(ipKey, now, now)
+        .expire(ipKey, 60)
+        .exec();
+    } catch (err: any) {
+      console.warn('[Rate Limiter] Redis error in publicVerifyRateLimiter, using in-memory fallback:', err.message);
+      return handleInMemoryVerifyLimit(ip, now, timeframe, maxAttempts, res, next);
+    }
+  } else {
+    return handleInMemoryVerifyLimit(ip, now, timeframe, maxAttempts, res, next);
+  }
+  next();
+};
+
+function handleInMemoryVerifyLimit(
+  ip: string,
+  now: number,
+  timeframe: number,
+  maxAttempts: number,
+  res: Response,
+  next: NextFunction
+) {
+  const timestamps = verifyIpAttempts.get(ip) || [];
+  const fresh = timestamps.filter((t) => now - t < timeframe);
+
+  if (fresh.length >= maxAttempts) {
+    return res.status(429).json({
+      error: 'Terlalu banyak permintaan verifikasi. Silakan coba lagi nanti.',
+    });
+  }
+
+  fresh.push(now);
+  verifyIpAttempts.set(ip, fresh);
+  next();
+}
