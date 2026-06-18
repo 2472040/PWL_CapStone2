@@ -3,6 +3,7 @@ import { useStore, D, Icon, StatTile, useSearch, useToast } from '../../../compo
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../../../services/api';
 import { MaintenanceTable } from './log/MaintenanceTable';
+import { ScheduleTable } from './log/ScheduleTable';
 import { MaintenanceModals } from './log/MaintenanceModals';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
@@ -24,6 +25,7 @@ export function Maintenance() {
   const navigate = useNavigate();
   const role = D.roles.find((r) => r.id === 'staflab') || D.roles[0];
   const [activeModal, setActiveModal] = useState<'log' | 'maint' | 'check' | 'bhp' | null>(null);
+  const [activeTab, setActiveTab] = useState<'logs' | 'schedules'>('logs');
 
   useEffect(() => {
     async function loadMaintLogs() {
@@ -79,8 +81,20 @@ export function Maintenance() {
       }
     }
 
+    async function loadMaintSchedules() {
+      try {
+        const res = await apiFetch('/maintenance-schedules');
+        if (res.data) {
+          dispatch({ type: 'SET_MAINT_SCHEDULES', schedules: res.data });
+        }
+      } catch (err) {
+        console.error('Failed to load maintenance schedules:', err);
+      }
+    }
+
     loadMaintLogs();
     loadBhpData();
+    loadMaintSchedules();
   }, [dispatch]);
 
   function handleQuickResolve(
@@ -160,6 +174,12 @@ export function Maintenance() {
                   dispatch({ type: 'SET_INVENTORY', inventory: formattedInv });
                 }
 
+                // Reload schedules
+                const resSched = await apiFetch('/maintenance-schedules');
+                if (resSched.data) {
+                  dispatch({ type: 'SET_MAINT_SCHEDULES', schedules: resSched.data });
+                }
+
                 toast(`Kondisi aset ${code} berhasil diperbarui menjadi "${condition}"!`, 'ok');
               }
             } catch (err: any) {
@@ -182,6 +202,43 @@ export function Maintenance() {
       (l.id || '').toLowerCase().includes(q)
     );
   });
+
+  const filteredSchedules = (state.maintSchedules || []).filter((s: any) => {
+    if (!query) return true;
+    const q = query.toLowerCase();
+    return (
+      (s.title || '').toLowerCase().includes(q) ||
+      (s.Inventory?.name || '').toLowerCase().includes(q) ||
+      (s.Inventory?.code || '').toLowerCase().includes(q) ||
+      (s.notes || '').toLowerCase().includes(q)
+    );
+  });
+
+  function handleDeleteSchedule(id: number) {
+    dispatch({
+      type: 'OPEN_MODAL',
+      modal: {
+        kind: 'confirm',
+        payload: {
+          title: 'Hapus Jadwal Preventif',
+          message: 'Apakah Anda yakin ingin menghapus jadwal pemeliharaan preventif ini?',
+          confirmText: 'Ya, Hapus',
+          cancelText: 'Batal',
+          onConfirm: async () => {
+            try {
+              await apiFetch(`/maintenance-schedules/${id}`, {
+                method: 'DELETE',
+              });
+              dispatch({ type: 'DELETE_MAINT_SCHEDULE', scheduleId: id });
+              toast('Jadwal pemeliharaan berhasil dihapus', 'ok');
+            } catch (err: any) {
+              toast(`Gagal menghapus jadwal: ${err.message}`, 'warn');
+            }
+          },
+        },
+      },
+    });
+  }
 
   const generateMaintenancePDF = () => {
     if (window.showToast) window.showToast('Menyiapkan Laporan PDF…', 'info', 'log');
@@ -384,32 +441,52 @@ export function Maintenance() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button
-            className="btn border border-line"
-            onClick={generateMaintenancePDF}
-            title="Cetak Laporan PDF"
-          >
-            <Icon name="log" size={13} /> PDF
-          </button>
-          <button
-            className="btn border border-line"
-            onClick={exportMaintenanceCSV}
-            title="Ekspor Laporan Excel/CSV"
-          >
-            <Icon name="download" size={13} /> CSV
-          </button>
-          <button
-            className="btn primary"
-            onClick={() =>
-              dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'maintenance', payload: {} } })
-            }
-          >
-            <Icon name="plus" size={13} strokeWidth={2.4} /> Log baru
-          </button>
+          {activeTab === 'logs' && (
+            <>
+              <button
+                className="btn border border-line"
+                onClick={generateMaintenancePDF}
+                title="Cetak Laporan PDF"
+              >
+                <Icon name="log" size={13} /> PDF
+              </button>
+              <button
+                className="btn border border-line"
+                onClick={exportMaintenanceCSV}
+                title="Ekspor Laporan Excel/CSV"
+              >
+                <Icon name="download" size={13} /> CSV
+              </button>
+            </>
+          )}
+
+          {activeTab === 'logs' ? (
+            state.role === 'staflab' && (
+              <button
+                className="btn primary"
+                onClick={() =>
+                  dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'maintenance', payload: {} } })
+                }
+              >
+                <Icon name="plus" size={13} strokeWidth={2.4} /> Log baru
+              </button>
+            )
+          ) : (
+            state.role === 'staflab' && (
+              <button
+                className="btn primary"
+                onClick={() =>
+                  dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'maintSchedule', payload: {} } })
+                }
+              >
+                <Icon name="plus" size={13} strokeWidth={2.4} /> Jadwal baru
+              </button>
+            )
+          )}
         </div>
       </div>
 
-      <div className="stats">
+      <div className="stats flex gap-4 mb-6">
         <div onClick={() => setActiveModal('log')} style={{ cursor: 'pointer' }} className="flex-1">
           <StatTile label="Log bulan ini" value={state.maintLog.length} icon="log" fmt="int" />
         </div>
@@ -447,19 +524,67 @@ export function Maintenance() {
             accent="var(--rose)"
           />
         </div>
+        <div
+          onClick={() => setActiveTab('schedules')}
+          style={{ cursor: 'pointer' }}
+          className="flex-1"
+        >
+          <StatTile
+            label="Jadwal terlambat"
+            value={(state.maintSchedules || []).filter((s: any) => s.status === 'overdue').length}
+            icon="cal"
+            fmt="int"
+            accent="var(--rose)"
+          />
+        </div>
       </div>
 
-      {query && filteredLogs.length === 0 && (
+      {/* Tabs */}
+      <div className="tabs flex gap-6 border-b border-line mb-6" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+        <button
+          className={`pb-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
+            activeTab === 'logs'
+              ? 'border-violet text-white font-semibold'
+              : 'border-transparent text-ink-3 hover:text-ink'
+          }`}
+          onClick={() => setActiveTab('logs')}
+        >
+          <Icon name="log" size={13} />
+          Riwayat Log Pemeliharaan
+        </button>
+        <button
+          className={`pb-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
+            activeTab === 'schedules'
+              ? 'border-violet text-white font-semibold'
+              : 'border-transparent text-ink-3 hover:text-ink'
+          }`}
+          onClick={() => setActiveTab('schedules')}
+        >
+          <Icon name="cal" size={13} />
+          Jadwal Pemeliharaan Preventif
+        </button>
+      </div>
+
+      {query && (activeTab === 'logs' ? filteredLogs.length === 0 : filteredSchedules.length === 0) && (
         <div className="empty" data-reveal>
           <div className="ico">
             <Icon name="search" size={20} />
           </div>
-          <h4>Tidak ada log cocok</h4>
+          <h4>Tidak ada hasil cocok</h4>
           <div>Coba kata kunci lain.</div>
         </div>
       )}
 
-      <MaintenanceTable filteredLogs={filteredLogs} dispatch={dispatch} />
+      {activeTab === 'logs' ? (
+        <MaintenanceTable filteredLogs={filteredLogs} dispatch={dispatch} />
+      ) : (
+        <ScheduleTable
+          schedules={filteredSchedules}
+          role={state.role}
+          onEdit={(s) => dispatch({ type: 'OPEN_DRAWER', drawer: { kind: 'maintSchedule', payload: s } })}
+          onDelete={handleDeleteSchedule}
+        />
+      )}
 
       <MaintenanceModals
         activeModal={activeModal}

@@ -193,6 +193,27 @@ export function useDataPolling(
         }
       }
 
+      // 7b. Fetch Maintenance Schedules (staflab & kalab, on 'maintenance', 'dashboard', or if empty)
+      if (role === 'staflab' || role === 'kalab') {
+        const needSchedules =
+          screen === 'maintenance' || screen === 'dashboard' || state.maintSchedules.length === 0;
+        if (needSchedules) {
+          try {
+            const resSchedules = await apiFetch<{ data: any[] }>('/maintenance-schedules', {
+              signal,
+            });
+            if (resSchedules.data) {
+              dispatch({ type: 'SET_MAINT_SCHEDULES', schedules: resSchedules.data });
+            }
+          } catch (e: unknown) {
+            console.error(
+              'Gagal mengambil data jadwal pemeliharaan preventif:',
+              e instanceof Error ? e.message : ''
+            );
+          }
+        }
+      }
+
       // 8. Fetch Inventory (all roles, on 'inventaris', 'dashboard', or if empty)
       const needInventory =
         screen === 'inventaris' || screen === 'dashboard' || state.inventory.length === 0;

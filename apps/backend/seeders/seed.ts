@@ -25,7 +25,9 @@ async function seed() {
     console.log('✅ Database terhubung');
 
     // Force sync (drops & recreates all tables)
+    await sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
     await sequelize.sync({ force: true });
+    await sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
     console.log('✅ Tabel di-reset');
 
     const hashed = await bcrypt.hash(DEFAULT_PASSWORD, 10);

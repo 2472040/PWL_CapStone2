@@ -1,13 +1,15 @@
-import { InventoryItem, MaintenanceLog, AppStoreState, AppAction } from './store.types';
+import { InventoryItem, MaintenanceLog, MaintenanceSchedule, AppStoreState, AppAction } from './store.types';
 
 export interface InventoryState {
   inventory: InventoryItem[];
   maintLog: MaintenanceLog[];
+  maintSchedules: MaintenanceSchedule[];
 }
 
 export const initialInventoryState: InventoryState = {
   inventory: [],
   maintLog: [],
+  maintSchedules: [],
 };
 
 export const inventoryReducer = (
@@ -37,6 +39,26 @@ export const inventoryReducer = (
       );
       return { maintLog: [log, ...state.maintLog], bhp, inventory: inv };
     }
+    case 'SET_MAINT_SCHEDULES':
+      return { maintSchedules: action.schedules || [] };
+    case 'ADD_MAINT_SCHEDULE':
+      return action.schedule
+        ? { maintSchedules: [action.schedule, ...state.maintSchedules] }
+        : null;
+    case 'UPDATE_MAINT_SCHEDULE':
+      return action.schedule
+        ? {
+            maintSchedules: state.maintSchedules.map((x) =>
+              x.id !== action.schedule!.id ? x : action.schedule!
+            ),
+          }
+        : null;
+    case 'DELETE_MAINT_SCHEDULE':
+      return action.scheduleId !== undefined
+        ? {
+            maintSchedules: state.maintSchedules.filter((x) => x.id !== action.scheduleId),
+          }
+        : null;
     default:
       return null;
   }

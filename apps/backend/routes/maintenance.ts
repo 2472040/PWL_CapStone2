@@ -6,6 +6,8 @@ import {
   updateMaintenanceSchema,
   createBhpSchema,
   updateBhpSchema,
+  createMaintenanceScheduleSchema,
+  updateMaintenanceScheduleSchema,
 } from '../schemas/maintenance';
 import {
   getMaintenanceLogs,
@@ -15,6 +17,10 @@ import {
   createBhp,
   getBhpPrediction,
   updateMaintenance as updateMaintenanceController,
+  getMaintenanceSchedules,
+  createMaintenanceSchedule,
+  updateMaintenanceSchedule,
+  deleteMaintenanceSchedule,
 } from '../controllers/maintenanceController';
 
 const router = Router();
@@ -115,6 +121,22 @@ router.put(
   validate(updateMaintenanceSchema),
   updateMaintenanceController
 );
+
+// Preventive Maintenance Schedules (Staf Lab & Kalab can view, Staf Lab can CRUD)
+router.get('/maintenance-schedules', authorize('staflab', 'kalab'), getMaintenanceSchedules);
+router.post(
+  '/maintenance-schedules',
+  authorize('staflab'),
+  validate(createMaintenanceScheduleSchema),
+  createMaintenanceSchedule
+);
+router.put(
+  '/maintenance-schedules/:id',
+  authorize('staflab'),
+  validate(updateMaintenanceScheduleSchema),
+  updateMaintenanceSchedule
+);
+router.delete('/maintenance-schedules/:id', authorize('staflab'), deleteMaintenanceSchedule);
 
 // BHP — staf lab & kalab & admin & kaprodi can view, staflab can modify (sysadmin excluded, admin cannot modify directly)
 /**

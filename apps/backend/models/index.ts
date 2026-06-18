@@ -15,6 +15,7 @@ import Label from './Label';
 import AuditLog from './AuditLog';
 import RevokedToken from './RevokedToken';
 import RefreshToken from './RefreshToken';
+import MaintenanceSchedule from './MaintenanceSchedule';
 
 // =============================================
 // Associations
@@ -57,6 +58,10 @@ DraftApproval.belongsTo(User, { as: 'approver', foreignKey: 'approved_by' });
 // MaintenanceLog ↔ Inventory
 MaintenanceLog.belongsTo(Inventory, { foreignKey: 'inventory_id' });
 Inventory.hasMany(MaintenanceLog, { as: 'maintenanceLogs', foreignKey: 'inventory_id' });
+
+// MaintenanceSchedule ↔ Inventory
+MaintenanceSchedule.belongsTo(Inventory, { foreignKey: 'inventory_id' });
+Inventory.hasMany(MaintenanceSchedule, { as: 'maintenanceSchedules', foreignKey: 'inventory_id', onDelete: 'CASCADE' });
 
 // MaintenanceLog ↔ User (technician)
 MaintenanceLog.belongsTo(User, { as: 'technician', foreignKey: 'tech_user_id' });
@@ -108,4 +113,5 @@ export {
   AuditLog,
   RevokedToken,
   RefreshToken,
+  MaintenanceSchedule,
 };

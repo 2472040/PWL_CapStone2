@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.RefreshToken = exports.RevokedToken = exports.AuditLog = exports.Label = exports.Receiving = exports.MaintenanceBhp = exports.MaintenanceLog = exports.DraftApproval = exports.DraftItem = exports.Draft = exports.Bhp = exports.Inventory = exports.Room = exports.User = exports.sequelize = void 0;
+exports.MaintenanceSchedule = exports.RefreshToken = exports.RevokedToken = exports.AuditLog = exports.Label = exports.Receiving = exports.MaintenanceBhp = exports.MaintenanceLog = exports.DraftApproval = exports.DraftItem = exports.Draft = exports.Bhp = exports.Inventory = exports.Room = exports.User = exports.sequelize = void 0;
 // Model index — loads all models and defines associations
 const database_1 = __importDefault(require("../config/database"));
 exports.sequelize = database_1.default;
@@ -35,6 +35,8 @@ const RevokedToken_1 = __importDefault(require("./RevokedToken"));
 exports.RevokedToken = RevokedToken_1.default;
 const RefreshToken_1 = __importDefault(require("./RefreshToken"));
 exports.RefreshToken = RefreshToken_1.default;
+const MaintenanceSchedule_1 = __importDefault(require("./MaintenanceSchedule"));
+exports.MaintenanceSchedule = MaintenanceSchedule_1.default;
 // =============================================
 // Associations
 // =============================================
@@ -67,6 +69,9 @@ DraftApproval_1.default.belongsTo(User_1.default, { as: 'approver', foreignKey: 
 // MaintenanceLog ↔ Inventory
 MaintenanceLog_1.default.belongsTo(Inventory_1.default, { foreignKey: 'inventory_id' });
 Inventory_1.default.hasMany(MaintenanceLog_1.default, { as: 'maintenanceLogs', foreignKey: 'inventory_id' });
+// MaintenanceSchedule ↔ Inventory
+MaintenanceSchedule_1.default.belongsTo(Inventory_1.default, { foreignKey: 'inventory_id' });
+Inventory_1.default.hasMany(MaintenanceSchedule_1.default, { as: 'maintenanceSchedules', foreignKey: 'inventory_id', onDelete: 'CASCADE' });
 // MaintenanceLog ↔ User (technician)
 MaintenanceLog_1.default.belongsTo(User_1.default, { as: 'technician', foreignKey: 'tech_user_id' });
 // MaintenanceLog ↔ MaintenanceBhp

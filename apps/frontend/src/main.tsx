@@ -62,6 +62,10 @@ const NewBhpForm = React.lazy(() =>
   import('./screens/dashboard/maintenance/BHP').then((m) => ({ default: m.NewBhpForm }))
 );
 
+const ScheduleForm = React.lazy(() =>
+  import('./screens/dashboard/maintenance/log/ScheduleForm').then((m) => ({ default: m.ScheduleForm }))
+);
+
 const LogoutModal = React.lazy(() =>
   import('./screens/dashboard/settings/LogoutModal').then((m) => ({ default: m.LogoutModal }))
 );
@@ -119,6 +123,7 @@ Object.assign(DrawerContent, {
   qrScanner: QRScanner,
   newBhp: NewBhpForm, // Register the new Manual Restock Drawer
   newInventory: NewInventoryForm,
+  maintSchedule: ScheduleForm,
 });
 
 Object.assign(ModalContent, {

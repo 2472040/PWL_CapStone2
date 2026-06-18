@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateBhpSchema = exports.createBhpSchema = exports.updateMaintenanceSchema = exports.createMaintenanceSchema = exports.bhpUsedItemSchema = void 0;
+exports.updateMaintenanceScheduleSchema = exports.createMaintenanceScheduleSchema = exports.updateBhpSchema = exports.createBhpSchema = exports.updateMaintenanceSchema = exports.createMaintenanceSchema = exports.bhpUsedItemSchema = void 0;
 const zod_1 = require("zod");
 const CONDITION_VALUES = ['Baik', 'Perlu cek', 'Maintenance', 'Rusak'];
 exports.bhpUsedItemSchema = zod_1.z.object({
@@ -75,4 +75,30 @@ exports.updateBhpSchema = zod_1.z.object({
     unit: zod_1.z.string().min(1).max(50).optional(),
     category: zod_1.z.string().max(100).optional(),
     reason: zod_1.z.string().max(500).optional(),
+});
+exports.createMaintenanceScheduleSchema = zod_1.z.object({
+    inventory_id: zod_1.z.number({ error: 'Inventory ID wajib diisi.' }).int().positive(),
+    title: zod_1.z
+        .string({ error: 'Judul jadwal wajib diisi.' })
+        .min(1, { message: 'Judul jadwal wajib diisi.' })
+        .max(150, { message: 'Judul jadwal maksimal 150 karakter.' }),
+    frequency_days: zod_1.z
+        .union([zod_1.z.number(), zod_1.z.string()])
+        .transform((v) => parseInt(String(v)))
+        .pipe(zod_1.z.number().int().positive({ message: 'Frekuensi harus berupa angka positif.' })),
+    next_maintenance_date: zod_1.z
+        .string({ error: 'Tanggal pemeliharaan berikutnya wajib diisi.' })
+        .min(1, { message: 'Tanggal pemeliharaan berikutnya wajib diisi.' }),
+    notes: zod_1.z.string().max(1000).optional().default(''),
+});
+exports.updateMaintenanceScheduleSchema = zod_1.z.object({
+    title: zod_1.z.string().min(1).max(150).optional(),
+    frequency_days: zod_1.z
+        .union([zod_1.z.number(), zod_1.z.string()])
+        .transform((v) => parseInt(String(v)))
+        .pipe(zod_1.z.number().int().positive())
+        .optional(),
+    next_maintenance_date: zod_1.z.string().min(1).optional(),
+    notes: zod_1.z.string().max(1000).optional(),
+    status: zod_1.z.enum(['scheduled', 'overdue', 'completed']).optional(),
 });

@@ -101,6 +101,28 @@ export interface MaintenanceLog {
   tech?: string;
 }
 
+export interface MaintenanceSchedule {
+  id: number;
+  inventory_id: number;
+  title: string;
+  frequency_days: number;
+  last_maintenance_date: string | null;
+  next_maintenance_date: string;
+  status: 'scheduled' | 'overdue' | 'completed';
+  notes: string | null;
+  Inventory?: {
+    id: number;
+    code: string;
+    name: string;
+    condition: ConditionStatus;
+    Room?: {
+      id: number;
+      code: string;
+      name: string;
+    };
+  };
+}
+
 // Drawer and Modal payload types
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface DrawerPayload {
@@ -135,12 +157,23 @@ interface AuthAction {
 
 // Inventory slice actions
 interface InventoryAction {
-  type: 'SET_INVENTORY' | 'UPDATE_ASSET_LABEL' | 'SET_MAINT_LOGS' | 'ADD_MAINT_LOG';
+  type:
+    | 'SET_INVENTORY'
+    | 'UPDATE_ASSET_LABEL'
+    | 'SET_MAINT_LOGS'
+    | 'ADD_MAINT_LOG'
+    | 'SET_MAINT_SCHEDULES'
+    | 'ADD_MAINT_SCHEDULE'
+    | 'UPDATE_MAINT_SCHEDULE'
+    | 'DELETE_MAINT_SCHEDULE';
   inventory?: InventoryItem[];
   code?: string;
   patch?: Partial<InventoryItem>;
   logs?: MaintenanceLog[];
   log?: MaintenanceLog;
+  schedules?: MaintenanceSchedule[];
+  schedule?: MaintenanceSchedule;
+  scheduleId?: number;
 }
 
 // Procurement slice actions
@@ -215,6 +248,7 @@ export interface AppStoreState {
   // Inventory slice
   inventory: InventoryItem[];
   maintLog: MaintenanceLog[];
+  maintSchedules: MaintenanceSchedule[];
 
   // Procurement slice
   drafts: Draft[];

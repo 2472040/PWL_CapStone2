@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
 
 import app from '../app';
@@ -148,15 +148,6 @@ describe('Maintenance and BHP Integration Test', () => {
     expect(resPredict.status).toBe(200);
     expect(resPredict.body.data).toBeDefined();
 
-    // Clean up test data
-    if (testMaintenanceLogId) {
-      await MaintenanceLog.destroy({ where: { id: testMaintenanceLogId } });
-    }
-    if (testBhpId) {
-      await Bhp.destroy({ where: { id: testBhpId } });
-    }
-    await Inventory.destroy({ where: { id: testInventoryId }, force: true });
-    await Room.destroy({ where: { id: testRoomId } });
   });
 
   it('should restrict unauthorized roles from getting maintenance logs', async () => {
@@ -188,5 +179,102 @@ describe('Maintenance and BHP Integration Test', () => {
         unit: 'pcs',
       });
     expect(resCreateBad.status).toBe(403);
+  });
+
+  it('should successfully run a full maintenance schedule lifecycle and auto-cycle when maintained', async () => {
+    let testScheduleId: number | null = null;
+
+    // A. Create Maintenance Schedule (Staff)
+    const schedulePayload = {
+      inventory_id: testInventoryId,
+      title: 'Kalibrasi Mikroskop Bulanan',
+      frequency_days: 30,
+      next_maintenance_date: '2026-07-15',
+      notes: 'Gunakan cairan pembersih standar optik.',
+    };
+
+    const resCreate = await request(app)
+      .post('/api/v1/maintenance-schedules')
+      .set('Authorization', `Bearer ${staffToken}`)
+      .set('Cookie', 'csrfToken=test_csrf')
+      .set('x-csrf-token', 'test_csrf')
+      .send(schedulePayload);
+
+    expect(resCreate.status).toBe(201);
+    expect(resCreate.body.data).toBeDefined();
+    expect(resCreate.body.data.title).toBe(schedulePayload.title);
+    expect(resCreate.body.data.frequency_days).toBe(30);
+    testScheduleId = resCreate.body.data.id;
+
+    // B. Get List of Maintenance Schedules
+    const resList = await request(app)
+      .get('/api/v1/maintenance-schedules')
+      .set('Authorization', `Bearer ${staffToken}`);
+    expect(resList.status).toBe(200);
+    const found = resList.body.data.find((s: any) => s.id === testScheduleId);
+    expect(found).toBeDefined();
+    expect(found.status).toBe('scheduled');
+
+    // C. Update Maintenance Schedule (Staff)
+    const updatePayload = {
+      title: 'Kalibrasi Mikroskop Bulanan - Diperbarui',
+    };
+
+    const resUpdate = await request(app)
+      .put(`/api/v1/maintenance-schedules/${testScheduleId}`)
+      .set('Authorization', `Bearer ${staffToken}`)
+      .set('Cookie', 'csrfToken=test_csrf')
+      .set('x-csrf-token', 'test_csrf')
+      .send(updatePayload);
+
+    expect(resUpdate.status).toBe(200);
+    expect(resUpdate.body.data.title).toBe(updatePayload.title);
+
+    // D. Auto-cycle schedule when maintenance is logged
+    const logPayload = {
+      inventory_ids: [testInventoryId],
+      action: 'Rutin maintenance tahunan',
+      condition_after: 'Baik',
+      date: '2026-06-18',
+    };
+
+    const resLog = await request(app)
+      .post('/api/v1/maintenance')
+      .set('Authorization', `Bearer ${staffToken}`)
+      .set('Cookie', 'csrfToken=test_csrf')
+      .set('x-csrf-token', 'test_csrf')
+      .send(logPayload);
+
+    expect(resLog.status).toBe(201);
+
+    // Verify schedule is updated/cycled: next date = 2026-06-18 + 30 days = 2026-07-18
+    const resListAfter = await request(app)
+      .get('/api/v1/maintenance-schedules')
+      .set('Authorization', `Bearer ${staffToken}`);
+    const foundAfter = resListAfter.body.data.find((s: any) => s.id === testScheduleId);
+    expect(foundAfter.last_maintenance_date).toBe('2026-06-18');
+    expect(foundAfter.next_maintenance_date).toBe('2026-07-18');
+    expect(foundAfter.status).toBe('scheduled');
+
+    // E. Delete Maintenance Schedule (Staff)
+    const resDelete = await request(app)
+      .delete(`/api/v1/maintenance-schedules/${testScheduleId}`)
+      .set('Authorization', `Bearer ${staffToken}`)
+      .set('Cookie', 'csrfToken=test_csrf')
+      .set('x-csrf-token', 'test_csrf');
+
+    expect(resDelete.status).toBe(200);
+  });
+
+  afterAll(async () => {
+    // Clean up test data
+    if (testInventoryId) {
+      await MaintenanceLog.destroy({ where: { inventory_id: testInventoryId } });
+    }
+    if (testBhpId) {
+      await Bhp.destroy({ where: { id: testBhpId } });
+    }
+    await Inventory.destroy({ where: { id: testInventoryId }, force: true });
+    await Room.destroy({ where: { id: testRoomId } });
   });
 });

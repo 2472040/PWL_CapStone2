@@ -88,6 +88,11 @@ router.post('/maintenance', (0, auth_1.authorize)('staflab'), (0, validation_1.v
  *         description: Status pemeliharaan berhasil diperbarui
  */
 router.put('/maintenance/:id', (0, auth_1.authorize)('staflab'), (0, validation_1.validate)(maintenance_1.updateMaintenanceSchema), maintenanceController_1.updateMaintenance);
+// Preventive Maintenance Schedules (Staf Lab & Kalab can view, Staf Lab can CRUD)
+router.get('/maintenance-schedules', (0, auth_1.authorize)('staflab', 'kalab'), maintenanceController_1.getMaintenanceSchedules);
+router.post('/maintenance-schedules', (0, auth_1.authorize)('staflab'), (0, validation_1.validate)(maintenance_1.createMaintenanceScheduleSchema), maintenanceController_1.createMaintenanceSchedule);
+router.put('/maintenance-schedules/:id', (0, auth_1.authorize)('staflab'), (0, validation_1.validate)(maintenance_1.updateMaintenanceScheduleSchema), maintenanceController_1.updateMaintenanceSchedule);
+router.delete('/maintenance-schedules/:id', (0, auth_1.authorize)('staflab'), maintenanceController_1.deleteMaintenanceSchedule);
 // BHP — staf lab & kalab & admin & kaprodi can view, staflab can modify (sysadmin excluded, admin cannot modify directly)
 /**
  * @swagger

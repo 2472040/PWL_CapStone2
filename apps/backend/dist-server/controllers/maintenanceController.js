@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateMaintenance = exports.getBhpPrediction = exports.createBhp = exports.updateBhp = exports.getBhp = exports.createMaintenance = exports.getMaintenanceLogs = void 0;
+exports.deleteMaintenanceSchedule = exports.updateMaintenanceSchedule = exports.createMaintenanceSchedule = exports.getMaintenanceSchedules = exports.updateMaintenance = exports.getBhpPrediction = exports.createBhp = exports.updateBhp = exports.getBhp = exports.createMaintenance = exports.getMaintenanceLogs = void 0;
 const models_1 = require("../models");
 const audit_1 = require("../middleware/audit");
 const database_1 = __importDefault(require("../config/database"));
@@ -57,12 +57,33 @@ exports.createMaintenance = (0, asyncHandler_1.default)(async (req, res) => {
         bhp_used,
         userId: req.user.id,
     });
+    // Update associated maintenance schedules if any
+    for (const invId of inventory_ids) {
+        const schedule = await models_1.MaintenanceSchedule.findOne({
+            where: {
+                inventory_id: invId,
+                status: { [sequelize_1.Op.in]: ['scheduled', 'overdue'] },
+            },
+        });
+        if (schedule) {
+            // Calculate next maintenance date: date + frequency_days
+            const freq = schedule.frequency_days;
+            const nextDate = new Date(date);
+            nextDate.setDate(nextDate.getDate() + freq);
+            const nextDateStr = nextDate.toISOString().substring(0, 10);
+            schedule.last_maintenance_date = date;
+            schedule.next_maintenance_date = nextDateStr;
+            schedule.status = 'scheduled';
+            await schedule.save();
+        }
+    }
     await (0, audit_1.logAudit)(req.user.id, 'maintenance.create', `${inventoryCodes.join(', ')} — ${action}`, req.ip);
     const io = req.app.get('io');
     if (io) {
         io.emit('data_changed', { type: 'maintenance' });
         io.emit('data_changed', { type: 'bhp' });
         io.emit('data_changed', { type: 'inventory' });
+        io.emit('data_changed', { type: 'maintenance_schedule' });
         io.emit('notification', {
             message: `Log pemeliharaan baru dibuat untuk ${logsCreated.length} aset dengan kondisi akhir: ${condition_after}.`,
             roles: ['kalab', 'admin'],
@@ -281,4 +302,115 @@ exports.updateMaintenance = (0, asyncHandler_1.default)(async (req, res) => {
         }
         throw err;
     }
+});
+// =============================================
+// PREVENTIVE MAINTENANCE SCHEDULES (Staf Lab & Kalab)
+// =============================================
+exports.getMaintenanceSchedules = (0, asyncHandler_1.default)(async (req, res) => {
+    const today = new Date().toISOString().substring(0, 10);
+    // Auto-update overdue schedules first
+    await models_1.MaintenanceSchedule.update({ status: 'overdue' }, {
+        where: {
+            next_maintenance_date: { [sequelize_1.Op.lt]: today },
+            status: 'scheduled',
+        },
+    });
+    const schedules = await models_1.MaintenanceSchedule.findAll({
+        include: [
+            {
+                model: models_1.Inventory,
+                attributes: ['id', 'code', 'name', 'condition'],
+                include: [{ model: models_1.Room, attributes: ['id', 'code', 'name'] }],
+            },
+        ],
+        order: [
+            [database_1.default.literal("CASE WHEN status = 'overdue' THEN 1 WHEN status = 'scheduled' THEN 2 ELSE 3 END"), 'ASC'],
+            ['next_maintenance_date', 'ASC'],
+        ],
+    });
+    res.json({ data: schedules });
+});
+exports.createMaintenanceSchedule = (0, asyncHandler_1.default)(async (req, res) => {
+    const { inventory_id, title, frequency_days, next_maintenance_date, notes } = req.body;
+    // Verify inventory exists
+    const inventory = await models_1.Inventory.findByPk(inventory_id);
+    if (!inventory) {
+        throw new errors_1.NotFoundError('Aset tidak ditemukan.');
+    }
+    const schedule = await models_1.MaintenanceSchedule.create({
+        inventory_id,
+        title,
+        frequency_days: parseInt(String(frequency_days)),
+        next_maintenance_date,
+        notes: notes || '',
+        status: 'scheduled',
+    });
+    await (0, audit_1.logAudit)(req.user.id, 'maintenance_schedule.create', `${inventory.code} — ${title}`, req.ip, `Frekuensi: ${frequency_days} hari, Jadwal Berikutnya: ${next_maintenance_date}`);
+    const io = req.app.get('io');
+    if (io) {
+        io.emit('data_changed', { type: 'maintenance_schedule' });
+        io.emit('notification', {
+            message: `Jadwal pemeliharaan baru "${title}" telah dibuat untuk aset ${inventory.code}.`,
+            roles: ['staflab', 'kalab'],
+            kind: 'info',
+        });
+    }
+    const result = await models_1.MaintenanceSchedule.findByPk(schedule.id, {
+        include: [{ model: models_1.Inventory, attributes: ['id', 'code', 'name'] }],
+    });
+    res.status(201).json({ data: result });
+});
+exports.updateMaintenanceSchedule = (0, asyncHandler_1.default)(async (req, res) => {
+    const schedule = await models_1.MaintenanceSchedule.findByPk(req.params.id, {
+        include: [{ model: models_1.Inventory, attributes: ['id', 'code', 'name'] }],
+    });
+    if (!schedule) {
+        throw new errors_1.NotFoundError('Jadwal pemeliharaan tidak ditemukan.');
+    }
+    const { title, frequency_days, next_maintenance_date, notes, status } = req.body;
+    const diffs = [];
+    if (title && title !== schedule.title) {
+        diffs.push(`Judul: ${schedule.title} ➔ ${title}`);
+        schedule.title = title;
+    }
+    if (frequency_days !== undefined && parseInt(String(frequency_days)) !== schedule.frequency_days) {
+        diffs.push(`Frekuensi: ${schedule.frequency_days} hari ➔ ${frequency_days} hari`);
+        schedule.frequency_days = parseInt(String(frequency_days));
+    }
+    if (next_maintenance_date && next_maintenance_date !== schedule.next_maintenance_date) {
+        diffs.push(`Tanggal berikutnya: ${schedule.next_maintenance_date} ➔ ${next_maintenance_date}`);
+        schedule.next_maintenance_date = next_maintenance_date;
+    }
+    if (notes !== undefined && notes !== schedule.notes) {
+        diffs.push(`Catatan: ${schedule.notes || '-'} ➔ ${notes || '-'}`);
+        schedule.notes = notes;
+    }
+    if (status && status !== schedule.status) {
+        diffs.push(`Status: ${schedule.status} ➔ ${status}`);
+        schedule.status = status;
+    }
+    if (diffs.length > 0) {
+        await schedule.save();
+        await (0, audit_1.logAudit)(req.user.id, 'maintenance_schedule.update', `${schedule.Inventory?.code || 'Aset'} — ${schedule.title}`, req.ip, diffs.join(', '));
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('data_changed', { type: 'maintenance_schedule' });
+        }
+    }
+    res.json({ data: schedule });
+});
+exports.deleteMaintenanceSchedule = (0, asyncHandler_1.default)(async (req, res) => {
+    const schedule = await models_1.MaintenanceSchedule.findByPk(req.params.id, {
+        include: [{ model: models_1.Inventory, attributes: ['id', 'code', 'name'] }],
+    });
+    if (!schedule) {
+        throw new errors_1.NotFoundError('Jadwal pemeliharaan tidak ditemukan.');
+    }
+    await schedule.destroy();
+    await (0, audit_1.logAudit)(req.user.id, 'maintenance_schedule.delete', `${schedule.Inventory?.code || 'Aset'} — ${schedule.title}`, req.ip);
+    const io = req.app.get('io');
+    if (io) {
+        io.emit('data_changed', { type: 'maintenance_schedule' });
+    }
+    res.json({ message: 'Jadwal pemeliharaan berhasil dihapus.' });
 });

@@ -79,3 +79,31 @@ export const updateBhpSchema = z.object({
   category: z.string().max(100).optional(),
   reason: z.string().max(500).optional(),
 });
+
+export const createMaintenanceScheduleSchema = z.object({
+  inventory_id: z.number({ error: 'Inventory ID wajib diisi.' }).int().positive(),
+  title: z
+    .string({ error: 'Judul jadwal wajib diisi.' })
+    .min(1, { message: 'Judul jadwal wajib diisi.' })
+    .max(150, { message: 'Judul jadwal maksimal 150 karakter.' }),
+  frequency_days: z
+    .union([z.number(), z.string()])
+    .transform((v) => parseInt(String(v)))
+    .pipe(z.number().int().positive({ message: 'Frekuensi harus berupa angka positif.' })),
+  next_maintenance_date: z
+    .string({ error: 'Tanggal pemeliharaan berikutnya wajib diisi.' })
+    .min(1, { message: 'Tanggal pemeliharaan berikutnya wajib diisi.' }),
+  notes: z.string().max(1000).optional().default(''),
+});
+
+export const updateMaintenanceScheduleSchema = z.object({
+  title: z.string().min(1).max(150).optional(),
+  frequency_days: z
+    .union([z.number(), z.string()])
+    .transform((v) => parseInt(String(v)))
+    .pipe(z.number().int().positive())
+    .optional(),
+  next_maintenance_date: z.string().min(1).optional(),
+  notes: z.string().max(1000).optional(),
+  status: z.enum(['scheduled', 'overdue', 'completed']).optional(),
+});

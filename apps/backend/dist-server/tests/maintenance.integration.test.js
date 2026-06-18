@@ -132,15 +132,6 @@ const models_1 = require("../models");
             .set('Authorization', `Bearer ${staffToken}`);
         (0, vitest_1.expect)(resPredict.status).toBe(200);
         (0, vitest_1.expect)(resPredict.body.data).toBeDefined();
-        // Clean up test data
-        if (testMaintenanceLogId) {
-            await models_1.MaintenanceLog.destroy({ where: { id: testMaintenanceLogId } });
-        }
-        if (testBhpId) {
-            await models_1.Bhp.destroy({ where: { id: testBhpId } });
-        }
-        await models_1.Inventory.destroy({ where: { id: testInventoryId }, force: true });
-        await models_1.Room.destroy({ where: { id: testRoomId } });
     });
     (0, vitest_1.it)('should restrict unauthorized roles from getting maintenance logs', async () => {
         // Admin cannot view maintenance logs directly via staff endpoint in router
@@ -169,5 +160,87 @@ const models_1 = require("../models");
             unit: 'pcs',
         });
         (0, vitest_1.expect)(resCreateBad.status).toBe(403);
+    });
+    (0, vitest_1.it)('should successfully run a full maintenance schedule lifecycle and auto-cycle when maintained', async () => {
+        let testScheduleId = null;
+        // A. Create Maintenance Schedule (Staff)
+        const schedulePayload = {
+            inventory_id: testInventoryId,
+            title: 'Kalibrasi Mikroskop Bulanan',
+            frequency_days: 30,
+            next_maintenance_date: '2026-07-15',
+            notes: 'Gunakan cairan pembersih standar optik.',
+        };
+        const resCreate = await (0, supertest_1.default)(app_1.default)
+            .post('/api/v1/maintenance-schedules')
+            .set('Authorization', `Bearer ${staffToken}`)
+            .set('Cookie', 'csrfToken=test_csrf')
+            .set('x-csrf-token', 'test_csrf')
+            .send(schedulePayload);
+        (0, vitest_1.expect)(resCreate.status).toBe(201);
+        (0, vitest_1.expect)(resCreate.body.data).toBeDefined();
+        (0, vitest_1.expect)(resCreate.body.data.title).toBe(schedulePayload.title);
+        (0, vitest_1.expect)(resCreate.body.data.frequency_days).toBe(30);
+        testScheduleId = resCreate.body.data.id;
+        // B. Get List of Maintenance Schedules
+        const resList = await (0, supertest_1.default)(app_1.default)
+            .get('/api/v1/maintenance-schedules')
+            .set('Authorization', `Bearer ${staffToken}`);
+        (0, vitest_1.expect)(resList.status).toBe(200);
+        const found = resList.body.data.find((s) => s.id === testScheduleId);
+        (0, vitest_1.expect)(found).toBeDefined();
+        (0, vitest_1.expect)(found.status).toBe('scheduled');
+        // C. Update Maintenance Schedule (Staff)
+        const updatePayload = {
+            title: 'Kalibrasi Mikroskop Bulanan - Diperbarui',
+        };
+        const resUpdate = await (0, supertest_1.default)(app_1.default)
+            .put(`/api/v1/maintenance-schedules/${testScheduleId}`)
+            .set('Authorization', `Bearer ${staffToken}`)
+            .set('Cookie', 'csrfToken=test_csrf')
+            .set('x-csrf-token', 'test_csrf')
+            .send(updatePayload);
+        (0, vitest_1.expect)(resUpdate.status).toBe(200);
+        (0, vitest_1.expect)(resUpdate.body.data.title).toBe(updatePayload.title);
+        // D. Auto-cycle schedule when maintenance is logged
+        const logPayload = {
+            inventory_ids: [testInventoryId],
+            action: 'Rutin maintenance tahunan',
+            condition_after: 'Baik',
+            date: '2026-06-18',
+        };
+        const resLog = await (0, supertest_1.default)(app_1.default)
+            .post('/api/v1/maintenance')
+            .set('Authorization', `Bearer ${staffToken}`)
+            .set('Cookie', 'csrfToken=test_csrf')
+            .set('x-csrf-token', 'test_csrf')
+            .send(logPayload);
+        (0, vitest_1.expect)(resLog.status).toBe(201);
+        // Verify schedule is updated/cycled: next date = 2026-06-18 + 30 days = 2026-07-18
+        const resListAfter = await (0, supertest_1.default)(app_1.default)
+            .get('/api/v1/maintenance-schedules')
+            .set('Authorization', `Bearer ${staffToken}`);
+        const foundAfter = resListAfter.body.data.find((s) => s.id === testScheduleId);
+        (0, vitest_1.expect)(foundAfter.last_maintenance_date).toBe('2026-06-18');
+        (0, vitest_1.expect)(foundAfter.next_maintenance_date).toBe('2026-07-18');
+        (0, vitest_1.expect)(foundAfter.status).toBe('scheduled');
+        // E. Delete Maintenance Schedule (Staff)
+        const resDelete = await (0, supertest_1.default)(app_1.default)
+            .delete(`/api/v1/maintenance-schedules/${testScheduleId}`)
+            .set('Authorization', `Bearer ${staffToken}`)
+            .set('Cookie', 'csrfToken=test_csrf')
+            .set('x-csrf-token', 'test_csrf');
+        (0, vitest_1.expect)(resDelete.status).toBe(200);
+    });
+    (0, vitest_1.afterAll)(async () => {
+        // Clean up test data
+        if (testInventoryId) {
+            await models_1.MaintenanceLog.destroy({ where: { inventory_id: testInventoryId } });
+        }
+        if (testBhpId) {
+            await models_1.Bhp.destroy({ where: { id: testBhpId } });
+        }
+        await models_1.Inventory.destroy({ where: { id: testInventoryId }, force: true });
+        await models_1.Room.destroy({ where: { id: testRoomId } });
     });
 });
