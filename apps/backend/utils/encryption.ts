@@ -79,7 +79,9 @@ export const decryptData = (backupFile: {
     decrypted = decipher.update(backupFile.encrypted, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
   } catch (decryptErr) {
-    throw new Error('Integritas backup gagal: File backup telah dimanipulasi atau kunci salah.', { cause: decryptErr });
+    throw new Error('Integritas backup gagal: File backup telah dimanipulasi atau kunci salah.', {
+      cause: decryptErr,
+    });
   }
 
   if (backupFile.checksum) {

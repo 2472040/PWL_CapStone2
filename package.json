@@ -28,7 +28,7 @@
     "e2e:test": "npx playwright test"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
+    "@eslint/js": "^9.19.0",
     "@playwright/test": "^1.61.0",
     "concurrently": "^9.1.2",
     "eslint": "^9.39.4",

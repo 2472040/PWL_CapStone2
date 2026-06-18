@@ -64,7 +64,9 @@ const decryptData = (backupFile) => {
         decrypted += decipher.final('utf8');
     }
     catch (decryptErr) {
-        throw new Error('Integritas backup gagal: File backup telah dimanipulasi atau kunci salah.', { cause: decryptErr });
+        throw new Error('Integritas backup gagal: File backup telah dimanipulasi atau kunci salah.', {
+            cause: decryptErr,
+        });
     }
     if (backupFile.checksum) {
         const currentChecksum = crypto_1.default.createHash('sha256').update(decrypted).digest('hex');
