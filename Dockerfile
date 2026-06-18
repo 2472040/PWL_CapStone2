@@ -47,7 +47,7 @@ COPY --from=builder /app/apps/backend ./apps/backend
 
 # Copy production node_modules
 COPY --from=deps-prod /app/node_modules ./node_modules
-COPY --from=deps-prod /app/apps/backend/node_modules ./apps/backend/node_modules
+
 
 # Set ownership of app files to non-root user
 RUN chown -R appuser:appgroup /app

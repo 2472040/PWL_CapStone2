@@ -89,7 +89,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build Docker Image
-        run: docker build -t lokalab-suite:latest .
+        run: docker build --target production -t lokalab-suite:latest .
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
