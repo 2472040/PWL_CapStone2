@@ -306,7 +306,7 @@ router.post(
   '/validate-qr-file',
   authorize('sysadmin', 'admin', 'staflab'),
   (req, res, next) => {
-    uploadImage(req, res, (err) => {
+    uploadImage(req, res, (err: any) => {
       if (err) {
         return res.status(400).json({ error: err.message });
       }
@@ -319,9 +319,9 @@ router.post(
       message:
         'File valid: Lolos verifikasi ukuran, tipe MIME, ekstensi, dan kecocokan Magic Bytes!',
       file: {
-        name: req.file.originalname,
-        size: req.file.size,
-        path: req.file.path,
+        name: req.file!.originalname,
+        size: req.file!.size,
+        path: req.file!.path,
       },
     });
   }

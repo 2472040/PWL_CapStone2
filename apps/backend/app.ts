@@ -30,6 +30,7 @@ import inventoryRouter from './routes/inventory';
 import procurementRouter from './routes/procurement';
 import maintenanceRouter from './routes/maintenance';
 import dashboardRouter from './routes/dashboard';
+import redisClient from './utils/redis';
 
 const app = express();
 
@@ -108,6 +109,16 @@ app.get(['/api/health', '/api/v1/health'], async (req: Request, res: Response) =
     console.error('Database connection verification failed in health check:', err);
   }
 
+  let redisStatus = 'disconnected';
+  if (redisClient && redisClient.status === 'ready') {
+    try {
+      await redisClient.ping();
+      redisStatus = 'connected';
+    } catch (err) {
+      console.error('Redis connection verification failed in health check:', err);
+    }
+  }
+
   const memoryUsage = process.memoryUsage();
   const status = dbStatus === 'connected' ? 'ok' : 'degraded';
 
@@ -116,6 +127,7 @@ app.get(['/api/health', '/api/v1/health'], async (req: Request, res: Response) =
     timestamp: new Date().toISOString(),
     services: {
       database: dbStatus,
+      redis: redisStatus,
     },
     uptime: Math.floor(process.uptime()),
     memory: {

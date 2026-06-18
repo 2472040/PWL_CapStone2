@@ -54,8 +54,8 @@ export default [
     },
     rules: {
       // Quality rules
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
-      'no-undef': 'warn',
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
+      'no-undef': 'error',
       'no-console': 'off',
       'no-empty': 'off',
       'no-constant-condition': 'warn',
@@ -121,7 +121,7 @@ export default [
     },
     rules: {
       // TypeScript quality rules
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-empty-function': 'off',
 

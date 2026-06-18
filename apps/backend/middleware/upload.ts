@@ -11,10 +11,10 @@ if (!fs.existsSync(uploadDir)) {
 
 // Multer Storage Configuration with filename sanitization
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
+  destination: (req: any, file: any, cb: any) => {
     cb(null, uploadDir);
   },
-  filename: (req, file, cb) => {
+  filename: (req: any, file: any, cb: any) => {
     // Sanitize filename to prevent path traversal (OWASP)
     const sanitized = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);

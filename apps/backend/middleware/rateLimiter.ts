@@ -47,10 +47,7 @@ export const loginRateLimiter: RequestHandler = async (
 
   const cleanEmail = email ? String(email).trim().toLowerCase() : null;
 
-  // Check if we should use Redis or local fallback
-  const useRedis = redisClient && redisClient.status === 'ready';
-
-  if (useRedis) {
+  if (redisClient && redisClient.status === 'ready') {
     try {
       const ipKey = `rate:ip:${ip}`;
       const userKey = cleanEmail ? `rate:user:${cleanEmail}` : null;
@@ -178,8 +175,7 @@ export const clearLoginAttempts = (ip?: string, email?: string): void => {
   if (cleanEmail) userAttempts.delete(cleanEmail);
 
   // Clear in Redis
-  const useRedis = redisClient && redisClient.status === 'ready';
-  if (useRedis) {
+  if (redisClient && redisClient.status === 'ready') {
     try {
       const ipKey = `rate:ip:${ip}`;
       const userKey = cleanEmail ? `rate:user:${cleanEmail}` : null;
@@ -201,9 +197,7 @@ export const publicVerifyRateLimiter: RequestHandler = async (
   const timeframe = 60 * 1000; // 1 minute
   const maxAttempts = 15;
 
-  const useRedis = redisClient && redisClient.status === 'ready';
-
-  if (useRedis) {
+  if (redisClient && redisClient.status === 'ready') {
     try {
       const ipKey = `rate:verify:ip:${ip}`;
       await redisClient.zremrangebyscore(ipKey, 0, now - timeframe);

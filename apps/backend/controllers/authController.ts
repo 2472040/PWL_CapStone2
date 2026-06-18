@@ -29,7 +29,12 @@ export const login = asyncHandler(async (req: any, res: any) => {
 
   const user = await User.findOne({ where: { email } });
   if (!user) {
-    await logAudit(null, 'auth.login_failed', `Email: ${email} (Pengguna tidak ditemukan)`, req.ip);
+    await logAudit(
+      undefined,
+      'auth.login_failed',
+      `Email: ${email} (Pengguna tidak ditemukan)`,
+      req.ip
+    );
     throw new UnauthorizedError('Email atau password salah.');
   }
 

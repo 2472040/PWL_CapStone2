@@ -13,8 +13,7 @@ export const tokenBlacklist = {
    */
   has: async (jti: string): Promise<boolean> => {
     // 1. Try Redis first
-    const isRedisReady = redisClient && redisClient.status === 'ready';
-    if (isRedisReady) {
+    if (redisClient && redisClient.status === 'ready') {
       try {
         const cached = await redisClient.get(`blacklist:${jti}`);
         if (cached !== null) {
@@ -67,8 +66,7 @@ export const tokenBlacklist = {
     }
 
     // 2. Save to Redis with TTL
-    const isRedisReady = redisClient && redisClient.status === 'ready';
-    if (isRedisReady) {
+    if (redisClient && redisClient.status === 'ready') {
       try {
         const expiryMs = expiry.getTime();
         const ttlSeconds = Math.max(0, Math.ceil((expiryMs - Date.now()) / 1000));
