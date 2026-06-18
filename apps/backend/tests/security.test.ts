@@ -186,8 +186,8 @@ describe('Security Middleware & Utilities', () => {
       decipherTamper.setAuthTag(tag);
 
       expect(() => {
-        let dec = decipherTamper.update(tamperedEncrypted, 'hex', 'utf8');
-        dec += decipherTamper.final('utf8');
+        decipherTamper.update(tamperedEncrypted, 'hex', 'utf8');
+        decipherTamper.final('utf8');
       }).toThrow();
     });
   });

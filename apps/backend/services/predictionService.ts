@@ -52,7 +52,7 @@ export async function calculateBhpPrediction(bhpId: number) {
   }
 
   // Construct coordinates: x = days since first use, y = cumulative quantity used
-  let coordinates: Coordinate[] = [];
+  let coordinates: Coordinate[];
   let dailyBurnRate = 0.05; // Default fallback daily burn rate
   let r2Score = 0.95; // Simulated high accuracy R2 fallback
   let lossMse = 0.042; // Simulated low MSE fallback
@@ -206,9 +206,9 @@ export async function calculateBhpPrediction(bhpId: number) {
   confUpperDays = Math.max(confUpperDays, Math.ceil(predictedDays));
 
   // 3. Local Rule-Based Expert AI Narrative & Recommendation Generator
-  let riskTitle = 'AMAN (LOW RISK)';
-  let riskColor = 'green';
-  let aiAnalysis = '';
+  let riskTitle: string;
+  let riskColor: string;
+  let aiAnalysis: string;
 
   if (currentStock === 0) {
     riskTitle = 'STOK KOSONG (CRITICAL)';

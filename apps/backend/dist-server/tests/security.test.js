@@ -156,8 +156,8 @@ const createMockResponse = () => {
             const decipherTamper = crypto_1.default.createDecipheriv('aes-256-gcm', key, iv);
             decipherTamper.setAuthTag(tag);
             (0, vitest_1.expect)(() => {
-                let dec = decipherTamper.update(tamperedEncrypted, 'hex', 'utf8');
-                dec += decipherTamper.final('utf8');
+                decipherTamper.update(tamperedEncrypted, 'hex', 'utf8');
+                decipherTamper.final('utf8');
             }).toThrow();
         });
     });

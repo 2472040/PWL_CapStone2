@@ -9,8 +9,8 @@ export default [
   // Global ignores for build output and dependencies
   {
     ignores: [
-      'dist/**',
-      'build/**',
+      '**/dist/**',
+      '**/build/**',
       'apps/backend/dist-server/**',
       'node_modules/**',
       'apps/backend/logs/**',

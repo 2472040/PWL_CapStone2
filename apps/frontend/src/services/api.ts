@@ -155,7 +155,7 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
           },
         });
       } catch (refreshErr) {
-        throw new Error('Sesi Anda telah berakhir. Silakan login kembali.');
+        throw new Error('Sesi Anda telah berakhir. Silakan login kembali.', { cause: refreshErr });
       }
     }
 
@@ -205,7 +205,8 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
       (message.includes('Unexpected end of JSON input') || message.includes('Failed to fetch'))
     ) {
       throw new Error(
-        'Gagal terhubung ke server. Pastikan backend sudah dijalankan (npm run server atau npm run dev:all).'
+        'Gagal terhubung ke server. Pastikan backend sudah dijalankan (npm run server atau npm run dev:all).',
+        { cause: err }
       );
     }
     throw err;
