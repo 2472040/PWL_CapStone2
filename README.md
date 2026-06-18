@@ -1,6 +1,6 @@
 # 🧪 LokaLab Suite — Enterprise SaaS Inventory & Procurement System
 
-[![Software Version](https://img.shields.io/badge/version-3.0.0-blue.svg?style=flat-square)](CHANGELOG.md)
+[![Software Version](https://img.shields.io/badge/version-3.3.0-blue.svg?style=flat-square)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 [![Security Rating](https://img.shields.io/badge/security-OWASP%20Compliant-success.svg?style=flat-square)](SECURITY.md)
 [![Architecture](https://img.shields.io/badge/architecture-Microservices%20Ready-orange.svg?style=flat-square)](GUIDE.md)
@@ -77,10 +77,11 @@ LokaLab membagi tanggung jawab kerja secara ketat menggunakan model RBAC (_Role-
 
 Sistem dikonfigurasi menggunakan dependensi berkualitas tinggi dan teruji:
 
-- **Frontend**: React 18, Vite, Tailwind CSS, Lucide Icons, Chart.js.
-- **Backend**: Node.js, Express.js, Socket.io, Sequelize ORM (MySQL), bcrypt, jsonwebtoken.
-- **Security & Utility**: Helmet, Zod Validation, PDFKit, Winston Logger.
-- **Infrastruktur**: Docker & Docker Compose.
+- **Frontend**: React 18, Vite 8, Tailwind CSS 4, Framer Motion, Lucide Icons, Zustand, Lenis.
+- **Backend**: Node.js 20+, Express.js 5, Socket.io 4, Sequelize 6 ORM (MySQL 8), bcryptjs, jsonwebtoken.
+- **Security & Utility**: Helmet, Zod v4, PDFKit, Winston Logger (JSON structured logging).
+- **Testing**: Vitest 4, Testing Library, Supertest (41 backend + 85 frontend tests).
+- **Infrastruktur**: Docker & Docker Compose, GitHub Actions CI/CD Pipeline.
 
 ---
 
@@ -88,23 +89,28 @@ Sistem dikonfigurasi menggunakan dependensi berkualitas tinggi dan teruji:
 
 ```text
 PWL_CapStone2/
-├── .github/                   # Konfigurasi CI/CD & Template Isu/PR
-├── assets/                    # Aset statis & berkas styling global
-├── database/                  # Skema dan dokumentasi database MySQL
-├── server/                    # Backend API (Express.js)
-│   ├── config/                # Konfigurasi koneksi database & variabel
-│   ├── controllers/           # Logika bisnis per fitur (RBAC, Audit, dll)
-│   ├── middleware/            # Proteksi CORS, CSP, JWT, RBAC, Rate Limiter
-│   ├── models/                # Skema ORM Sequelize (User, Room, Log, dll)
-│   ├── routes/                # Endpoint router API
-│   └── tests/                 # Pengujian unit keamanan & fungsional
-├── src/                       # Frontend SPA (Vite + React)
-│   ├── components/            # Komponen visual yang reusable
-│   ├── data/                  # Konstanta data statis aplikasi
-│   ├── screens/               # Halaman UI dashboard, login, & landing
-│   └── services/              # Client API wrapper (Axios / fetch)
-├── Dockerfile                 # Konfigurasi container backend/app
-└── docker-compose.yml         # Orkestrasi multi-container (App + MySQL)
+├── .github/
+│   └── workflows/             # CI/CD Pipeline (GitHub Actions)
+├── apps/
+│   ├── backend/               # Backend API (Node.js + Express.js + TypeScript)
+│   │   ├── controllers/       # Handler HTTP per fitur
+│   │   ├── middleware/        # Auth, CORS, Rate Limiter, Audit, Upload
+│   │   ├── models/            # Skema ORM Sequelize (User, Room, Log, dll)
+│   │   ├── routes/            # Definisi endpoint API
+│   │   ├── services/          # Business logic layer (transaksional)
+│   │   ├── utils/             # Logger Winston, Error classes, Scheduler
+│   │   └── dist-server/       # Build output TypeScript (runtime)
+│   └── frontend/              # Frontend SPA (Vite + React + TypeScript)
+│       ├── src/
+│       │   ├── components/    # Komponen UI reusable
+│       │   ├── screens/       # Halaman dashboard, login, & landing
+│       │   ├── store/         # Zustand global state management
+│       │   └── services/      # API client wrapper
+│       └── dist/              # Build output Vite (served by Express)
+├── database/                  # Skema SQL & dokumentasi database
+├── tests/                     # E2E tests (Playwright)
+├── Dockerfile                 # Multi-stage container build
+└── docker-compose.yml         # Orkestrasi multi-container (App + MySQL + Redis)
 ```
 
 ---

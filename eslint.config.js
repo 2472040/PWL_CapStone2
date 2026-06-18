@@ -3,6 +3,7 @@ import reactPlugin from 'eslint-plugin-react';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
 import prettierConfig from 'eslint-config-prettier';
 import globals from 'globals';
+import tseslint from 'typescript-eslint';
 
 export default [
   // Global ignores for build output and dependencies
@@ -10,11 +11,13 @@ export default [
     ignores: [
       'dist/**',
       'build/**',
+      'apps/backend/dist-server/**',
       'node_modules/**',
-      'server/logs/**',
+      'apps/backend/logs/**',
       'logs/**',
       'tmp/**',
-      'server/backups/**',
+      'apps/backend/backups/**',
+      'coverage/**',
       'package-lock.json',
     ],
   },
@@ -22,6 +25,7 @@ export default [
   // Base recommended JS configs
   js.configs.recommended,
 
+  // JavaScript files (server, config, etc.)
   {
     files: ['**/*.js', '**/*.jsx', '**/*.cjs', '**/*.mjs'],
     languageOptions: {
@@ -76,6 +80,67 @@ export default [
       'react/require-render-return': 'warn',
       'react/jsx-no-target-blank': 'warn',
       'react/jsx-no-duplicate-props': 'warn',
+
+      // Hooks rules
+      ...reactHooksPlugin.configs.recommended.rules,
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/rules-of-hooks': 'warn',
+      'react-hooks/exhaustive-deps': 'warn',
+      'react-hooks/immutability': 'off',
+    },
+    settings: {
+      react: {
+        version: 'detect',
+      },
+    },
+  },
+
+  // TypeScript files (frontend src/)
+  ...tseslint.configs.recommended.map((config) => ({
+    ...config,
+    files: ['**/*.ts', '**/*.tsx'],
+  })),
+  {
+    files: ['**/*.ts', '**/*.tsx'],
+    languageOptions: {
+      parser: tseslint.parser,
+      parserOptions: {
+        project: ['./apps/frontend/tsconfig.json', './apps/backend/tsconfig.json'],
+        ecmaFeatures: {
+          jsx: true,
+        },
+      },
+      globals: {
+        ...globals.browser,
+      },
+    },
+    plugins: {
+      '@typescript-eslint': tseslint.plugin,
+      react: reactPlugin,
+      'react-hooks': reactHooksPlugin,
+    },
+    rules: {
+      // TypeScript quality rules
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-empty-function': 'off',
+
+      // Disable base rules that conflict with TS
+      'no-unused-vars': 'off',
+      'no-undef': 'off',
+      'no-console': 'off',
+      'no-empty': 'off',
+
+      // React rules
+      ...reactPlugin.configs.recommended.rules,
+      'react/react-in-jsx-scope': 'off',
+      'react/prop-types': 'off',
+      'react/no-unescaped-entities': 'off',
+      'react/jsx-no-comment-textnodes': 'off',
+      'react/jsx-no-undef': 'warn',
+      'react/no-direct-mutation-state': 'warn',
+      'react/display-name': 'off',
+      'react/jsx-key': 'warn',
 
       // Hooks rules
       ...reactHooksPlugin.configs.recommended.rules,

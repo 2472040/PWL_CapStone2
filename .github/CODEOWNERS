@@ -1,0 +1,11 @@
+# LokaLab Suite Code Owners
+# Defines team and developer ownership of code directories
+
+# Global owners
+* @maliq-dlt
+
+# Frontend
+/src/ @maliq-dlt
+
+# Backend
+/server/ @maliq-dlt

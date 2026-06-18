@@ -1,0 +1,102 @@
+name: CI/CD Pipeline & Security Scan
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test-and-lint:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: lokalab_db
+          MYSQL_USER: lokalab_user
+          MYSQL_PASSWORD: lokalab_password
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
+
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_NAME: lokalab_db
+      DB_USER: lokalab_user
+      DB_PASS: lokalab_password
+      JWT_SECRET: e2e-test-secure-jwt-secret-key-32-bytes-long
+      JWT_REFRESH_SECRET: e2e-test-secure-jwt-refresh-secret-key-32-bytes-long
+      BACKUP_ENCRYPTION_SECRET: eb5f0e6264ffbc28019083f3763ac0f9c0947988a5fd86cb67c13f78be35e5cd
+      AUDIT_LOG_SECRET: b87b24b57409f1268e3b5a55ec1348a5aa4a770687c97bd05772e5df8a92b249
+      NODE_ENV: test
+      PORT: 3000
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Build Frontend & Backend (Typecheck & Compile)
+        run: |
+          npm run build
+
+      - name: Run database migrations and seeding
+        run: |
+          npm run db:migrate
+          npm run seed
+
+      - name: Run Unit & Integration Tests
+        run: npm run test:all
+
+      - name: Install Playwright Browsers
+        run: npx playwright install chromium
+
+      - name: Run Playwright E2E Tests
+        run: npx playwright test
+
+      - name: Upload Playwright Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
+
+  docker-build-scan:
+    runs-on: ubuntu-latest
+    needs: test-and-lint
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker Image
+        run: docker build -t lokalab-suite:latest .
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'lokalab-suite:latest'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL'

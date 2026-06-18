@@ -40,8 +40,9 @@ Opsi ini digunakan jika Anda ingin melakukan pengembangan (_development_) aktif 
 
 | Komponen                 | Versi Minimal | Kegunaan                                                           |
 | :----------------------- | :------------ | :----------------------------------------------------------------- |
-| **Node.js**              | v18+          | Runtime eksekusi JavaScript (Backend & Frontend Builder)           |
+| **Node.js**              | v20+          | Runtime eksekusi JavaScript (Backend & Frontend Builder)           |
 | **XAMPP / MySQL Server** | Port 3306     | Media penyimpanan data relasional utama                            |
+| **Redis**                | Port 6379     | Session cache & sliding window rate limiter                        |
 | **Layanan Web Browser**  | Versi Modern  | Peramban untuk mengakses antarmuka LokaLab (Chrome, Edge, Firefox) |
 
 ### 🔧 Langkah-Langkah Setup Awal (Hanya Sekali)
@@ -59,20 +60,20 @@ npm install
 1. Aktifkan modul **MySQL** pada Control Panel XAMPP Anda.
 2. Hubungkan ke database lokal menggunakan aplikasi pengelola database (seperti MySQL Workbench atau phpMyAdmin), kemudian jalankan perintah SQL berikut untuk membuat skema basis data baru:
    ```sql
-   CREATE DATABASE IF NOT EXISTS lokalab_inventory
+   CREATE DATABASE IF NOT EXISTS lokalab_db
    CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
    ```
 
 #### 3. Konfigurasi Berkas Lingkungan (`.env`)
 
-Pastikan berkas `.env` di direktori utama (_root_) proyek telah terkonfigurasi dengan benar sebagai berikut:
+Pastikan berkas `.env` di direktori utama (_root_) proyek telah terkonfigurasi dengan benar sebagai berikut (sesuai `.env.example`):
 
 ```env
 DB_HOST=localhost
 DB_PORT=3306
-DB_USER=root
-DB_PASS=
-DB_NAME=lokalab_inventory
+DB_USER=lokalab_user
+DB_PASS=lokalab_password
+DB_NAME=lokalab_db
 JWT_SECRET=lokalab-secret-key-change-in-production-2026
 BACKUP_ENCRYPTION_SECRET=lokalab-super-secure-backup-secret-key-2026
 AUDIT_LOG_SECRET=lokalab-super-secure-audit-secret-key-2026
@@ -96,7 +97,7 @@ npm run seed
 Setelah seluruh langkah setup awal di atas berhasil diselesaikan, Anda dapat menjalankan backend dan frontend secara bersamaan menggunakan perintah terintegrasi berikut:
 
 ```bash
-npm run dev:all
+npm run dev
 ```
 
 - **Layanan Frontend (Vite + React)** akan berjalan pada port `5173` (akses: `http://localhost:5173`)
@@ -104,15 +105,24 @@ npm run dev:all
 
 ---
 
-## 🧪 Pengujian Terotomatisasi (Unit & Keamanan)
+## 🧪 Pengujian Terotomatisasi (Unit, Integrasi, & Keamanan)
 
-LokaLab Suite dilengkapi dengan rangkaian uji terotomatisasi (Vitest) untuk memverifikasi fungsionalitas CRUD inventaris, siklus pemeliharaan & draf pengadaan, logika backend, RBAC, algoritma enkripsi backup, proteksi _Rate Limiting_, dan integritas rantai audit log.
+LokaLab Suite dilengkapi dengan rangkaian uji terotomatisasi (Vitest) untuk memverifikasi komponen frontend, fungsionalitas CRUD inventaris, siklus pemeliharaan & draf pengadaan, logika backend, RBAC, algoritma enkripsi backup, proteksi _Rate Limiting_, dan integritas rantai audit log.
 
-Jalankan seluruh 41 unit & integration test dengan perintah berikut:
+Total terdapat **126 test cases** yang terbagi menjadi:
 
-```bash
-npm run test
-```
+1. **Backend Integration & Security Tests (41 tests)**:
+   ```bash
+   npm run test:backend   # Atau gunakan: npm run test
+   ```
+2. **Frontend Component Unit Tests (85 tests)**:
+   ```bash
+   npm run test:frontend
+   ```
+3. **Menjalankan Seluruh Uji Coba (126 tests)**:
+   ```bash
+   npm run test:all
+   ```
 
 Untuk menjalankan khusus pengujian keamanan dan integritas enkripsi cadangan saja:
 
@@ -148,10 +158,13 @@ npm run seed
 
 | Skrip Perintah          | Kegunaan Fungsional                                                                             |
 | :---------------------- | :---------------------------------------------------------------------------------------------- |
-| `npm run dev:all`       | Menjalankan server backend Express dan frontend Vite secara bersamaan dalam mode _development_. |
+| `npm run dev`           | Menjalankan server backend Express (TS) dan frontend Vite secara bersamaan dalam mode _development_. |
 | `npm run seed`          | Melakukan reset database dan mengisi ulang data standar akun demo.                              |
 | `npm run db:migrate`    | Menjalankan seluruh berkas migrasi database Sequelize secara berurutan.                         |
-| `npm run test`          | Mengeksekusi seluruh 41 unit & integration test menggunakan Vitest.                             |
+| `npm run test:backend`  | Mengeksekusi 41 integration & security test backend menggunakan Vitest.                         |
+| `npm run test:frontend` | Mengeksekusi 85 unit test komponen frontend menggunakan Vitest.                                 |
+| `npm run test:all`      | Mengeksekusi seluruh 126 test suite (backend & frontend) secara sekuensial.                     |
+| `npm run build`         | Melakukan kompilasi TypeScript backend & build Vite frontend ke folder output produksi.         |
+| `npm run lint`          | Melakukan pemindaian kode menggunakan ESLint untuk melacak syntax error atau code style.        |
+| `npm run format`        | Memformat seluruh kode sumber menggunakan Prettier secara otomatis.                             |
 | `npm run security-test` | Mengeksekusi rangkaian uji unit keamanan dan integritas enkripsi cadangan menggunakan Vitest.   |
-| `npm run build`         | Melakukan kompilasi (_compile_) kode frontend menjadi berkas siap produksi pada folder `/dist`. |
-| `npm run preview`       | Menjalankan server lokal untuk melakukan peninjauan hasil build produksi frontend.              |

@@ -54,3 +54,7 @@ mcp/
 server/backups/
 *.loka
 
+# Test results
+test-results/
+
+

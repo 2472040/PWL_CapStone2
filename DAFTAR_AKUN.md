@@ -1,6 +1,6 @@
 # 🔐 Daftar Akun Demo & Skenario Pengujian LokaLab Suite
 
-Dokumen ini memuat daftar akun uji coba (_demo accounts_) yang terdaftar secara _default_ dalam basis data MySQL (`lokalab_inventory`) melalui seeder. Akun-akun ini dikonfigurasi untuk memudahkan pengujian hak akses berbasis peran (_Role-Based Access Control_ / RBAC) dan verifikasi alur kerja operasional secara menyeluruh (_end-to-end_).
+Dokumen ini memuat daftar akun uji coba (_demo accounts_) yang terdaftar secara _default_ dalam basis data MySQL (`lokalab_db`) melalui seeder. Akun-akun ini dikonfigurasi untuk memudahkan pengujian hak akses berbasis peran (_Role-Based Access Control_ / RBAC) dan verifikasi alur kerja operasional secara menyeluruh (_end-to-end_).
 
 > [!IMPORTANT]
 > **Kredensial Global Uji Coba:**

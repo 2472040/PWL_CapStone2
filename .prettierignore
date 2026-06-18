@@ -1,6 +1,10 @@
 node_modules/
 dist/
 build/
+dist-server/
+apps/backend/dist-server/
+apps/backend/dist/
+apps/frontend/dist/
 server/backups/
 server/logs/
 logs/
